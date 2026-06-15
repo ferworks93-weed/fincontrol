@@ -1292,7 +1292,7 @@ function rPortfolio(){
       <div class="inv-track"><div class="inv-fill" style="width:${pct}%"></div></div>
       <div style="display:flex;gap:6px;margin-top:9px">
         <button onclick="openInvOp('${i.id}')" class="btn primary sm" style="flex:1">+ Operação</button>
-        <button onclick="if(confirm('Remover?')){D.investments=D.investments.filter(x=>String(x.id)!=='${i.id}');save();rPortfolio();toast('🗑 Removido')}" class="btn danger sm">Remover</button>
+        <button onclick="if(confirm('Remover?')){markDeleted('${i.id}');D.investments=D.investments.filter(x=>String(x.id)!=='${i.id}');save();rPortfolio();toast('🗑 Removido')}" class="btn danger sm">Remover</button>
       </div>
     </div>`;
   }).join('')||'<div class="empty">Nenhum investimento</div>';
@@ -1510,7 +1510,7 @@ function editTx(id){
 }
 function delTxEdit(){
   const id=document.getElementById('ov-tx').dataset.editId;if(!id)return;
-  D.transactions=D.transactions.filter(x=>String(x.id)!==String(id));
+  markDeleted(id);D.transactions=D.transactions.filter(x=>String(x.id)!==String(id));
   document.getElementById('ov-tx').dataset.editId='';
   save();closeSheet('ov-tx');renderPage(curPg);toast('🗑 Removido');
 }
@@ -1577,7 +1577,7 @@ function editAcc(id){
 }
 function delAccEdit(){
   const id=document.getElementById('ov-acc').dataset.editId;if(!id)return;
-  D.accounts=D.accounts.filter(x=>String(x.id)!==String(id));
+  markDeleted(id);D.accounts=D.accounts.filter(x=>String(x.id)!==String(id));
   document.getElementById('ov-acc').dataset.editId='';
   save();closeSheet('ov-acc');rCards();toast('🗑 Conta removida');
 }
@@ -1632,7 +1632,7 @@ function editGoal(id){
 }
 function delGoalEdit(){
   const id=document.getElementById('ov-goal').dataset.editId;if(!id)return;
-  D.goals=D.goals.filter(x=>String(x.id)!==String(id));
+  markDeleted(id);D.goals=D.goals.filter(x=>String(x.id)!==String(id));
   document.getElementById('ov-goal').dataset.editId='';
   save();closeSheet('ov-goal');rPortfolio();toast('🗑 Meta removida');
 }
@@ -2187,16 +2187,54 @@ async function _driveDownload(fileId){
   return r.json();
 }
 
+function _mergeDeleted(ld,rd){
+  const out={};
+  new Set([...Object.keys(ld||{}),...Object.keys(rd||{})]).forEach(id=>{out[id]=Math.max((ld||{})[id]||0,(rd||{})[id]||0);});
+  const cutoff=Date.now()-60*864e5;Object.keys(out).forEach(id=>{if(out[id]<cutoff)delete out[id];});
+  return out;
+}
+function _mergeArr(lArr,rArr,deleted,localWins){
+  const map=new Map();
+  const[base,priority]=localWins?[rArr,lArr]:[lArr,rArr];
+  (base||[]).forEach(x=>map.set(String(x.id),x));
+  (priority||[]).forEach(x=>map.set(String(x.id),x));
+  Object.keys(deleted).forEach(id=>map.delete(id));
+  return[...map.values()];
+}
+function mergeDatasets(local,remote){
+  const lt=new Date(local.meta?.lastSync||0).getTime();
+  const rt=new Date(remote.meta?.lastSync||0).getTime();
+  const localWins=lt>=rt;
+  const deleted=_mergeDeleted(local.meta?.deleted,remote.meta?.deleted);
+  const base=localWins?remote:local;
+  return{
+    ...base,
+    transactions:_mergeArr(local.transactions,remote.transactions,deleted,localWins),
+    accounts:    _mergeArr(local.accounts,    remote.accounts,    deleted,localWins),
+    cards:       _mergeArr(local.cards,       remote.cards,       deleted,localWins),
+    budgets:     _mergeArr(local.budgets,     remote.budgets,     deleted,localWins),
+    goals:       _mergeArr(local.goals,       remote.goals,       deleted,localWins),
+    investments: _mergeArr(local.investments, remote.investments, deleted,localWins),
+    recurrents:  _mergeArr(local.recurrents,  remote.recurrents,  deleted,localWins),
+    recurring:   _mergeArr(local.recurring,   remote.recurring,   deleted,localWins),
+    categories:  localWins?local.categories:remote.categories,
+    meta:{...(localWins?remote.meta:local.meta),...(localWins?local.meta:remote.meta),deleted,driveFileId:local.meta?.driveFileId||remote.meta?.driveFileId}
+  };
+}
+function markDeleted(id){if(!D.meta.deleted)D.meta.deleted={};D.meta.deleted[String(id)]=Date.now();}
 async function _driveSync(){
   try{
     setSyncStatus('busy','Sincronizando com Drive…');
     let fileId=D.meta.driveFileId||localStorage.getItem(DRIVE_KEY);
     if(!fileId)fileId=await _driveFindFile();
-    const localTime=D.meta.lastSync?new Date(D.meta.lastSync).getTime():0;
     if(fileId){
       const remote=await _driveDownload(fileId);
-      const remoteTime=remote?.meta?.lastSync?new Date(remote.meta.lastSync).getTime():0;
-      if(remoteTime>localTime){D=mobileAdapt(remote);renderPage(curPg);toast('☁ Dados atualizados do Drive');}
+      if(remote?.meta){
+        const prev=JSON.stringify({t:D.transactions?.length,c:D.cards?.length});
+        D=mobileAdapt(mergeDatasets(D,remote));
+        const next=JSON.stringify({t:D.transactions?.length,c:D.cards?.length});
+        if(prev!==next){renderPage(curPg);toast('☁ Dados mesclados do Drive');}
+      }
     }
     D.meta.lastSync=new Date().toISOString();
     D.meta.driveFileId=fileId||null;
@@ -2871,7 +2909,7 @@ function applySwipeToDelete(container){
         el.style.opacity='0';
         const id=el.dataset.id;
         setTimeout(()=>{
-          D.transactions=D.transactions.filter(t=>String(t.id)!==String(id));
+          markDeleted(id);D.transactions=D.transactions.filter(t=>String(t.id)!==String(id));
           save();rTx();toast('🗑 Removido');
         },220);
       } else {

@@ -1898,7 +1898,7 @@ function delTx(id){
     const acc=D.accounts.find(a=>a.id===t.accountId);
     if(acc) acc.balance+=t.type==='income'?-t.amount:t.amount;
   }
-  D.transactions=D.transactions.filter(t=>String(t.id)!==String(id));
+  markDeleted(id);D.transactions=D.transactions.filter(t=>String(t.id)!==String(id));
   save();render();toast('Lançamento removido');
 }
 
@@ -1958,7 +1958,7 @@ function confirmRecAmt() {
     date:d.toISOString().slice(0,10),cat:r.cat,accountId:1,cardId:null,installments:1,recurringId:id});
   save(); closeOv('ov-confirm-rec'); render(); toast(`✓ ${r.desc} lançado com ${fmt(amt)}`);
 }
-function delRecurring(id){if(!confirm('Remover este recorrente?'))return;D.recurring=D.recurring.filter(r=>String(r.id)!==String(id));save();renderRecurring();toast('Recorrente removido');}
+function delRecurring(id){if(!confirm('Remover este recorrente?'))return;markDeleted(id);D.recurring=D.recurring.filter(r=>String(r.id)!==String(id));save();renderRecurring();toast('Recorrente removido');}
 function saveRecurring(){
   const desc=document.getElementById('rec-desc').value.trim();
   const type=document.getElementById('rec-type').value;
@@ -2113,7 +2113,7 @@ function renderAccounts(){
                tooltip:{...CHART_BASE.plugins.tooltip,callbacks:{label:c=>` ${c.label}: ${fmt(c.raw)}`}}}}
   });
 }
-function delAccount(id){if(!confirm('Remover esta conta?'))return;D.accounts=D.accounts.filter(a=>String(a.id)!==String(id));save();renderAccounts();toast('Conta removida');}
+function delAccount(id){if(!confirm('Remover esta conta?'))return;markDeleted(id);D.accounts=D.accounts.filter(a=>String(a.id)!==String(id));save();renderAccounts();toast('Conta removida');}
 
 // ════════════════════════════════════════════════════════════════
 // BUDGETS
@@ -2135,7 +2135,7 @@ function renderBudgets(){
                tooltip:{...CHART_BASE.plugins.tooltip,callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}}}}
   });
 }
-function delBudget(id){D.budgets=D.budgets.filter(b=>String(b.id)!==String(id));save();renderBudgets();toast('Orçamento removido');}
+function delBudget(id){markDeleted(id);D.budgets=D.budgets.filter(b=>String(b.id)!==String(id));save();renderBudgets();toast('Orçamento removido');}
 
 // ════════════════════════════════════════════════════════════════
 // GOALS
@@ -2176,7 +2176,7 @@ function quickUpdateGoal(id,cur){
   if(isNaN(v))return;
   const g=D.goals.find(g=>g.id===id);if(g){g.current=v;save();renderGoals();toast('✓ Meta atualizada');}
 }
-function delGoal(id){if(!confirm('Remover meta?'))return;D.goals=D.goals.filter(g=>String(g.id)!==String(id));save();renderGoals();toast('Meta removida');}
+function delGoal(id){if(!confirm('Remover meta?'))return;markDeleted(id);D.goals=D.goals.filter(g=>String(g.id)!==String(id));save();renderGoals();toast('Meta removida');}
 
 // ════════════════════════════════════════════════════════════════
 // CARDS
@@ -2268,7 +2268,7 @@ function renderCards(){
     </div>`;
   }).join('')||'<div class="empty">Nenhum parcelamento ativo</div>';
 }
-function delCard(id){if(!confirm('Remover cartão?'))return;D.cards=D.cards.filter(c=>String(c.id)!==String(id));save();renderCards();toast('Cartão removido');}
+function delCard(id){if(!confirm('Remover cartão?'))return;markDeleted(id);D.cards=D.cards.filter(c=>String(c.id)!==String(id));save();renderCards();toast('Cartão removido');}
 
 function checkCardNotifs(){
   if(!('Notification'in window)||Notification.permission!=='granted')return;
@@ -2368,7 +2368,7 @@ function renderInvestments(){
       <div class="amt ${op.type==='resgate'?'amt-out':'amt-in'}">${op.type==='resgate'?'- ':'+'}${fmt(op.amount)}</div>
     </div>`).join('')||'<div class="empty">Nenhuma operação</div>';
 }
-function delInvest(id){if(!confirm('Remover ativo?'))return;D.investments=D.investments.filter(i=>String(i.id)!==String(id));save();renderInvestments();toast('Ativo removido');}
+function delInvest(id){if(!confirm('Remover ativo?'))return;markDeleted(id);D.investments=D.investments.filter(i=>String(i.id)!==String(id));save();renderInvestments();toast('Ativo removido');}
 
 // ════════════════════════════════════════════════════════════════
 // ANNUAL
@@ -3013,16 +3013,59 @@ async function _driveDownload(fileId){
   return r.json();
 }
 
+function _mergeDeleted(ld,rd){
+  const out={};
+  new Set([...Object.keys(ld||{}),...Object.keys(rd||{})]).forEach(id=>{
+    out[id]=Math.max((ld||{})[id]||0,(rd||{})[id]||0);
+  });
+  // prune tombstones older than 60 days
+  const cutoff=Date.now()-60*864e5;
+  Object.keys(out).forEach(id=>{if(out[id]<cutoff)delete out[id];});
+  return out;
+}
+function _mergeArr(lArr,rArr,deleted,localWins){
+  const map=new Map();
+  const [base,priority]=localWins?[rArr,lArr]:[lArr,rArr];
+  (base||[]).forEach(x=>map.set(String(x.id),x));
+  (priority||[]).forEach(x=>map.set(String(x.id),x));
+  Object.keys(deleted).forEach(id=>map.delete(id));
+  return[...map.values()];
+}
+function mergeDatasets(local,remote){
+  const lt=new Date(local.meta?.lastSync||0).getTime();
+  const rt=new Date(remote.meta?.lastSync||0).getTime();
+  const localWins=lt>=rt;
+  const deleted=_mergeDeleted(local.meta?.deleted,remote.meta?.deleted);
+  const base=localWins?remote:local;
+  const merged={
+    ...base,
+    transactions:_mergeArr(local.transactions,remote.transactions,deleted,localWins),
+    accounts:    _mergeArr(local.accounts,    remote.accounts,    deleted,localWins),
+    cards:       _mergeArr(local.cards,       remote.cards,       deleted,localWins),
+    budgets:     _mergeArr(local.budgets,     remote.budgets,     deleted,localWins),
+    goals:       _mergeArr(local.goals,       remote.goals,       deleted,localWins),
+    investments: _mergeArr(local.investments, remote.investments, deleted,localWins),
+    recurrents:  _mergeArr(local.recurrents,  remote.recurrents,  deleted,localWins),
+    recurring:   _mergeArr(local.recurring,   remote.recurring,   deleted,localWins),
+    categories:  localWins?local.categories:remote.categories,
+    meta:{...(localWins?remote.meta:local.meta),...(localWins?local.meta:remote.meta),deleted,driveFileId:local.meta?.driveFileId||remote.meta?.driveFileId}
+  };
+  return merged;
+}
+function markDeleted(id){if(!D.meta.deleted)D.meta.deleted={};D.meta.deleted[String(id)]=Date.now();}
 async function _driveSync(){
   try{
     _setSyncDot('busy','Sincronizando com Drive…');
     let fileId=D.meta.driveFileId||localStorage.getItem(DRIVE_KEY);
     if(!fileId)fileId=await _driveFindFile();
-    const localTime=D.meta.lastSync?new Date(D.meta.lastSync).getTime():0;
     if(fileId){
       const remote=await _driveDownload(fileId);
-      const remoteTime=remote?.meta?.lastSync?new Date(remote.meta.lastSync).getTime():0;
-      if(remoteTime>localTime){D=migrateData(remote);render();toast('☁ Dados atualizados do Drive');}
+      if(remote?.meta){
+        const prev=JSON.stringify({t:D.transactions?.length,a:D.accounts?.length});
+        D=migrateData(mergeDatasets(D,remote));
+        const next=JSON.stringify({t:D.transactions?.length,a:D.accounts?.length});
+        if(prev!==next){render();toast('☁ Dados mesclados do Drive');}
+      }
     }
     D.meta.lastSync=new Date().toISOString();
     D.meta.driveFileId=fileId||null;
