@@ -644,8 +644,12 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
       </div>
     </div>
     <div id="mb-budgets">
-      <div class="sec">Orçamentos</div>
+      <div class="sec" style="display:flex;justify-content:space-between;align-items:center">Orçamentos <button class="btn" style="font-size:10px;padding:3px 10px" onclick="openSheet('bud')">+ Novo</button></div>
       <div class="card" id="h-budgets"></div>
+    </div>
+    <div id="mb-projecao">
+      <div class="sec">Projeção de saldo</div>
+      <div class="card" id="h-projecao"></div>
     </div>
     <div id="mb-recent">
       <div class="sec">Recentes</div>
@@ -851,7 +855,8 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
       <button class="type-btn" id="tb-card" onclick="selType('card')">▭ Cartão</button>
       <button class="type-btn" id="tb-transfer" onclick="selType('transfer')">⇄ Transfer.</button>
     </div>
-    <div class="fg"><label class="fl">Descrição</label><input class="fi" id="tx-desc" placeholder="Ex: Salário, Mercado…"></div>
+    <div class="fg"><label class="fl">Descrição</label><input class="fi" id="tx-desc" placeholder="Ex: Salário, Mercado…" oninput="aiCatHint()">
+    <div id="ai-cat-hint" style="display:none;align-items:center;gap:8px;margin-top:5px;padding:6px 9px;background:var(--s2);border:1px solid var(--edge);border-radius:var(--r-sm)"><span style="font-size:10px;color:var(--muted)">🤖 Sugestão:</span><button id="ai-cat-lbl" onclick="aiCatApply()" style="background:var(--copper-s);border:1px solid var(--copper-b);color:var(--copper);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer"></button><button onclick="document.getElementById('ai-cat-hint').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;margin-left:auto;line-height:1">✕</button></div></div>
     <div class="frow">
       <div class="fg"><label class="fl">Valor (R$)</label><input class="fi" id="tx-amount" type="number" min="0" step="0.01" placeholder="0,00" inputmode="decimal"></div>
       <div class="fg"><label class="fl">Data</label><input class="fi" id="tx-date" type="date"></div>
@@ -962,6 +967,18 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
     <div class="fg"><label class="fl">Prazo</label><input class="fi" id="goal-deadline" type="date"></div>
     <button class="fbtn" onclick="saveGoal()">Salvar meta</button>
     <button class="fbtn" id="goal-del-btn" style="display:none;background:var(--crimson);margin-top:6px" onclick="delGoalEdit()">Excluir meta</button>
+  </div>
+</div>
+
+<!-- BUDGET SHEET -->
+<div class="ov" id="ov-bud" data-edit-id="" onclick="closeSheet('ov-bud',event)">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-hdl"></div>
+    <div class="sheet-title" id="sheet-bud-title">Novo orçamento</div>
+    <div class="fg"><label class="fl">Categoria</label><select class="fs" id="bud-cat"></select></div>
+    <div class="fg"><label class="fl">Limite mensal (R$)</label><input class="fi" id="bud-limit" type="number" inputmode="decimal" placeholder="0,00"></div>
+    <button class="fbtn" onclick="saveBud()">Salvar orçamento</button>
+    <button class="fbtn" id="bud-del-btn" style="display:none;background:var(--crimson);margin-top:6px" onclick="delBudEdit()">Excluir orçamento</button>
   </div>
 </div>
 
@@ -1210,8 +1227,8 @@ function rCards(){
     <div id="${cid}-prev" style="display:none">${prevTx.map(txCard).join('')}</div>`:''}`;
   }).join('')||'<div class="empty"><div class="empty-icon">▭</div>Nenhum cartão</div>';
 
-  const inst=D.transactions.filter(t=>t.type==='card'&&(t.installments||1)>1&&!t.skipped);
-  document.getElementById('inst-list').innerHTML=inst.map(t=>{const c=gc(t.cardId);return`<div class="tx"><div class="tx-ico card">▭</div><div class="tx-body"><div class="tx-name">${t.desc}</div><div class="tx-sub">${c?.name||'Cartão'} · ${t.installments}×</div></div><div class="tx-right"><div class="tx-amt neg">${f(t.amount/t.installments)}/mês</div><div class="tx-date">Total: ${f(t.amount)}</div></div></div>`;}).join('')||'<div class="empty">Nenhum parcelamento ativo</div>';
+  const inst=D.transactions.filter(t=>t.type==='card'&&(t.installTotal||t.installments||1)>1&&!t.skipped&&inM(t));
+  document.getElementById('inst-list').innerHTML=inst.map(t=>{const c=gc(t.cardId);const cur=t.installCurrent||1;const tot=t.installTotal||t.installments||1;return`<div class="tx"><div class="tx-ico card">▭</div><div class="tx-body"><div class="tx-name">${t.desc}</div><div class="tx-sub">${c?.name||'Cartão'} · Parcela ${cur}/${tot}</div></div><div class="tx-right"><div class="tx-amt neg">${f(t.amount)}/mês</div><div class="tx-date">${tot-cur} restante${tot-cur!==1?'s':''}</div></div></div>`;}).join('')||'<div class="empty">Nenhum parcelamento este mês</div>';
 }
 
 // ════════════════════════════════════════════
@@ -1436,6 +1453,16 @@ function openSheet(type,sub=null){
     ov.classList.add('open');
   }
   if(type==='inv'){document.getElementById('inv-date-grp')&&(document.getElementById('inv-date').value=new Date().toISOString().slice(0,10));document.getElementById('ov-inv').classList.add('open');}
+  if(type==='bud'){
+    const ov=document.getElementById('ov-bud');
+    ov.dataset.editId='';
+    document.getElementById('sheet-bud-title').textContent='Novo orçamento';
+    document.getElementById('bud-del-btn').style.display='none';
+    document.getElementById('bud-limit').value='';
+    const cats=[...new Set([...(D.categories.expense||[]),...(D.categories.card||[])])];
+    document.getElementById('bud-cat').innerHTML=cats.map(c=>`<option>${c}</option>`).join('');
+    ov.classList.add('open');
+  }
   if(type==='goal'){
     const ov=document.getElementById('ov-goal');
     ov.dataset.editId='';
@@ -1549,7 +1576,15 @@ function saveTx(){
     if(idx>=0)D.transactions[idx]={...D.transactions[idx],type:selTypeV,desc,amount,date,cat,cardId,accountId};
     document.getElementById('ov-tx').dataset.editId='';
   } else {
-    D.transactions.push({id:uid(),type:selTypeV,desc,amount,date,cat,cardId,accountId,installments,recurrentId:null});
+    if(selTypeV==='card'&&installments>1){
+      const sid=uid();const perAmt=Math.round(amount/installments*100)/100;
+      for(let p=0;p<installments;p++){
+        const d=new Date(date+'T12:00:00');d.setMonth(d.getMonth()+p);
+        D.transactions.push({id:uid(),type:'card',desc,amount:perAmt,date:d.toISOString().slice(0,10),cat,cardId,accountId:null,installments,installCurrent:p+1,installTotal:installments,seriesId:sid,recurrentId:null});
+      }
+    }else{
+      D.transactions.push({id:uid(),type:selTypeV,desc,amount,date,cat,cardId,accountId,installments,recurrentId:null});
+    }
   }
   save();closeSheet('ov-tx');renderPage(curPg);toast(editId?'✅ Editado':'✅ Lançamento salvo');
   if(!editId){const b=D.budgets.find(b=>b.category===cat);if(b){const sp=D.transactions.filter(t=>inM(t)&&t.cat===cat&&t.type!=='income'&&!t.skipped).reduce((a,t)=>a+t.amount,0);if(sp>=b.limit)setTimeout(()=>toast(`🚨 Orçamento de ${cat} esgotado`),500);}}
@@ -1656,6 +1691,94 @@ function saveGoal(){
 }
 
 // ════════════════════════════════════════════
+// ORÇAMENTOS
+// ════════════════════════════════════════════
+function editBud(id){
+  const b=D.budgets.find(x=>String(x.id)===String(id));if(!b)return;
+  const ov=document.getElementById('ov-bud');
+  ov.dataset.editId=String(id);
+  document.getElementById('sheet-bud-title').textContent='Editar orçamento';
+  document.getElementById('bud-del-btn').style.display='block';
+  const cats=[...new Set([...(D.categories.expense||[]),...(D.categories.card||[])])];
+  document.getElementById('bud-cat').innerHTML=cats.map(c=>`<option${c===b.category?' selected':''}>${c}</option>`).join('');
+  document.getElementById('bud-limit').value=b.limit;
+  ov.classList.add('open');
+}
+function delBudEdit(){
+  const id=document.getElementById('ov-bud').dataset.editId;if(!id)return;
+  markDeleted(id);D.budgets=D.budgets.filter(x=>String(x.id)!==String(id));
+  document.getElementById('ov-bud').dataset.editId='';
+  save();closeSheet('ov-bud');rHome();toast('🗑 Orçamento removido');
+}
+function saveBud(){
+  const cat=document.getElementById('bud-cat').value;
+  const limit=parseFloat(document.getElementById('bud-limit').value);
+  if(!cat||!limit){toast('⚠️ Preencha os campos');return;}
+  const editId=document.getElementById('ov-bud').dataset.editId;
+  if(editId){
+    const b=D.budgets.find(x=>String(x.id)===String(editId));
+    if(b){b.category=cat;b.limit=limit;}
+    document.getElementById('ov-bud').dataset.editId='';
+    save();closeSheet('ov-bud');rHome();toast('✅ Orçamento atualizado');
+  }else{
+    if(D.budgets.find(b=>b.category===cat)){toast('⚠️ Já existe orçamento para '+cat);return;}
+    D.budgets.push({id:uid(),category:cat,limit});
+    save();closeSheet('ov-bud');rHome();toast('✅ Orçamento criado');
+  }
+}
+
+// ════════════════════════════════════════════
+// CATEGORIZAÇÃO POR IA
+// ════════════════════════════════════════════
+function aiCatHint(){
+  const desc=(document.getElementById('tx-desc')?.value||'').toLowerCase().trim();
+  const hint=document.getElementById('ai-cat-hint');
+  if(desc.length<3){hint.style.display='none';return;}
+  const matches=D.transactions.filter(t=>t.desc&&t.cat&&t.desc.toLowerCase().includes(desc));
+  if(!matches.length){hint.style.display='none';return;}
+  const freq={};matches.forEach(t=>freq[t.cat]=(freq[t.cat]||0)+1);
+  const best=Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];
+  const curCat=document.getElementById('tx-cat')?.value;
+  if(best===curCat){hint.style.display='none';return;}
+  hint.style.display='flex';
+  const lbl=document.getElementById('ai-cat-lbl');lbl.textContent=best;lbl._cat=best;
+}
+function aiCatApply(){
+  const lbl=document.getElementById('ai-cat-lbl');
+  const cat=lbl._cat;if(!cat)return;
+  const sel=document.getElementById('tx-cat');
+  if(sel){const opt=[...sel.options].find(o=>o.text===cat);if(opt)sel.value=opt.value;}
+  document.getElementById('ai-cat-hint').style.display='none';
+}
+
+// ════════════════════════════════════════════
+// PROJEÇÃO DE SALDO
+// ════════════════════════════════════════════
+function renderProjecao(){
+  const el=document.getElementById('h-projecao');if(!el)return;
+  const accBal=D.accounts.reduce((s,a)=>s+a.balance,0);
+  const nets=[];
+  for(let i=1;i<=3;i++){
+    const d=new Date(curY,curM-i,1);const mm=d.getMonth(),yy=d.getFullYear();
+    const tx=D.transactions.filter(t=>inM(t,mm,yy)&&!t.skipped);
+    const inc=tx.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+    const exp=tx.filter(t=>t.type!=='income'&&t.type!=='transfer').reduce((s,t)=>s+t.amount,0);
+    nets.push(inc-exp);
+  }
+  const avgNet=nets.length?nets.reduce((a,b)=>a+b,0)/nets.length:0;
+  const months=[];let bal=accBal;
+  for(let i=1;i<=4;i++){
+    const d=new Date(curY,curM+i,1);
+    const futureInst=D.transactions.filter(t=>inM(t,d.getMonth(),d.getFullYear())&&!t.skipped&&t.seriesId);
+    const instDelta=-futureInst.reduce((s,t)=>s+t.amount,0);
+    bal+=avgNet+instDelta;
+    months.push({label:MO[d.getMonth()].slice(0,3)+' '+(d.getFullYear()%100).toString().padStart(2,'0'),bal});
+  }
+  el.innerHTML=`<div style="font-size:10px;color:var(--muted);margin-bottom:10px">Baseado na média dos últimos 3 meses + parcelamentos futuros</div>`+
+  months.map((m,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0${i<months.length-1?';border-bottom:1px solid var(--edge)':''}"><span style="font-size:11px;color:var(--sub)">${m.label}</span><span style="font-size:13px;font-weight:700;color:${m.bal>=0?'var(--jade)':'var(--crimson)'}">${f(m.bal)}</span></div>`).join('');
+}
+
+// ════════════════════════════════════════════
 // SETTINGS & CUSTOMIZATION
 // ════════════════════════════════════════════
 const HOME_SECTIONS = [
@@ -1664,6 +1787,7 @@ const HOME_SECTIONS = [
   {id:'quickact',  label:'Ações rápidas',   default:true},
   {id:'flowchart', label:'Gráfico de fluxo',default:true},
   {id:'budgets',   label:'Orçamentos',      default:true},
+  {id:'projecao',  label:'Projeção de saldo',default:true},
   {id:'recent',    label:'Lançamentos recentes',default:true},
 ];
 
@@ -1861,12 +1985,12 @@ function rHome(){
   if(budSec)budSec.style.display=cfg.budgets!==false?'':'none';
   if(budCard){budCard.style.display=cfg.budgets!==false?'':'none';
     if(cfg.budgets!==false){
-      budCard.innerHTML=D.budgets.slice(0,4).map(b=>{const sp=mTx.filter(t=>t.cat===b.category&&t.type!=='income').reduce((a,t)=>a+t.amount,0);const pct=Math.min(100,sp/b.limit*100);const cls=pct>=100?'fill-over':pct>=80?'fill-warn':'fill-ok';return`<div class="bud"><div class="bud-row"><div class="bud-name">${b.category}</div><div class="bud-vals">${f(sp)} / ${f(b.limit)}</div></div><div class="bud-track"><div class="bud-fill ${cls}" style="width:${pct}%"></div></div><div class="bud-pct ${pct>=100?'over':''}">${pct.toFixed(0)}%${pct>=100?' — esgotado':''}</div></div>`;}).join('')||'<div class="empty"><div class="empty-icon">◎</div>Orçamentos no painel web</div>';
+      budCard.innerHTML=D.budgets.map(b=>{const sp=mTx.filter(t=>t.cat===b.category&&t.type!=='income').reduce((a,t)=>a+t.amount,0);const pct=Math.min(100,sp/b.limit*100);const cls=pct>=100?'fill-over':pct>=80?'fill-warn':'fill-ok';return`<div class="bud"><div class="bud-row"><div class="bud-name">${b.category}</div><div style="display:flex;align-items:center;gap:8px"><div class="bud-vals">${f(sp)} / ${f(b.limit)}</div><button onclick="editBud('${b.id}')" style="background:none;border:none;color:var(--muted);font-size:13px;padding:2px 4px;cursor:pointer;line-height:1">✎</button></div></div><div class="bud-track"><div class="bud-fill ${cls}" style="width:${pct}%"></div></div><div class="bud-pct ${pct>=100?'over':''}">${pct.toFixed(0)}%${pct>=100?' — esgotado':''}</div></div>`;}).join('')||'<div class="empty"><div class="empty-icon">◎</div><div style="margin-bottom:10px">Nenhum orçamento</div><button class="btn" onclick="openSheet(\'bud\')">+ Criar orçamento</button></div>';
     }
   }
 
   // Recent
-  const recentSec=document.querySelectorAll('#pg-home .sec')[2];
+  const recentSec=document.querySelectorAll('#pg-home .sec')[3];
   const recentDiv=document.getElementById('h-recent');
   if(recentSec)recentSec.style.display=cfg.recent!==false?'':'none';
   if(recentDiv){recentDiv.style.display=cfg.recent!==false?'':'none';
@@ -1876,7 +2000,11 @@ function rHome(){
     }
   }
 
+  const projecaoEl=document.getElementById('mb-projecao');
+  if(projecaoEl)projecaoEl.style.display=cfg.projecao!==false?'':'none';
+
   renderMbSavingsGoal(inc,exp);
+  if(cfg.projecao!==false)renderProjecao();
 }
 
 function mbSgKey(m,y){return`${y}-${String(m+1).padStart(2,'0')}`;}
@@ -2477,7 +2605,7 @@ function toast(msg,dur=2600){const el=document.getElementById('toast');el.textCo
 // ════════════════════════════════════════════
 // INIT
 // ── MOBILE LAYOUT ENGINE ─────────────────────────────────────────
-const _ML=['mb-hero','mb-forecast','mb-savings','mb-quickact','mb-chart','mb-budgets','mb-recent'];
+const _ML=['mb-hero','mb-forecast','mb-savings','mb-quickact','mb-chart','mb-budgets','mb-projecao','mb-recent'];
 const _MLK='fc_layout_mobile';
 let _mlDragEl=null;
 function initMobileLayout(){
