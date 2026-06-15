@@ -582,6 +582,17 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
 .fz-opt.active{border-color:var(--cu);background:var(--cu-s)}
 .fz-opt span:first-child{line-height:1;font-weight:600;color:var(--tx)}
 .fz-opt span:last-child{font-size:9px;color:var(--tm)}
+/* Login screen */
+#login-screen{position:fixed;inset:0;z-index:9999;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;transition:opacity .3s}
+#login-screen.hiding{opacity:0;pointer-events:none}
+.login-logo-wrap{width:72px;height:72px;border-radius:20px;background:rgba(184,115,51,.12);border:1px solid rgba(184,115,51,.22);display:flex;align-items:center;justify-content:center;margin:0 auto 24px}
+.login-title{font-size:36px;font-weight:800;letter-spacing:-.04em;color:#fff;margin-bottom:10px;text-align:center}
+.login-sub{font-size:14px;color:rgba(255,255,255,.3);letter-spacing:.03em;text-align:center}
+.login-google-btn{display:flex;align-items:center;gap:14px;background:#fff;border:none;border-radius:14px;padding:16px 36px;font-size:16px;font-weight:600;color:#1a1a1a;cursor:pointer;letter-spacing:-.01em;box-shadow:0 4px 28px rgba(0,0,0,.45);transition:transform .13s,box-shadow .13s;font-family:var(--font);margin-top:56px}
+.login-google-btn:hover{transform:translateY(-1px);box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.login-google-btn:active{transform:scale(.97)}
+.login-note{font-size:12px;color:rgba(255,255,255,.18);text-align:center;line-height:1.7;max-width:300px;margin-top:36px}
+.login-loading{font-size:13px;color:rgba(255,255,255,.38);margin-top:20px;display:none}
 /* Layout drag controls */
 [data-lid]{position:relative}
 .lc{position:absolute;top:6px;right:8px;display:flex;gap:3px;z-index:6;pointer-events:none}
@@ -595,6 +606,30 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
 </style>
 </head>
 <body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-logo-wrap">
+    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+      <rect x="2" y="24" width="9" height="14" rx="2" fill="#b87333" opacity=".45"/>
+      <rect x="16" y="14" width="9" height="24" rx="2" fill="#b87333" opacity=".72"/>
+      <rect x="30" y="4"  width="9" height="34" rx="2" fill="#b87333"/>
+    </svg>
+  </div>
+  <div class="login-title">Fin_Control</div>
+  <div class="login-sub">Controle financeiro inteligente</div>
+  <button class="login-google-btn" onclick="loginWithGoogle()">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+    </svg>
+    Entrar com Google
+  </button>
+  <div class="login-loading" id="login-loading">Autenticando…</div>
+  <div class="login-note">Seus dados ficam protegidos na sua própria conta Google Drive</div>
+</div>
 
 <!-- ── SIDEBAR ─────────────────────────────────────────────────── -->
 <aside class="sb">
@@ -647,6 +682,8 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
         <button onclick="goTo('settings',null);toggleDashAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:7px 10px;font-size:11px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px">⚙ Configurações</button>
         <button onclick="syncAction();toggleDashAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:7px 10px;font-size:11px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px">↻ Sincronizar agora</button>
         <button onclick="openCustomize();toggleDashAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:7px 10px;font-size:11px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px">⊞ Personalizar</button>
+        <div style="border-top:1px solid var(--bd2);margin:5px 0 3px"></div>
+        <button onclick="logout();toggleDashAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--rd);padding:7px 10px;font-size:11px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px">↩ Sair</button>
       </div>
     </div>
   </div>
@@ -1231,7 +1268,8 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
 // ════════════════════════════════════════════════════════════════
 // CONSTANTS & DEFAULTS
 // ════════════════════════════════════════════════════════════════
-const KEY = 'fincontrol_v3';
+let KEY = 'fincontrol_v3';
+(()=>{try{const _s=JSON.parse(localStorage.getItem('fc_session'));if(_s?.userId)KEY='fincontrol_v3_'+_s.userId;}catch(e){}})();
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const ACC_TYPES = {checking:'Conta Corrente',savings:'Poupança',wallet:'Carteira Digital',cash:'Dinheiro'};
 const TYPE_LBL = {income:'Receita',expense:'Despesa',card:'Cartão',transfer:'Transferência'};
@@ -2398,7 +2436,7 @@ function clearAll(){if(!confirm('Apagar todos os dados locais?'))return;localSto
 // GOOGLE DRIVE SYNC
 // ════════════════════════════════════════════════════════════════
 const DRIVE_CLIENT_ID='25581440063-luicau2iqvpa9h45gjuja41q56u4cd72.apps.googleusercontent.com';
-const DRIVE_SCOPE='https://www.googleapis.com/auth/drive.file';
+const DRIVE_SCOPE='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
 const DRIVE_FILENAME='fincontrol-v3.json';
 const DRIVE_KEY='fc_drive_file_id';
 
@@ -2419,20 +2457,60 @@ function _updateDriveUI(){
   ['drive-sync-btn','drive-disconnect-btn'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=on?'':'none';});
 }
 
+// ── AUTH / LOGIN ─────────────────────────────────────────────────
+function getSession(){try{return JSON.parse(localStorage.getItem('fc_session'));}catch{return null;}}
+
+function loginWithGoogle(){
+  if(!_gTokenClient){document.getElementById('login-loading').style.display='block';_loginPending=true;return;}
+  document.getElementById('login-loading').style.display='block';
+  _gTokenClient.requestAccessToken();
+}
+let _loginPending=false;
+
+async function handleGoogleLogin(user){
+  localStorage.setItem('fc_session',JSON.stringify({userId:user.id,name:user.name,email:user.email,picture:user.picture||''}));
+  localStorage.setItem('fc_drive_connected','1');
+  const ls=document.getElementById('login-screen');
+  ls.classList.add('hiding');
+  setTimeout(()=>{ls.style.display='none';location.reload();},300);
+}
+
+function logout(){
+  if(_gToken)try{google.accounts.oauth2.revoke(_gToken);}catch(e){}
+  ['fc_session','fc_drive_connected','fc_drive_file_id'].forEach(k=>localStorage.removeItem(k));
+  location.reload();
+}
+
 function _initGIS(){
   if(!window.google?.accounts?.oauth2)return;
   _gTokenClient=google.accounts.oauth2.initTokenClient({
     client_id:DRIVE_CLIENT_ID,
     scope:DRIVE_SCOPE,
     callback:async resp=>{
-      if(resp.error){_setSyncDot('error','Erro na autenticação');return;}
+      if(resp.error){
+        document.getElementById('login-loading').style.display='none';
+        _setSyncDot('error','Erro na autenticação');
+        return;
+      }
       _gToken=resp.access_token;
-      localStorage.setItem('fc_drive_connected','1');
-      _updateDriveUI();
-      await _driveSync();
+      if(!getSession()){
+        document.getElementById('login-loading').textContent='Obtendo perfil…';
+        try{
+          const r=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:`Bearer ${_gToken}`}});
+          const user=await r.json();
+          await handleGoogleLogin(user);
+        }catch(e){
+          document.getElementById('login-loading').style.display='none';
+        }
+      }else{
+        localStorage.setItem('fc_drive_connected','1');
+        _updateDriveUI();
+        await _driveSync();
+      }
     }
   });
-  if(localStorage.getItem('fc_drive_connected')==='1'){
+  if(_loginPending){_loginPending=false;_gTokenClient.requestAccessToken();return;}
+  if(getSession()&&localStorage.getItem('fc_drive_connected')==='1'){
     _gTokenClient.requestAccessToken({prompt:''});
   }
 }
@@ -2542,6 +2620,17 @@ function toast(msg,dur=2600){const el=document.getElementById('toast');el.textCo
 // ════════════════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════════════════
+// Verificar sessão ao iniciar
+(()=>{
+  const _sess=getSession();
+  if(_sess){
+    document.getElementById('login-screen').style.display='none';
+    const ava=document.getElementById('dash-ava');
+    const un=document.getElementById('dash-un');
+    if(ava&&_sess.name){const ini=_sess.name.trim().split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();ava.textContent=ini;}
+    if(un&&_sess.name)un.textContent=_sess.name;
+  }
+})();
 document.getElementById('mLabel').textContent=`${MONTHS[curM]} ${curY}`;
 renderDash();
 document.addEventListener('keydown',e=>{
