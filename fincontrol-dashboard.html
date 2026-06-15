@@ -753,6 +753,12 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px" id="fc-grid"></div>
     </div>
   </div>
+  <div class="mb" id="dash-projecao-row">
+    <div class="card">
+      <div class="card-hd"><div><div class="card-title">Projeção de Saldo</div><div class="card-sub">Média dos últimos 3 meses + parcelamentos futuros</div></div></div>
+      <div id="dash-projecao" style="margin-top:10px"></div>
+    </div>
+  </div>
   <div class="mb" id="dash-savings-row">
     <div class="card" style="padding:14px 18px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px">
@@ -1157,7 +1163,8 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
     <button class="tgl" id="tgl-card" onclick="selTy('card')">▬ Cartão</button>
     <button class="tgl" id="tgl-transfer" onclick="selTy('transfer')">⇄ Transfer.</button>
   </div>
-  <div class="fg"><label class="fl">Descrição</label><input class="fi" id="tx-desc" placeholder="Ex: Salário, Mercado, Aluguel..."></div>
+  <div class="fg"><label class="fl">Descrição</label><input class="fi" id="tx-desc" placeholder="Ex: Salário, Mercado, Aluguel..." oninput="aiCatHint()">
+  <div id="ai-cat-hint" style="display:none;align-items:center;gap:8px;margin-top:5px;padding:6px 9px;background:var(--s2,#1a1a1a);border:1px solid var(--bd,#2a2a2a);border-radius:6px"><span style="font-size:10px;color:var(--tm)">🤖 Sugestão:</span><button id="ai-cat-lbl" onclick="aiCatApply()" style="background:rgba(184,114,46,.15);border:1px solid rgba(184,114,46,.3);color:#c8873a;border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer"></button><button onclick="document.getElementById('ai-cat-hint').style.display='none'" style="background:none;border:none;color:var(--td);font-size:13px;cursor:pointer;margin-left:auto;line-height:1">✕</button></div></div>
   <div class="fg-row">
     <div class="fg"><label class="fl">Valor (R$)</label><input class="fi" id="tx-amt" type="number" placeholder="0,00" step="0.01" min="0"></div>
     <div class="fg"><label class="fl">Data</label><input class="fi" id="tx-date" type="date"></div>
@@ -1231,12 +1238,13 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
 </div></div>
 
 <!-- Budget -->
-<div class="ov" id="ov-budget" onclick="closeOv('ov-budget',event)">
+<div class="ov" id="ov-budget" data-edit-id="" onclick="closeOv('ov-budget',event)">
 <div class="modal" onclick="event.stopPropagation()">
-  <div class="modal-hd"><div class="modal-title">Novo orçamento</div><button class="modal-x" onclick="closeOv('ov-budget')">✕</button></div>
+  <div class="modal-hd"><div class="modal-title" id="modal-bud-title">Novo orçamento</div><button class="modal-x" onclick="closeOv('ov-budget')">✕</button></div>
   <div class="fg"><label class="fl">Categoria</label><select class="fs" id="bud-cat"></select></div>
   <div class="fg"><label class="fl">Limite mensal (R$)</label><input class="fi" id="bud-lim" type="number" placeholder="500,00" step="0.01"></div>
   <button class="btn pri" style="width:100%;padding:9px;font-size:12px" onclick="saveBudget()">Salvar orçamento</button>
+  <button id="bud-del-btn" class="btn danger" style="width:100%;padding:9px;font-size:12px;margin-top:6px;display:none" onclick="delBudgetEdit()">Excluir orçamento</button>
 </div></div>
 
 <!-- Goal -->
@@ -1529,6 +1537,7 @@ function budgetBar(b) {
       <div style="font-size:11px;font-weight:500">${ICONS[b.category]||'·'} ${b.category}</div>
       <div style="display:flex;align-items:center;gap:8px">
         <div style="font-size:10px;color:var(--tm)">${fmt(spent)} / ${fmt(b.limit)}</div>
+        <button onclick="editBudget('${b.id}')" style="background:none;border:none;color:var(--td);cursor:pointer;font-size:11px;padding:0 3px" title="Editar">✎</button>
         <button onclick="delBudget('${b.id}')" style="background:none;border:none;color:var(--td);cursor:pointer;font-size:10px">✕</button>
       </div>
     </div>
@@ -1789,6 +1798,11 @@ function renderDash() {
   if(tableRow) tableRow.style.display=show('table')?'':'none';
   const recent=[...mTx].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
   document.getElementById('d-table').innerHTML=recent.map(t=>txRow(t,false)).join('')||`<tr><td colspan="6"><div class="empty"><div class="empty-icon">≡</div>Nenhum lançamento</div></td></tr>`;
+
+  // Projeção de saldo
+  const projecaoRow=document.getElementById('dash-projecao-row');
+  if(projecaoRow) projecaoRow.style.display=show('projecao')?'':'none';
+  if(show('projecao')) renderProjecao();
 
   renderSavingsGoal();
 }
@@ -2259,14 +2273,15 @@ function renderCards(){
     </div>`;
   }).join('')||'<div class="empty"><div class="empty-icon">▬</div>Nenhum cartão cadastrado</div>';
 
-  const installs=D.transactions.filter(t=>t.type==='card'&&(t.installments||1)>1);
+  const installs=D.transactions.filter(t=>t.type==='card'&&(t.installTotal||t.installments||1)>1&&inM(t));
   document.getElementById('install-list').innerHTML=installs.map(t=>{
     const card=getCard(t.cardId);
+    const cur=t.installCurrent||1;const tot=t.installTotal||t.installments||1;
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bd)">
-      <div><div style="font-size:12px;font-weight:500">${t.desc}</div><div style="font-size:10px;color:var(--tm);margin-top:2px">${card?.name||'Cartão'} · ${t.installments}× · início ${dStr(t.date)}</div></div>
-      <div style="text-align:right"><div class="amt amt-out">${fmt(t.amount/t.installments)}/mês</div><div style="font-size:10px;color:var(--tm)">Total ${fmt(t.amount)}</div></div>
+      <div><div style="font-size:12px;font-weight:500">${t.desc}</div><div style="font-size:10px;color:var(--tm);margin-top:2px">${card?.name||'Cartão'} · Parcela ${cur}/${tot}</div></div>
+      <div style="text-align:right"><div class="amt amt-out">${fmt(t.amount)}/mês</div><div style="font-size:10px;color:var(--tm)">${tot-cur} restante${tot-cur!==1?'s':''}</div></div>
     </div>`;
-  }).join('')||'<div class="empty">Nenhum parcelamento ativo</div>';
+  }).join('')||'<div class="empty">Nenhum parcelamento este mês</div>';
 }
 function delCard(id){if(!confirm('Remover cartão?'))return;markDeleted(id);D.cards=D.cards.filter(c=>String(c.id)!==String(id));save();renderCards();toast('Cartão removido');}
 
@@ -2503,10 +2518,56 @@ function openMod(type,sub=null){
   if(type==='report')    {openOv('ov-report');}
 }
 
+function aiCatHint(){
+  const desc=(document.getElementById('tx-desc')?.value||'').toLowerCase().trim();
+  const hint=document.getElementById('ai-cat-hint');
+  if(desc.length<3){hint.style.display='none';return;}
+  const matches=D.transactions.filter(t=>t.desc&&t.cat&&t.desc.toLowerCase().includes(desc));
+  if(!matches.length){hint.style.display='none';return;}
+  const freq={};matches.forEach(t=>freq[t.cat]=(freq[t.cat]||0)+1);
+  const best=Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];
+  const curCat=document.getElementById('tx-cat')?.value;
+  if(best===curCat){hint.style.display='none';return;}
+  hint.style.display='flex';
+  const lbl=document.getElementById('ai-cat-lbl');lbl.textContent=best;lbl._cat=best;
+}
+function aiCatApply(){
+  const lbl=document.getElementById('ai-cat-lbl');const cat=lbl._cat;if(!cat)return;
+  const sel=document.getElementById('tx-cat');
+  if(sel){const opt=[...sel.options].find(o=>o.text===cat);if(opt)sel.value=opt.value;}
+  document.getElementById('ai-cat-hint').style.display='none';
+}
+function renderProjecao(){
+  const el=document.getElementById('dash-projecao');if(!el)return;
+  const accBal=D.accounts.reduce((s,a)=>s+a.balance,0);
+  const nets=[];
+  for(let i=1;i<=3;i++){
+    const d=new Date(curY,curM-i,1);const mm=d.getMonth(),yy=d.getFullYear();
+    const tx=D.transactions.filter(t=>inM(t,mm,yy)&&!t.skipped);
+    const inc=tx.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+    const exp=tx.filter(t=>t.type!=='income'&&t.type!=='transfer').reduce((s,t)=>s+t.amount,0);
+    nets.push(inc-exp);
+  }
+  const avgNet=nets.length?nets.reduce((a,b)=>a+b,0)/nets.length:0;
+  let bal=accBal;
+  el.innerHTML=`<div style="font-size:10px;color:var(--tm);margin-bottom:12px">Baseado na média dos últimos 3 meses + parcelamentos futuros agendados</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">`+
+  [1,2,3,4].map(i=>{
+    const d=new Date(curY,curM+i,1);
+    const futureInst=D.transactions.filter(t=>inM(t,d.getMonth(),d.getFullYear())&&!t.skipped&&t.seriesId);
+    const instDelta=-futureInst.reduce((s,t)=>s+t.amount,0);
+    bal+=avgNet+instDelta;
+    const color=bal>=0?'var(--gn)':'var(--rd)';
+    return`<div style="background:var(--s2,#111);border:1px solid var(--bd);border-radius:8px;padding:12px;text-align:center">
+      <div style="font-size:10px;color:var(--tm);margin-bottom:6px">${MONTHS[d.getMonth()].slice(0,3)} ${d.getFullYear()%100}</div>
+      <div style="font-size:15px;font-weight:700;color:${color}">${fmt(bal)}</div>
+    </div>`;
+  }).join('')+'</div>';
+}
 function prepTx(type){
   selType=type;document.getElementById('tx-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('tx-desc').value='';document.getElementById('tx-amt').value='';
   document.getElementById('tx-recurring').checked=false;
+  const hint=document.getElementById('ai-cat-hint');if(hint)hint.style.display='none';
   updateTxUI();
 }
 function selTy(t){selType=t;updateTxUI();}
@@ -2538,6 +2599,10 @@ function prepTransfer(){
 function prepBudget(){
   const all=[...D.categories.expense,...D.categories.card].filter((v,i,a)=>a.indexOf(v)===i);
   document.getElementById('bud-cat').innerHTML=all.map(c=>`<option>${c}</option>`).join('');
+  document.getElementById('bud-lim').value='';
+  document.getElementById('ov-budget').dataset.editId='';
+  document.getElementById('modal-bud-title').textContent='Novo orçamento';
+  document.getElementById('bud-del-btn').style.display='none';
 }
 
 function saveTx(){
@@ -2559,7 +2624,15 @@ function saveTx(){
     if(accFrom) accFrom.balance-=amount;
     if(accTo) accTo.balance+=amount;
   } else {
-    D.transactions.push({id:uid(),type:selType,desc,amount,date,cat,accountId,cardId,installments});
+    if(selType==='card'&&installments>1){
+      const sid=uid();const perAmt=Math.round(amount/installments*100)/100;
+      for(let p=0;p<installments;p++){
+        const d=new Date(date+'T12:00:00');d.setMonth(d.getMonth()+p);
+        D.transactions.push({id:uid(),type:'card',desc,amount:perAmt,date:d.toISOString().slice(0,10),cat,cardId,accountId:null,installments,installCurrent:p+1,installTotal:installments,seriesId:sid,recurrentId:null});
+      }
+    }else{
+      D.transactions.push({id:uid(),type:selType,desc,amount,date,cat,accountId,cardId,installments});
+    }
     if(accountId){
       const acc=D.accounts.find(a=>a.id===accountId);
       if(acc) acc.balance+=selType==='income'?amount:-amount;
@@ -2615,13 +2688,38 @@ function saveAccount(){
   }
 }
 
+function editBudget(id){
+  const b=D.budgets.find(x=>String(x.id)===String(id));if(!b)return;
+  const ov=document.getElementById('ov-budget');
+  ov.dataset.editId=String(id);
+  document.getElementById('modal-bud-title').textContent='Editar orçamento';
+  document.getElementById('bud-del-btn').style.display='block';
+  const cats=[...new Set([...(D.categories?.expense||[]),...(D.categories?.card||[])])];
+  document.getElementById('bud-cat').innerHTML=cats.map(c=>`<option${c===b.category?' selected':''}>${c}</option>`).join('');
+  document.getElementById('bud-lim').value=b.limit;
+  openMod('budget');
+}
+function delBudgetEdit(){
+  const id=document.getElementById('ov-budget').dataset.editId;if(!id)return;
+  markDeleted(id);D.budgets=D.budgets.filter(b=>String(b.id)!==String(id));
+  document.getElementById('ov-budget').dataset.editId='';
+  save();closeOv('ov-budget');renderBudgets();toast('Orçamento removido');
+}
 function saveBudget(){
   const cat=document.getElementById('bud-cat').value;
   const limit=parseFloat(document.getElementById('bud-lim').value);
   if(!limit){toast('⚠ Informe o limite');return;}
-  const ex=D.budgets.findIndex(b=>b.category===cat);
-  if(ex>=0) D.budgets[ex].limit=limit; else D.budgets.push({id:uid(),category:cat,limit});
-  save();closeOv('ov-budget');render();toast('✓ Orçamento salvo');
+  const editId=document.getElementById('ov-budget').dataset.editId;
+  if(editId){
+    const b=D.budgets.find(x=>String(x.id)===String(editId));
+    if(b){b.category=cat;b.limit=limit;}
+    document.getElementById('ov-budget').dataset.editId='';
+    save();closeOv('ov-budget');renderBudgets();toast('✓ Orçamento atualizado');
+  }else{
+    if(D.budgets.find(b=>b.category===cat)){toast('⚠ Já existe orçamento para '+cat);return;}
+    D.budgets.push({id:uid(),category:cat,limit});
+    save();closeOv('ov-budget');renderBudgets();toast('✓ Orçamento criado');
+  }
 }
 
 function saveGoal(){
@@ -3147,7 +3245,7 @@ document.addEventListener('keydown',e=>{
 });
 
 // ── LAYOUT ENGINE (Dashboard) ────────────────────────────────────
-const _DL=['d-kpi-row','dash-forecast-row','dash-savings-row','dash-charts-row','dash-widgets-row','dash-table-row'];
+const _DL=['d-kpi-row','dash-forecast-row','dash-projecao-row','dash-savings-row','dash-charts-row','dash-widgets-row','dash-table-row'];
 const _DLK='fc_layout_dash';
 let _dlDragEl=null;
 function initDashLayout(){
