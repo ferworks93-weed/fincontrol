@@ -471,11 +471,13 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
 .empty{text-align:center;padding:28px 15px;color:var(--muted);font-size:12px}
 .empty-icon{font-size:28px;margin-bottom:7px;opacity:.5}
 /* Login screen */
-#login-screen{position:fixed;inset:0;z-index:9999;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;transition:opacity .3s}
+#login-screen{position:fixed;inset:0;z-index:9999;background:url('Gemini_Generated_Image_d366sbd366sbd366.png') center/cover no-repeat #0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;transition:opacity .3s}
+#login-screen::before{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(5,5,5,.55) 0%,rgba(5,5,5,.35) 45%,rgba(5,5,5,.72) 100%);z-index:0}
+#login-screen>*{position:relative;z-index:1}
 #login-screen.hiding{opacity:0;pointer-events:none}
-.login-logo-wrap{width:68px;height:68px;border-radius:20px;background:rgba(184,115,51,.12);border:1px solid rgba(184,115,51,.22);display:flex;align-items:center;justify-content:center;margin:0 auto 22px}
-.login-title{font-size:32px;font-weight:800;letter-spacing:-.04em;color:#fff;margin-bottom:8px;text-align:center}
-.login-sub{font-size:13px;color:rgba(255,255,255,.32);letter-spacing:.03em;text-align:center}
+.login-logo-wrap{width:72px;height:72px;border-radius:22px;background:rgba(184,115,51,.18);border:1.5px solid rgba(184,115,51,.5);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 0 28px rgba(184,115,51,.25),0 2px 16px rgba(0,0,0,.6)}
+.login-title{font-size:32px;font-weight:800;letter-spacing:-.04em;color:#fff;margin-bottom:6px;text-align:center;text-shadow:0 2px 12px rgba(0,0,0,.7)}
+.login-sub{font-size:13px;color:rgba(255,255,255,.55);letter-spacing:.03em;text-align:center;text-shadow:0 1px 6px rgba(0,0,0,.6)}
 .login-google-btn{display:flex;align-items:center;gap:12px;background:#fff;border:none;border-radius:14px;padding:15px 32px;font-size:15px;font-weight:600;color:#1a1a1a;cursor:pointer;letter-spacing:-.01em;box-shadow:0 4px 28px rgba(0,0,0,.45);transition:transform .13s,box-shadow .13s;font-family:var(--font);margin-top:52px}
 .login-google-btn:active{transform:scale(.96);box-shadow:0 2px 12px rgba(0,0,0,.3)}
 .login-note{font-size:11px;color:rgba(255,255,255,.18);text-align:center;line-height:1.7;max-width:260px;margin-top:32px}
