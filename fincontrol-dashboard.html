@@ -1217,9 +1217,9 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
 </div></div>
 
 <!-- Card -->
-<div class="ov" id="ov-card" onclick="closeOv('ov-card',event)">
+<div class="ov" id="ov-card" onclick="closeOv('ov-card',event)" data-edit-id="">
 <div class="modal" onclick="event.stopPropagation()">
-  <div class="modal-hd"><div class="modal-title">Novo cartão</div><button class="modal-x" onclick="closeOv('ov-card')">✕</button></div>
+  <div class="modal-hd"><div class="modal-title" id="cd-modal-title">Novo cartão</div><button class="modal-x" onclick="closeOv('ov-card')">✕</button></div>
   <div class="fg"><label class="fl">Nome</label><input class="fi" id="cd-name" placeholder="Ex: Nubank, Inter, Bradesco..."></div>
   <div class="fg"><label class="fl">Limite (R$)</label><input class="fi" id="cd-lim" type="number" placeholder="5000"></div>
   <div class="fg-row3">
@@ -2198,7 +2198,7 @@ function renderCards(){
           <tbody>${txRows(prevTx)}</tbody></table>
         </div>
       </div>
-      <div style="text-align:right;margin-bottom:14px"><button onclick="delCard('${c.id}')" class="btn sm danger">Remover ${c.name}</button></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px"><button onclick="editCard('${c.id}')" class="btn sm">✎ Editar</button><button onclick="delCard('${c.id}')" class="btn sm danger">✕ Remover</button></div>
     </div>`;
   }).join('')||'<div class="empty"><div class="empty-icon">▬</div>Nenhum cartão cadastrado</div>';
 
@@ -2404,7 +2404,7 @@ function openMod(type,sub=null){
   if(type==='transfer')  {prepTransfer();openOv('ov-transfer');}
   if(type==='budget')    {prepBudget();openOv('ov-budget');}
   if(type==='goal')      {document.getElementById('gl-deadline').value=new Date().toISOString().slice(0,10);openOv('ov-goal');}
-  if(type==='card')      {openOv('ov-card');}
+  if(type==='card')      {document.getElementById('ov-card').dataset.editId='';document.getElementById('cd-modal-title').textContent='Novo cartão';['cd-name','cd-lim','cd-close','cd-due'].forEach(id=>document.getElementById(id).value='');openOv('ov-card');}
   if(type==='invest')    {openOv('ov-invest');}
   if(type==='invest-op') {ivOpKind=sub||'aporte';document.getElementById('iv-op-title').textContent=sub==='resgate'?'Registrar resgate':'Registrar aporte';document.getElementById('iv-op-date').value=new Date().toISOString().slice(0,10);const sel=document.getElementById('iv-op-inv');sel.innerHTML=D.investments.map(i=>`<option value="${i.id}">${i.name}</option>`).join('');openOv('ov-invest-op');}
   if(type==='div')       {document.getElementById('dv-date').value=new Date().toISOString().slice(0,10);openOv('ov-div');}
@@ -2525,6 +2525,17 @@ function saveGoal(){
   save();closeOv('ov-goal');render();toast('✓ Meta salva');
 }
 
+function editCard(id){
+  const c=D.cards.find(c=>String(c.id)===String(id));if(!c)return;
+  document.getElementById('ov-card').dataset.editId=id;
+  document.getElementById('cd-modal-title').textContent='Editar cartão';
+  document.getElementById('cd-name').value=c.name;
+  document.getElementById('cd-lim').value=c.limit;
+  document.getElementById('cd-close').value=c.closing;
+  document.getElementById('cd-due').value=c.due;
+  document.getElementById('cd-color').value=c.color||'#8b7cf8';
+  openOv('ov-card');
+}
 function saveCard(){
   const name=document.getElementById('cd-name').value.trim();
   const limit=parseFloat(document.getElementById('cd-lim').value);
@@ -2532,8 +2543,17 @@ function saveCard(){
   const due=parseInt(document.getElementById('cd-due').value)||8;
   const color=document.getElementById('cd-color').value;
   if(!name||!limit){toast('⚠ Preencha os campos');return;}
-  D.cards.push({id:uid(),name,limit,closing,due,color});
-  save();closeOv('ov-card');render();toast('✓ Cartão adicionado');
+  const editId=document.getElementById('ov-card').dataset.editId;
+  if(editId){
+    const c=D.cards.find(c=>String(c.id)===String(editId));
+    if(c){Object.assign(c,{name,limit,closing,due,color});}
+    document.getElementById('ov-card').dataset.editId='';
+    document.getElementById('cd-modal-title').textContent='Novo cartão';
+    save();closeOv('ov-card');renderCards();toast('✓ Cartão atualizado');
+  } else {
+    D.cards.push({id:uid(),name,limit,closing,due,color});
+    save();closeOv('ov-card');render();toast('✓ Cartão adicionado');
+  }
 }
 
 function saveInvest(){
