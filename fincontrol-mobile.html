@@ -1535,7 +1535,7 @@ function importMobileJSON(e){
   r.readAsText(file);
 }
 function clearMobileData(){
-  localStorage.removeItem(KEY);D=defaultData();save();
+  localStorage.removeItem(KEY);D=mobileAdapt(createDefaultData());save();
   document.getElementById('m-clear-confirm').style.display='none';
   renderPage(curPg);toast('🗑 Dados zerados');
 }
