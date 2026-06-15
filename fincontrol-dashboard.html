@@ -2127,14 +2127,46 @@ function delGoal(id){if(!confirm('Remover meta?'))return;D.goals=D.goals.filter(
 // ════════════════════════════════════════════════════════════════
 // CARDS
 // ════════════════════════════════════════════════════════════════
+function getFatura(card,offset=0){
+  const today=new Date();
+  const d=today.getDate(),m=today.getMonth(),y=today.getFullYear();
+  let em=m,ey=y;
+  if(d>card.closing)em++; // passou do fechamento: fatura fecha no mês seguinte
+  em+=offset;
+  while(em<0){em+=12;ey--;}
+  while(em>11){em-=12;ey++;}
+  let sm=em-1,sy=ey;
+  if(sm<0){sm+=12;sy--;}
+  return{start:new Date(sy,sm,card.closing+1),end:new Date(ey,em,card.closing),due:new Date(ey,em,card.due)};
+}
+function txsInFatura(card,offset=0){
+  const{start,end}=getFatura(card,offset);
+  return D.transactions.filter(t=>{
+    if(t.type!=='card'||String(t.cardId)!==String(card.id)||t.skipped)return false;
+    const dt=new Date(t.date+'T12:00:00');
+    return dt>=start&&dt<=end;
+  });
+}
 function renderCards(){
+  const fmtDia=dt=>`${dt.getDate()} ${MONTHS[dt.getMonth()].slice(0,3)}`;
   document.getElementById('cards-grid').innerHTML=D.cards.map(c=>{
-    const cTx=D.transactions.filter(t=>t.type==='card'&&t.cardId===c.id&&inM(t));
+    const fat=getFatura(c,0);
+    const fatPrev=getFatura(c,-1);
+    const cTx=txsInFatura(c,0);
+    const prevTx=txsInFatura(c,-1);
     const used=cTx.reduce((a,t)=>a+t.amount,0);
-    const pct=Math.min(100,used/c.limit*100);
-    const today=new Date().getDate();
-    const dC=c.closing>=today?c.closing-today:30-(today-c.closing);
-    const dD=c.due>=today?c.due-today:30-(today-c.due);
+    const usedPrev=prevTx.reduce((a,t)=>a+t.amount,0);
+    const pct=Math.min(100,c.limit>0?used/c.limit*100:0);
+    const today=new Date();
+    const dC=Math.round((fat.end-today)/(1000*60*60*24));
+    const dD=Math.round((fat.due-today)/(1000*60*60*24));
+    const periodLabel=`${fmtDia(fat.start)} → ${fmtDia(fat.end)}`;
+    const prevLabel=`${fmtDia(fatPrev.start)} → ${fmtDia(fatPrev.end)}`;
+    const txRows=tx=>tx.sort((a,b)=>b.date.localeCompare(a.date)).map(t=>`<tr>
+      <td>${ICONS[t.cat]||'·'} ${t.desc}</td><td style="color:var(--tm)">${t.cat}</td>
+      <td style="color:var(--bl)">${t.installments||1}×</td><td style="color:var(--tm)">${dStr(t.date)}</td>
+      <td style="text-align:right" class="amt amt-out">- ${fmt(t.amount)}</td>
+    </tr>`).join('')||'<tr><td colspan="5"><div class="empty">Nenhum gasto neste período</div></td></tr>';
     return `<div>
       <div class="cc-card" style="background:linear-gradient(135deg,${c.color}28,${c.color}0c);border:1px solid ${c.color}30">
         <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:${c.color};filter:blur(50px);opacity:.15;z-index:0"></div>
@@ -2142,20 +2174,29 @@ function renderCards(){
         <div class="cc-used">${fmt(used)}</div>
         <div class="cc-sub">de ${fmt(c.limit)} utilizado · ${pct.toFixed(0)}%</div>
         <div class="cc-stats">
-          <div><div class="cc-stat-label">Fecha</div><div class="cc-stat-val">dia ${c.closing} (${dC}d)</div></div>
-          <div><div class="cc-stat-label">Vence</div><div class="cc-stat-val">dia ${c.due} (${dD}d)</div></div>
+          <div><div class="cc-stat-label">Fecha</div><div class="cc-stat-val">dia ${c.closing}${dC>=0?' ('+dC+'d)':' (fechada)'}</div></div>
+          <div><div class="cc-stat-label">Vence</div><div class="cc-stat-val">dia ${c.due}${dD>=0?' ('+dD+'d)':' (vencida)'}</div></div>
           <div><div class="cc-stat-label">Disponível</div><div class="cc-stat-val">${fmt(c.limit-used)}</div></div>
         </div>
         <div class="cc-prog"><div class="cc-fill" style="width:${pct}%;background:${c.color}"></div></div>
       </div>
       <div class="tbl-wrap mb">
-        <div class="tbl-hd" style="padding:9px 14px"><div style="font-size:11px;font-weight:600">Fatura ${MONTHS[curM]}</div><div style="font-size:10px;color:var(--tm)">${fmt(used)}</div></div>
+        <div class="tbl-hd" style="padding:9px 14px">
+          <div style="font-size:11px;font-weight:600">🟢 Fatura aberta · ${periodLabel}</div>
+          <div style="font-size:10px;color:var(--tm)">${fmt(used)} · vence ${fmtDia(fat.due)}</div>
+        </div>
         <table><thead><tr><th>Descrição</th><th>Categoria</th><th>Parc.</th><th>Data</th><th style="text-align:right">Valor</th></tr></thead>
-        <tbody>${cTx.sort((a,b)=>b.date.localeCompare(a.date)).map(t=>`<tr>
-          <td>${ICONS[t.cat]||'·'} ${t.desc}</td><td style="color:var(--tm)">${t.cat}</td>
-          <td style="color:var(--bl)">${t.installments||1}×</td><td style="color:var(--tm)">${dStr(t.date)}</td>
-          <td style="text-align:right" class="amt amt-out">- ${fmt(t.amount)}</td>
-        </tr>`).join('')||'<tr><td colspan="5"><div class="empty">Sem gastos este mês</div></td></tr>'}</tbody></table>
+        <tbody>${txRows(cTx)}</tbody></table>
+      </div>
+      <div class="tbl-wrap mb">
+        <div class="tbl-hd" style="padding:9px 14px;cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'">
+          <div style="font-size:11px;font-weight:600;color:var(--tm)">🔴 Fatura anterior · ${prevLabel}</div>
+          <div style="font-size:10px;color:var(--tm)">${fmt(usedPrev)} · vencimento ${fmtDia(fatPrev.due)} ▾</div>
+        </div>
+        <div style="display:none">
+          <table><thead><tr><th>Descrição</th><th>Categoria</th><th>Parc.</th><th>Data</th><th style="text-align:right">Valor</th></tr></thead>
+          <tbody>${txRows(prevTx)}</tbody></table>
+        </div>
       </div>
       <div style="text-align:right;margin-bottom:14px"><button onclick="delCard('${c.id}')" class="btn sm danger">Remover ${c.name}</button></div>
     </div>`;

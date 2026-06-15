@@ -1075,19 +1075,53 @@ function setFilt(flt,btn){txFilt=flt;document.querySelectorAll('#pg-tx .chip').f
 function rCards(){
   document.getElementById('acc-list').innerHTML=D.accounts.map(a=>`<div class="acc"><div class="acc-left"><div class="acc-dot" style="background:${a.color}"></div><div><div class="acc-name">${a.name}</div><div class="acc-bank">${a.bank||'—'}</div></div></div><div class="acc-bal">${f(a.balance)}</div></div>`).join('')||'<div class="empty">Nenhuma conta</div>';
 
+  function mbGetFatura(card,offset=0){
+    const today=new Date();const d=today.getDate(),m=today.getMonth(),y=today.getFullYear();
+    let em=m,ey=y;if(d>card.closing)em++;
+    em+=offset;while(em<0){em+=12;ey--;}while(em>11){em-=12;ey++;}
+    let sm=em-1,sy=ey;if(sm<0){sm+=12;sy--;}
+    return{start:new Date(sy,sm,card.closing+1),end:new Date(ey,em,card.closing),due:new Date(ey,em,card.due)};
+  }
+  const mbFmtD=dt=>`${dt.getDate()} ${MO[dt.getMonth()].slice(0,3)}`;
   document.getElementById('cc-list').innerHTML=D.cards.map(c=>{
-    const cTx=D.transactions.filter(t=>t.type==='card'&&t.cardId===c.id&&inM(t)&&!t.skipped);
-    const used=cTx.reduce((a,t)=>a+t.amount,0);const pct=Math.min(100,used/c.limit*100);
-    const today=new Date().getDate();const dC=c.closing>=today?c.closing-today:30-(today-c.closing);const dD=c.due>=today?c.due-today:30-(today-c.due);
+    const fat=mbGetFatura(c,0);
+    const fatPrev=mbGetFatura(c,-1);
+    const cTx=D.transactions.filter(t=>{
+      if(t.type!=='card'||String(t.cardId)!==String(c.id)||t.skipped)return false;
+      const dt=new Date(t.date+'T12:00:00');return dt>=fat.start&&dt<=fat.end;
+    });
+    const prevTx=D.transactions.filter(t=>{
+      if(t.type!=='card'||String(t.cardId)!==String(c.id)||t.skipped)return false;
+      const dt=new Date(t.date+'T12:00:00');return dt>=fatPrev.start&&dt<=fatPrev.end;
+    });
+    const used=cTx.reduce((a,t)=>a+t.amount,0);
+    const usedPrev=prevTx.reduce((a,t)=>a+t.amount,0);
+    const pct=Math.min(100,c.limit>0?used/c.limit*100:0);
+    const today=new Date();
+    const dC=Math.round((fat.end-today)/(1000*60*60*24));
+    const dD=Math.round((fat.due-today)/(1000*60*60*24));
+    const cid='cc'+String(c.id).replace(/\W/g,'');
     return`<div class="cc" style="background:linear-gradient(135deg,${c.color}1a,${c.color}08);border:1px solid ${c.color}25">
       <div style="position:absolute;top:-25px;right:-25px;width:100px;height:100px;border-radius:50%;background:${c.color};filter:blur(40px);opacity:.12;pointer-events:none"></div>
       <div class="cc-bank">${c.name}</div>
       <div class="cc-amount">${f(used)}</div>
-      <div class="cc-sub">de ${f(c.limit)} · ${pct.toFixed(0)}%</div>
-      <div class="cc-stats"><div><div class="cc-stat-lbl">Fecha</div><div class="cc-stat-val">${dC}d</div></div><div><div class="cc-stat-lbl">Vence</div><div class="cc-stat-val">${dD}d</div></div><div><div class="cc-stat-lbl">Disponível</div><div class="cc-stat-val">${f(c.limit-used)}</div></div></div>
+      <div class="cc-sub">Fatura aberta · ${mbFmtD(fat.start)} → ${mbFmtD(fat.end)}</div>
+      <div class="cc-stats">
+        <div><div class="cc-stat-lbl">Fecha</div><div class="cc-stat-val">dia ${c.closing}${dC>=0?' ('+dC+'d)':' ✓'}</div></div>
+        <div><div class="cc-stat-lbl">Vence</div><div class="cc-stat-val">dia ${c.due}${dD>=0?' ('+dD+'d)':''}</div></div>
+        <div><div class="cc-stat-lbl">Disponível</div><div class="cc-stat-val">${f(c.limit-used)}</div></div>
+      </div>
       <div class="cc-track"><div class="cc-fill" style="width:${pct}%;background:${c.color}"></div></div>
     </div>
-    ${cTx.slice(0,3).map(txCard).join('')}`;
+    ${cTx.slice(0,4).map(txCard).join('')}
+    ${usedPrev>0?`<div style="margin:6px 0 2px;padding:8px 12px;background:var(--s2);border-radius:10px;cursor:pointer" onclick="document.getElementById('${cid}-prev').style.display=document.getElementById('${cid}-prev').style.display==='none'?'block':'none'">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;font-weight:600;color:var(--tx);opacity:.7">🔴 Fatura anterior · ${mbFmtD(fatPrev.start)} → ${mbFmtD(fatPrev.end)}</span>
+        <span style="font-size:11px;color:var(--tx);opacity:.7">${f(usedPrev)} ▾</span>
+      </div>
+      <div style="font-size:10px;color:var(--tx);opacity:.5;margin-top:2px">Vencimento ${mbFmtD(fatPrev.due)}</div>
+    </div>
+    <div id="${cid}-prev" style="display:none">${prevTx.map(txCard).join('')}</div>`:''}`;
   }).join('')||'<div class="empty"><div class="empty-icon">▭</div>Nenhum cartão</div>';
 
   const inst=D.transactions.filter(t=>t.type==='card'&&(t.installments||1)>1&&!t.skipped);
