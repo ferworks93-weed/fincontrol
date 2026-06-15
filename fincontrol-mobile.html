@@ -339,8 +339,9 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
 .sec{font-size:9px;color:var(--copper);text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:8px;padding-left:7px;border-left:2px solid var(--copper);opacity:.85}
 
 /* ── TX ITEM ── */
-.tx{background:var(--s1);border:1px solid var(--edge);border-radius:var(--r-sm);padding:11px 12px;display:flex;align-items:center;gap:10px;margin-bottom:7px;transition:background .12s,transform .1s}
-.tx:active{background:var(--s2);transform:scale(.99)}
+.tx{background:var(--s1);border:1px solid var(--edge);border-radius:var(--r-sm);padding:11px 12px;display:flex;align-items:center;gap:10px;margin-bottom:7px;transition:background .12s,transform .1s;position:relative;overflow:hidden;user-select:none}
+.tx:active{background:var(--s2)}
+.swipe-del-hint{position:absolute;right:0;top:0;bottom:0;width:72px;background:var(--crimson);display:flex;align-items:center;justify-content:center;font-size:20px;opacity:0;transition:opacity .15s;border-radius:0 var(--r-sm) var(--r-sm) 0;pointer-events:none}
 .tx-ico{width:35px;height:35px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 .tx-ico.income{background:var(--jade-s)}.tx-ico.expense{background:var(--crimson-s)}.tx-ico.card{background:var(--cobalt-s)}
 .tx-body{flex:1;min-width:0}
@@ -777,6 +778,7 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
       <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="document.getElementById('m-import-json').click()">⬆ Importar backup JSON</button>
       <button class="btn" style="width:100%;padding:9px;margin-bottom:8px;border-color:var(--copper-b);color:var(--copper)" onclick="document.getElementById('m-import-ofx').click()">📄 Importar extrato OFX / CSV</button>
       <input type="file" id="m-import-ofx" accept=".ofx,.csv,.txt" style="display:none" onchange="mImportFile(event)">
+      <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="openQRExport()">📲 Exportar configurações via QR Code</button>
       <input type="file" id="m-import-json" accept=".json" style="display:none" onchange="importMobileJSON(event)">
       <button class="btn danger" style="width:100%;padding:9px" onclick="document.getElementById('m-clear-confirm').style.display='block'">🗑 Zerar todos os dados</button>
       <div id="m-clear-confirm" style="display:none;background:rgba(217,95,95,.1);border:1px solid var(--crimson);border-radius:var(--r-sm);padding:12px;margin-top:8px">
@@ -1124,11 +1126,13 @@ function rTx(){
   );
   list.sort((a,b)=>b.date.localeCompare(a.date));
   const globalBanner=q?`<div style="padding:6px 12px;font-size:11px;color:var(--td);background:var(--s2);border-radius:8px;margin-bottom:6px">🔍 Todos os meses · ${list.length} resultado(s)</div>`:'';
-  document.getElementById('tx-list').innerHTML=globalBanner+(list.map(t=>{
+  const container=document.getElementById('tx-list');
+  container.innerHTML=globalBanner+(list.map(t=>{
     const isIn=t.type==='income';const icon=CI[t.cat]||'📌';const card=t.cardId?gc(t.cardId):null;
     const monthLabel=q?`<span style="font-size:10px;color:var(--td);margin-left:4px">${t.date?.slice(0,7)||''}</span>`:'';
-    return`<div class="tx" onclick="editTx('${t.id}')"><div class="tx-ico ${t.type}">${icon}</div><div class="tx-body"><div class="tx-name">${t.desc}${monthLabel}</div><div class="tx-sub">${t.cat}${card?` · ${card.name}`:''}</div></div><div class="tx-right"><div class="tx-amt ${isIn?'pos':'neg'}">${isIn?'+':'-'} ${f(t.amount)}</div><div class="tx-date">${ds(t.date)}</div></div></div>`;
+    return`<div class="tx swipeable" data-id="${t.id}" onclick="editTx('${t.id}')"><div class="tx-ico ${t.type}">${icon}</div><div class="tx-body"><div class="tx-name">${t.desc}${monthLabel}</div><div class="tx-sub">${t.cat}${card?` · ${card.name}`:''}</div></div><div class="tx-right"><div class="tx-amt ${isIn?'pos':'neg'}">${isIn?'+':'-'} ${f(t.amount)}</div><div class="tx-date">${ds(t.date)}</div></div><div class="swipe-del-hint">🗑</div></div>`;
   }).join('')||'<div class="empty"><div class="empty-icon">≡</div>Nenhum lançamento</div>');
+  applySwipeToDelete(container);
 }
 function setFilt(flt,btn){txFilt=flt;document.querySelectorAll('#pg-tx .chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');rTx();}
 
@@ -2673,6 +2677,90 @@ function resetMobileLayout(){
   document.querySelectorAll('.cs-item').forEach(el=>el.classList.toggle('active',el.dataset.cs===(localStorage.getItem('fc_chart')||'bars')));
 })();
 
+// ── QR CODE EXPORT ───────────────────────────────────────────────
+function openQRExport(){
+  const ov=document.getElementById('ov-qr');
+  const img=document.getElementById('qr-img');
+  const spinner=document.getElementById('qr-spinner');
+  const lbl=document.getElementById('qr-size-lbl');
+  img.style.display='none';
+  spinner.style.display='block';
+  lbl.textContent='';
+  ov.style.display='flex';
+
+  // Export only config — no transactions (too large for QR)
+  const payload=JSON.stringify({
+    _fc:'config_v3',
+    accounts:D.accounts,
+    cards:D.cards,
+    budgets:D.budgets,
+    goals:D.goals,
+    categories:D.categories,
+    recurrents:D.recurrents,
+    meta:{savingsGoals:D.meta?.savingsGoals||{}}
+  });
+
+  const kb=(payload.length/1024).toFixed(1);
+  lbl.textContent=`Dados: ${kb} KB · Apenas configurações (sem lançamentos)`;
+
+  if(payload.length>2800){
+    spinner.textContent='⚠️ Dados grandes demais para QR. Use "Exportar JSON".';
+    return;
+  }
+
+  const encoded=encodeURIComponent(payload);
+  const url=`https://chart.googleapis.com/chart?cht=qr&chs=352x352&chld=M|2&chl=${encoded}`;
+  img.onload=()=>{spinner.style.display='none';img.style.display='block';};
+  img.onerror=()=>{spinner.textContent='Sem conexão. Conecte-se à internet e tente novamente.';};
+  img.src=url;
+}
+
+// ── SWIPE TO DELETE ──────────────────────────────────────────────
+function applySwipeToDelete(container){
+  container.querySelectorAll('.swipeable').forEach(el=>{
+    let startX=0,startY=0,curX=0,tracking=false,decided=false,isHoriz=false;
+    const hint=el.querySelector('.swipe-del-hint');
+    el.addEventListener('touchstart',e=>{
+      startX=e.touches[0].clientX;startY=e.touches[0].clientY;
+      curX=0;tracking=true;decided=false;isHoriz=false;
+      el.style.transition='none';
+    },{passive:true});
+    el.addEventListener('touchmove',e=>{
+      if(!tracking)return;
+      const dx=e.touches[0].clientX-startX;
+      const dy=e.touches[0].clientY-startY;
+      if(!decided){
+        if(Math.abs(dx)<6&&Math.abs(dy)<6)return;
+        decided=true;
+        isHoriz=Math.abs(dx)>Math.abs(dy);
+      }
+      if(!isHoriz)return;
+      curX=Math.min(0,dx);
+      el.style.transform=`translateX(${curX}px)`;
+      if(hint)hint.style.opacity=Math.min(1,Math.abs(curX)/72)+'';
+    },{passive:true});
+    el.addEventListener('touchend',()=>{
+      tracking=false;
+      if(!isHoriz){return;}
+      if(curX<-72){
+        el.style.transition='transform .22s,opacity .22s';
+        el.style.transform='translateX(-110%)';
+        el.style.opacity='0';
+        const id=el.dataset.id;
+        setTimeout(()=>{
+          D.transactions=D.transactions.filter(t=>String(t.id)!==String(id));
+          save();rTx();toast('🗑 Removido');
+        },220);
+      } else {
+        el.style.transition='transform .25s';
+        el.style.transform='';
+        if(hint)hint.style.opacity='0';
+      }
+      curX=0;
+    },{passive:true});
+  });
+}
+
 // ── IMPORT OFX / CSV ─────────────────────────────────────────────
 let mImportRows=[];
 function mImportFile(e){
@@ -2991,6 +3079,27 @@ function obRender(){
   else{nextBtn.onclick=()=>obStep(1);}
 }
 </script>
+
+<!-- QR EXPORT MODAL -->
+<div id="ov-qr" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.75);align-items:center;justify-content:center" onclick="if(event.target===this)document.getElementById('ov-qr').style.display='none'">
+  <div style="background:var(--s1);border-radius:20px;padding:24px 20px;width:min(88vw,340px);display:flex;flex-direction:column;align-items:center;gap:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+      <div style="font-size:14px;font-weight:700;color:var(--text)">📲 Exportar por QR Code</div>
+      <button onclick="document.getElementById('ov-qr').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:0;line-height:1">×</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;line-height:1.6">Escaneie com outro dispositivo para importar contas, cartões, orçamentos, metas e categorias.</div>
+    <div id="qr-wrap" style="background:#fff;border-radius:12px;padding:12px;display:flex;align-items:center;justify-content:center;min-height:200px;width:200px">
+      <div id="qr-spinner" style="font-size:11px;color:#999">Gerando…</div>
+      <img id="qr-img" style="display:none;width:176px;height:176px" alt="QR Code">
+    </div>
+    <div id="qr-size-lbl" style="font-size:9px;color:var(--muted)"></div>
+    <div style="background:var(--s2);border-radius:10px;padding:10px 12px;width:100%;box-sizing:border-box">
+      <div style="font-size:10px;font-weight:600;color:var(--text);margin-bottom:4px">Como usar</div>
+      <div style="font-size:10px;color:var(--muted);line-height:1.7">1. Abra o FinControl no outro dispositivo<br>2. Vá em Config → Dados → Importar backup JSON<br>3. Ou escaneie e cole o texto no campo de importação</div>
+    </div>
+    <div style="font-size:9px;color:var(--muted);text-align:center">Requer conexão com a internet para gerar o QR</div>
+  </div>
+</div>
 
 <!-- IMPORT SHEET -->
 <div class="ov" id="ov-import" onclick="if(event.target===this)closeSheet('ov-import')">
