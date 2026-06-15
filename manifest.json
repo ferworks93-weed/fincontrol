@@ -31,6 +31,20 @@
       "description": "Adicionar um lançamento rapidamente",
       "url": "./fincontrol-mobile.html#new-tx",
       "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Ver Saldo",
+      "short_name": "Saldo",
+      "description": "Ver resumo financeiro do mês",
+      "url": "./fincontrol-mobile.html",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Abrir o dashboard completo",
+      "url": "./fincontrol-dashboard.html",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
     }
   ]
 }

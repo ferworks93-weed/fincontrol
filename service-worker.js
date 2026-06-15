@@ -51,3 +51,21 @@ self.addEventListener('fetch', e => {
 self.addEventListener('message', e => {
   if (e.data === 'skipWaiting') self.skipWaiting();
 });
+
+self.addEventListener('push', e => {
+  const data = e.data ? e.data.json() : { title: 'FinControl', body: '' };
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: './icon.svg',
+      badge: './icon.svg',
+      tag: data.tag || 'fincontrol',
+      data: { url: data.url || './fincontrol-mobile.html' }
+    })
+  );
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.openWindow(e.notification.data?.url || './fincontrol-mobile.html'));
+});

@@ -2187,6 +2187,7 @@ function checkCardNotifs(){
   if(localStorage.getItem('fc_notif_last')===todayKey)return;
   localStorage.setItem('fc_notif_last',todayKey);
   const today=new Date();
+  // Cartões vencendo em ≤3 dias
   D.cards.forEach(c=>{
     const fat=mbGetFatura(c,0);
     const dD=Math.round((fat.due-today)/(1000*60*60*24));
@@ -2196,6 +2197,21 @@ function checkCardNotifs(){
       try{new Notification(`💳 ${c.name} — Fatura ${lbl}`,{body:`Valor: ${f(total)} · Vencimento: ${fat.due.toLocaleDateString('pt-BR')}`,icon:'./icon.svg',tag:`card-due-${c.id}-${todayKey}`});}catch(e){}
     }
   });
+  // Orçamentos esgotados
+  D.budgets.forEach(b=>{
+    const spent=D.transactions.filter(t=>inM(t)&&t.cat===b.cat&&t.type!=='income'&&t.type!=='transfer'&&!t.skipped).reduce((a,t)=>a+t.amount,0);
+    if(b.limit>0&&spent>=b.limit){
+      try{new Notification(`⚠️ Orçamento esgotado: ${b.cat}`,{body:`Gasto: ${f(spent)} de ${f(b.limit)}`,icon:'./icon.svg',tag:`budget-${b.id}-${todayKey}`});}catch(e){}
+    }
+  });
+  // Recorrentes pendentes
+  const pending=(D.recurring||[]).filter(r=>{
+    const already=D.transactions.some(t=>t.recurrentId===r.id&&inM(t));
+    return !already&&r.active!==false;
+  });
+  if(pending.length){
+    try{new Notification(`📅 ${pending.length} recorrente${pending.length>1?'s':''} pendente${pending.length>1?'s':''}`,{body:pending.slice(0,3).map(r=>r.desc).join(', ')+(pending.length>3?'…':''),icon:'./icon.svg',tag:`recurring-${todayKey}`});}catch(e){}
+  }
 }
 function enableMobileNotifs(){
   if(!('Notification'in window)){toast('⚠ Browser não suporta notificações');return;}
@@ -2461,6 +2477,13 @@ async function fetchRates(){
   }catch(e){console.warn('Rates fetch:',e);}
 }
 fetchRates();
+document.addEventListener('keydown',e=>{
+  const inInput=e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT';
+  if(e.key==='Escape'){document.querySelectorAll('.ov.open').forEach(o=>o.classList.remove('open'));return;}
+  if(inInput)return;
+  if(e.key==='n'||e.key==='N') openSheet('tx','expense');
+  if(e.key==='s'||e.key==='S'){e.preventDefault();doSync();}
+});
 window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){D=mobileAdapt(JSON.parse(e.newValue));renderPage(curPg);setSyncStatus('ok','Sync automático');toast('🔄 Dados atualizados');}});
 setInterval(()=>{if(_gToken)_driveSync();},30000);
 

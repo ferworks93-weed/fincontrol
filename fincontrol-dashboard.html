@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>FinControl</title>
+<title>FinControl — Dashboard</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#b87333">
 <script>(()=>{const s=localStorage.getItem('fc_font_size');if(s)document.documentElement.style.zoom=s;})()</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async onload="if(typeof _initGIS==='function')_initGIS()"></script>
@@ -606,6 +608,15 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
 [data-lid].ld-dragging{opacity:.3}
 [data-lid].ld-over-top{outline:2px solid var(--cu);outline-offset:2px}
 [data-lid].ld-over-bot{outline:2px solid var(--cu);outline-offset:2px}
+/* Search */
+.sr-row{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;transition:background .1s}
+.sr-row:hover{background:var(--s2)}
+.sr-ico{font-size:16px;flex-shrink:0;width:24px;text-align:center}
+.sr-main{flex:1;min-width:0}
+.sr-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr-sub{font-size:10px;color:var(--tm);margin-top:1px}
+.sr-val{font-size:12px;font-weight:600;white-space:nowrap}
+.kbd{background:var(--s3);border:1px solid var(--bd);border-radius:4px;padding:2px 8px;font-size:11px;font-family:monospace;color:var(--tx)}
 </style>
 </head>
 <body>
@@ -720,6 +731,7 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
         <span id="mLabel"></span>
         <button onclick="chMonth(1)">›</button>
       </div>
+      <button class="btn" onclick="openSearch()" title="Buscar (/)">🔍</button>
       <button class="btn" onclick="openMod('report')">↓ Relatório</button>
       <button class="btn pri" onclick="openMod('tx')">+ Lançamento</button>
     </div>
@@ -1095,8 +1107,8 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
       </div>
       <div style="margin-top:16px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd)">Notificações</div>
       <div class="setting-row">
-        <div><div class="setting-lbl">Vencimento de fatura</div><div class="setting-sub" id="notif-status">Avisa 3 dias antes do vencimento do cartão</div></div>
-        <button class="btn sm" id="notif-btn" onclick="enableNotifs()">Ativar</button>
+        <div><div class="setting-lbl">Notificações push</div><div class="setting-sub" id="notif-status">Cartões, orçamentos esgotados e recorrentes pendentes</div></div>
+        <button class="btn sm" id="notif-btn" onclick="enableDashNotifs()">Ativar</button>
       </div>
       <div style="margin-top:16px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd)">Sincronização</div>
       <div class="setting-row">
@@ -1365,6 +1377,33 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
   <input type="hidden" id="confirm-rec-id">
   <div class="fg"><label class="fl">Valor deste mês (R$)</label><input class="fi" id="confirm-rec-amt" type="number" step="0.01"></div>
   <button class="btn pri" style="width:100%;padding:9px;font-size:12px" onclick="confirmRecAmt()">Confirmar e lançar</button>
+</div></div>
+
+<!-- BUSCA GLOBAL -->
+<div class="ov" id="ov-search" onclick="closeSearch()" style="align-items:flex-start;padding-top:60px">
+<div class="modal" onclick="event.stopPropagation()" style="max-width:560px;padding:0;overflow:hidden">
+  <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--bd)">
+    <span style="font-size:14px;color:var(--tm)">🔍</span>
+    <input id="search-input" class="fi" placeholder="Buscar transações, contas, metas, cartões…" oninput="runSearch()" style="border:none;background:none;font-size:13px;flex:1;outline:none;color:var(--tx)" autocomplete="off">
+    <kbd style="font-size:10px;color:var(--tm);background:var(--s3);border:1px solid var(--bd);border-radius:4px;padding:2px 6px">Esc</kbd>
+  </div>
+  <div id="search-results" style="max-height:400px;overflow-y:auto;padding:8px 0">
+    <div style="color:var(--tm);font-size:12px;text-align:center;padding:20px">Digite para buscar</div>
+  </div>
+</div></div>
+
+<!-- ATALHOS DE TECLADO -->
+<div class="ov" id="ov-shortcuts" onclick="document.getElementById('ov-shortcuts').classList.remove('open')">
+<div class="modal" onclick="event.stopPropagation()" style="max-width:340px">
+  <div class="modal-hd"><div class="modal-title">Atalhos de teclado</div><button class="modal-x" onclick="document.getElementById('ov-shortcuts').classList.remove('open')">✕</button></div>
+  <div style="display:grid;gap:8px;font-size:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--tm)">Novo lançamento</span><kbd class="kbd">N</kbd></div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--tm)">Nova recorrência</span><kbd class="kbd">R</kbd></div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--tm)">Sincronizar Drive</span><kbd class="kbd">S</kbd></div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--tm)">Busca global</span><kbd class="kbd">/ ou F</kbd></div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--tm)">Mostrar atalhos</span><kbd class="kbd">?</kbd></div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--tm)">Fechar modal</span><kbd class="kbd">Esc</kbd></div>
+  </div>
 </div></div>
 
 <div class="toast" id="toast"></div>
@@ -2471,7 +2510,7 @@ function renderSettings(){
   const ns=document.getElementById('notif-status');
   if(nb&&ns){
     const p='Notification'in window?Notification.permission:'denied';
-    if(p==='granted'){nb.textContent='Ativado ✓';nb.disabled=true;ns.textContent='Notificações ativas — avisa 3 dias antes do vencimento';}
+    if(p==='granted'){nb.textContent='Ativado ✓';nb.disabled=true;ns.textContent='Notificações ativas — cartões, orçamentos e recorrentes';}
     else if(p==='denied'){nb.textContent='Bloqueado';nb.disabled=true;ns.textContent='Permissão negada pelo browser. Libere nas configurações do site.';}
     else{nb.textContent='Ativar';nb.disabled=false;}
   }
@@ -3339,10 +3378,98 @@ renderDash();
   }
   localStorage.setItem(key,now);
 })();
+// ── SERVICE WORKER ───────────────────────────────────────────────
+if('serviceWorker'in navigator){
+  navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+}
+
+// ── NOTIFICAÇÕES ─────────────────────────────────────────────────
+function checkDashNotifs(){
+  if(!('Notification'in window)||Notification.permission!=='granted')return;
+  const todayKey=new Date().toISOString().slice(0,10);
+  if(localStorage.getItem('fc_dash_notif_last')===todayKey)return;
+  localStorage.setItem('fc_dash_notif_last',todayKey);
+  const today=new Date();
+  // Cartões com fatura vencendo em ≤3 dias
+  D.cards.forEach(c=>{
+    const fat=getFatura(c,0);
+    const dD=Math.round((fat.due-today)/(1000*60*60*24));
+    const total=D.transactions.filter(t=>t.type==='card'&&String(t.cardId)===String(c.id)&&!t.skipped).reduce((a,t)=>a+t.amount,0);
+    if(dD>=0&&dD<=3&&total>0){
+      const lbl=dD===0?'vence hoje!':`vence em ${dD} dia${dD>1?'s':''}`;
+      try{new Notification(`💳 ${c.name} — Fatura ${lbl}`,{body:`Valor: ${fmt(total)} · Vencimento: ${fat.due.toLocaleDateString('pt-BR')}`,icon:'./icon.svg',tag:`card-due-${c.id}-${todayKey}`});}catch(e){}
+    }
+  });
+  // Orçamentos esgotados
+  D.budgets.forEach(b=>{
+    const spent=D.transactions.filter(t=>inM(t)&&t.cat===b.cat&&t.type!=='income'&&t.type!=='transfer').reduce((a,t)=>a+t.amount,0);
+    if(b.limit>0&&spent>=b.limit){
+      try{new Notification(`⚠️ Orçamento esgotado: ${b.cat}`,{body:`Gasto: ${fmt(spent)} de ${fmt(b.limit)}`,icon:'./icon.svg',tag:`budget-${b.id}-${todayKey}`});}catch(e){}
+    }
+  });
+  // Recorrentes pendentes este mês
+  const pending=D.recurring.filter(r=>{
+    const already=D.transactions.some(t=>t.recurrentId===r.id&&inM(t));
+    return!already&&r.active!==false;
+  });
+  if(pending.length){
+    try{new Notification(`📅 ${pending.length} recorrente${pending.length>1?'s':''} pendente${pending.length>1?'s':''}`,{body:pending.slice(0,3).map(r=>r.desc).join(', ')+(pending.length>3?'…':''),icon:'./icon.svg',tag:`recurring-${todayKey}`});}catch(e){}
+  }
+}
+function enableDashNotifs(){
+  if(!('Notification'in window)){toast('⚠ Browser não suporta notificações');return;}
+  Notification.requestPermission().then(p=>{
+    if(p==='granted'){localStorage.removeItem('fc_dash_notif_last');checkDashNotifs();toast('✓ Notificações ativadas');}
+    else toast('⚠ Permissão negada');
+  });
+}
+
+// ── BUSCA GLOBAL ─────────────────────────────────────────────────
+function openSearch(){
+  document.getElementById('ov-search').classList.add('open');
+  setTimeout(()=>document.getElementById('search-input').focus(),80);
+}
+function closeSearch(){document.getElementById('ov-search').classList.remove('open');}
+function runSearch(){
+  const q=(document.getElementById('search-input').value||'').toLowerCase().trim();
+  const out=document.getElementById('search-results');
+  if(q.length<2){out.innerHTML='<div style="color:var(--tm);font-size:12px;text-align:center;padding:20px">Digite ao menos 2 caracteres</div>';return;}
+  const hits=[];
+  // Transações
+  D.transactions.filter(t=>!t.skipped&&(t.desc?.toLowerCase().includes(q)||t.cat?.toLowerCase().includes(q))).slice(0,8).forEach(t=>{
+    const isIn=t.type==='income';
+    hits.push(`<div class="sr-row" onclick="goTo('lancamentos',document.querySelector('[data-lid=lancamentos]'));closeSearch();"><span class="sr-ico">💸</span><div class="sr-main"><div class="sr-name">${t.desc}</div><div class="sr-sub">${t.cat} · ${t.date}</div></div><div class="sr-val ${isIn?'gn':'rd'}">${isIn?'+':'-'}${fmt(t.amount)}</div></div>`);
+  });
+  // Contas
+  D.accounts.filter(a=>a.name?.toLowerCase().includes(q)).forEach(a=>{
+    hits.push(`<div class="sr-row" onclick="goTo('contas',document.querySelector('[data-lid=contas]'));closeSearch();"><span class="sr-ico">🏦</span><div class="sr-main"><div class="sr-name">${a.name}</div><div class="sr-sub">Conta · ${a.currency||'BRL'}</div></div><div class="sr-val bl">${fmt(toBRL(a.balance,a.currency))}</div></div>`);
+  });
+  // Metas
+  D.goals.filter(g=>g.name?.toLowerCase().includes(q)).forEach(g=>{
+    const pct=g.target>0?Math.min(100,g.current/g.target*100).toFixed(0):0;
+    hits.push(`<div class="sr-row" onclick="goTo('metas',document.querySelector('[data-lid=metas]'));closeSearch();"><span class="sr-ico">${g.icon||'🎯'}</span><div class="sr-main"><div class="sr-name">${g.name}</div><div class="sr-sub">Meta · ${pct}% concluída</div></div><div class="sr-val vt">${fmt(g.current)}</div></div>`);
+  });
+  // Orçamentos
+  D.budgets.filter(b=>b.cat?.toLowerCase().includes(q)).forEach(b=>{
+    hits.push(`<div class="sr-row" onclick="goTo('orcamentos',document.querySelector('[data-lid=orcamentos]'));closeSearch();"><span class="sr-ico">📊</span><div class="sr-main"><div class="sr-name">${b.cat}</div><div class="sr-sub">Orçamento mensal</div></div><div class="sr-val">${fmt(b.limit)}</div></div>`);
+  });
+  // Cartões
+  D.cards.filter(c=>c.name?.toLowerCase().includes(q)).forEach(c=>{
+    hits.push(`<div class="sr-row" onclick="goTo('cartoes',document.querySelector('[data-lid=cartoes]'));closeSearch();"><span class="sr-ico">💳</span><div class="sr-main"><div class="sr-name">${c.name}</div><div class="sr-sub">Cartão · limite ${fmt(c.limit)}</div></div></div>`);
+  });
+  out.innerHTML=hits.length?hits.join(''):'<div style="color:var(--tm);font-size:12px;text-align:center;padding:20px">Nenhum resultado para "'+q+'"</div>';
+}
+
+// ── ATALHOS DE TECLADO ───────────────────────────────────────────
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape') document.querySelectorAll('.ov.open').forEach(o=>o.classList.remove('open'));
-  if(e.key==='n'&&!document.querySelector('.ov.open')) openMod('tx');
-  if(e.key==='r'&&!document.querySelector('.ov.open')) openMod('recurring');
+  const inInput=e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT';
+  if(e.key==='Escape'){document.querySelectorAll('.ov.open').forEach(o=>o.classList.remove('open'));return;}
+  if(inInput)return;
+  if(e.key==='n') openMod('tx');
+  if(e.key==='r') openMod('recurring');
+  if(e.key==='s'){e.preventDefault();doSync();}
+  if(e.key==='/'||e.key==='f'){e.preventDefault();openSearch();}
+  if(e.key==='?'){document.getElementById('ov-shortcuts').classList.toggle('open');}
 });
 
 // ── LAYOUT ENGINE (Dashboard) ────────────────────────────────────
@@ -3402,7 +3529,7 @@ function resetDashLayout(){
   toast('Layout padrão restaurado');
 }
 initDashLayout();
-checkCardNotifs();
+checkDashNotifs();
 
 // ── SIDEBAR MOBILE TOGGLE ────────────────────────────────────────
 function toggleSidebar(){
