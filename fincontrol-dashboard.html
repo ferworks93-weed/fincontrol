@@ -1469,6 +1469,10 @@ const save = () => {
     document.body.appendChild(msg);
     setTimeout(()=>msg.remove(), 6000);
   }
+  // Atualiza timestamp e agenda sync imediato ao Drive
+  D.meta.lastSync = new Date().toISOString();
+  clearTimeout(save._syncTimer);
+  save._syncTimer = setTimeout(()=>{ if(typeof _driveSync==='function'&&_gToken) _driveSync(); }, 1500);
 };
 
 // ════════════════════════════════════════════════════════════════

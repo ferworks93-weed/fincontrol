@@ -11,6 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.svg">
 <script src="https://accounts.google.com/gsi/client" async onload="if(typeof _initGIS==='function')_initGIS()"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <title>FinControl</title>
 <script>(()=>{const s=localStorage.getItem('fc_font_size');if(s)document.documentElement.style.zoom=s;})()</script>
 <style>
@@ -778,6 +779,8 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
       <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="document.getElementById('m-import-json').click()">⬆ Importar backup JSON</button>
       <button class="btn" style="width:100%;padding:9px;margin-bottom:8px;border-color:var(--copper-b);color:var(--copper)" onclick="document.getElementById('m-import-ofx').click()">📄 Importar extrato OFX / CSV</button>
       <input type="file" id="m-import-ofx" accept=".ofx,.csv,.txt" style="display:none" onchange="mImportFile(event)">
+      <button class="btn" style="width:100%;padding:9px;margin-bottom:8px;border-color:var(--copper-b);color:var(--copper)" onclick="document.getElementById('m-import-pdf').click()">📑 Importar extrato PDF</button>
+      <input type="file" id="m-import-pdf" accept=".pdf" style="display:none" onchange="mImportPDF(event)">
       <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="openQRExport()">📲 Exportar configurações via QR Code</button>
       <input type="file" id="m-import-json" accept=".json" style="display:none" onchange="importMobileJSON(event)">
       <button class="btn danger" style="width:100%;padding:9px" onclick="document.getElementById('m-clear-confirm').style.display='block'">🗑 Zerar todos os dados</button>
@@ -1065,7 +1068,12 @@ function mobileAdapt(d){
   return d;
 }
 let D=mobileAdapt(JSON.parse(localStorage.getItem(KEY)||'null'));
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){toast('⚠️ Erro ao salvar: armazenamento cheio. Exporte um backup.');}}
+const save=()=>{
+  D.meta.lastSync=new Date().toISOString();
+  try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){toast('⚠️ Erro ao salvar: armazenamento cheio. Exporte um backup.');}
+  clearTimeout(save._t);
+  save._t=setTimeout(()=>{if(typeof _driveSync==='function'&&window._gToken)_driveSync();},1500);
+};
 
 // ════════════════════════════════════════════
 // STATE
@@ -2929,6 +2937,63 @@ function mParseDate(s){
   const iso=s.match(/(\d{4})-(\d{2})-(\d{2})/);
   if(iso)return`${iso[1]}-${iso[2]}-${iso[3]}`;
   return null;
+}
+async function mImportPDF(e){
+  const file=e.target.files[0];if(!file)return;
+  e.target.value='';
+  if(typeof pdfjsLib==='undefined'){toast('⚠️ PDF.js ainda carregando, tente novamente em instantes');return;}
+  toast('⏳ Lendo PDF…');
+  try{
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const buf=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    let fullText='';
+    for(let p=1;p<=pdf.numPages;p++){
+      const page=await pdf.getPage(p);
+      const content=await page.getTextContent();
+      fullText+=content.items.map(i=>i.str).join(' ')+'\n';
+    }
+    mImportRows=[];
+    mParsePDFText(fullText);
+    if(!mImportRows.length){toast('⚠️ Nenhuma transação reconhecida no PDF. Tente OFX ou CSV.');return;}
+    mRenderImport();
+    document.getElementById('ov-import').classList.add('open');
+  }catch(err){
+    console.error('PDF import:',err);
+    toast('❌ Erro ao ler PDF: '+err.message);
+  }
+}
+function mParsePDFText(text){
+  // Padrão 1: DD/MM/YYYY ... descrição ... valor (R$ 1.234,56 ou -1234.56)
+  const lines=text.split(/\n/).map(l=>l.trim()).filter(Boolean);
+  const dateRe=/\b(\d{2})[\/\-](\d{2})[\/\-](\d{4})\b/;
+  const amtRe=/([+-]?\s*R?\$?\s*[\d\.]+,\d{2})/;
+  lines.forEach(line=>{
+    const dm=line.match(dateRe);if(!dm)return;
+    const date=`${dm[3]}-${dm[2]}-${dm[1]}`;
+    const am=line.match(amtRe);if(!am)return;
+    const rawAmt=am[1].replace(/\s/g,'').replace('R$','').replace('$','');
+    const amount=parseFloat(rawAmt.replace(/\./g,'').replace(',','.'));
+    if(isNaN(amount)||amount===0)return;
+    // descrição = texto entre a data e o valor, sem números isolados
+    const afterDate=line.slice(line.indexOf(dm[0])+dm[0].length);
+    const beforeAmt=afterDate.slice(0,afterDate.indexOf(am[1])).trim();
+    const desc=(beforeAmt||line).replace(dateRe,'').replace(amtRe,'').replace(/\s{2,}/g,' ').trim()||'Importado';
+    mImportRows.push({sel:true,date,desc:desc.slice(0,60),amount:Math.abs(amount),type:amount<0?'expense':'income',cat:amount<0?'Outros':'Outros rendimentos'});
+  });
+  // Padrão 2: se não encontrou nada, tenta formato "valor data descrição"
+  if(!mImportRows.length){
+    lines.forEach(line=>{
+      const am=line.match(/^([+-]?\d[\d\.]*,\d{2})\s+(\d{2}\/\d{2}\/\d{4})\s+(.+)/);
+      if(!am)return;
+      const amount=parseFloat(am[1].replace(/\./g,'').replace(',','.'));
+      if(isNaN(amount))return;
+      const dm2=am[2].match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      const date=`${dm2[3]}-${dm2[2]}-${dm2[1]}`;
+      const desc=am[3].trim().slice(0,60)||'Importado';
+      mImportRows.push({sel:true,date,desc,amount:Math.abs(amount),type:amount<0?'expense':'income',cat:amount<0?'Outros':'Outros rendimentos'});
+    });
+  }
 }
 function mRenderImport(){
   const accSel=document.getElementById('m-import-acc');
