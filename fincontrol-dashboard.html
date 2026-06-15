@@ -1217,7 +1217,10 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
     <div class="fg"><label class="fl">Tipo</label><select class="fs" id="acc-type"><option value="checking">Conta Corrente</option><option value="savings">Poupança</option><option value="wallet">Carteira Digital</option><option value="cash">Dinheiro</option></select></div>
     <div class="fg"><label class="fl">Saldo (R$)</label><input class="fi" id="acc-bal" type="number" placeholder="0,00" step="0.01"></div>
   </div>
-  <div class="fg"><label class="fl">Cor</label><input class="fi" id="acc-color" type="color" value="#4f8ef7"></div>
+  <div class="fg-row">
+    <div class="fg"><label class="fl">Moeda</label><select class="fs" id="acc-currency"><option value="BRL">BRL — Real</option><option value="USD">USD — Dólar</option><option value="EUR">EUR — Euro</option><option value="GBP">GBP — Libra</option><option value="ARS">ARS — Peso AR</option><option value="CLP">CLP — Peso CL</option><option value="JPY">JPY — Iene</option><option value="CHF">CHF — Franco</option></select></div>
+    <div class="fg"><label class="fl">Cor</label><input class="fi" id="acc-color" type="color" value="#4f8ef7"></div>
+  </div>
   <button class="btn pri" style="width:100%;padding:9px;font-size:12px" onclick="saveAccount()">Salvar conta</button>
 </div></div>
 
@@ -1365,6 +1368,7 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
 </div></div>
 
 <div class="toast" id="toast"></div>
+<div id="sync-badge" style="display:none;position:fixed;bottom:20px;right:20px;z-index:9999;background:var(--s2);border:1px solid var(--bd);border-radius:20px;padding:6px 14px;font-size:11px;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.18);pointer-events:none"><div class="sdot sb-dot"></div><span class="sb-txt"></span></div>
 
 <script>
 // ════════════════════════════════════════════════════════════════
@@ -1680,7 +1684,7 @@ function renderDash() {
   const inc=mTx.filter(t=>t.type==='income').reduce((a,t)=>a+t.amount,0);
   const exp=mTx.filter(t=>t.type!=='income'&&t.type!=='transfer').reduce((a,t)=>a+t.amount,0);
   const bal=inc-exp;
-  const accBal=D.accounts.reduce((a,ac)=>a+ac.balance,0);
+  const accBal=D.accounts.reduce((a,ac)=>a+toBRL(ac.balance,ac.currency),0);
   const invTot=D.investments.reduce((a,i)=>a+i.amount,0);
 
   // KPIs
@@ -2059,20 +2063,27 @@ function parseDate(s) {
   return null;
 }
 
+function _isDupeImport(r){
+  return D.transactions.some(t=>t.date===r.date&&Math.abs(t.amount-r.amount)<0.01&&t.desc.toLowerCase()===r.desc.toLowerCase());
+}
 function renderImportPreview() {
   document.getElementById('import-preview').style.display='block';
-  document.getElementById('import-count').textContent=`${importRows.length} transação${importRows.length!==1?'ões':''} encontrada${importRows.length!==1?'s':''}`;
+  const dupes=importRows.filter(r=>_isDupeImport(r)).length;
+  document.getElementById('import-count').textContent=`${importRows.length} transação${importRows.length!==1?'ões':''} encontrada${importRows.length!==1?'s':''}${dupes?` · ${dupes} duplicada${dupes>1?'s':''}`:''}`;
   const cats=[...D.categories.expense,...D.categories.income].filter((v,i,a)=>a.indexOf(v)===i);
-  document.getElementById('import-rows').innerHTML=importRows.map((r,i)=>`
-    <div class="import-row">
-      <input type="checkbox" class="import-check" id="ir-${i}" ${r.sel?'checked':''} onchange="importRows[${i}].sel=this.checked">
+  document.getElementById('import-rows').innerHTML=importRows.map((r,i)=>{
+    const dupe=_isDupeImport(r);
+    if(dupe)r.sel=false;
+    return`<div class="import-row" style="${dupe?'opacity:.5':''}">
+      <input type="checkbox" class="import-check" id="ir-${i}" ${r.sel?'checked':''} ${dupe?'disabled':''} onchange="importRows[${i}].sel=this.checked">
       <span style="flex:0 0 80px;color:var(--tm);font-size:10px">${r.date}</span>
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.desc}</span>
-      <select class="fs import-cat" style="width:140px;padding:3px 7px;font-size:10px" onchange="importRows[${i}].cat=this.value;importRows[${i}].type=this.value==='Outros rendimentos'||D.categories.income.includes(this.value)?'income':'expense'">
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.desc}${dupe?` <span style="font-size:9px;color:var(--tm);background:var(--s3);border:1px solid var(--bd);border-radius:4px;padding:1px 5px">já existe</span>`:''}</span>
+      <select class="fs import-cat" style="width:140px;padding:3px 7px;font-size:10px" ${dupe?'disabled':''} onchange="importRows[${i}].cat=this.value;importRows[${i}].type=this.value==='Outros rendimentos'||D.categories.income.includes(this.value)?'income':'expense'">
         ${cats.map(c=>`<option ${c===r.cat?'selected':''}>${c}</option>`).join('')}
       </select>
       <span class="amt ${r.type==='income'?'amt-in':'amt-out'}" style="width:80px;text-align:right">${r.type==='income'?'+':'-'} ${fmt(r.amount)}</span>
-    </div>`).join('')||'<div class="empty">Nenhuma transação encontrada no arquivo</div>';
+    </div>`;
+  }).join('')||'<div class="empty">Nenhuma transação encontrada no arquivo</div>';
 }
 
 function toggleAllImport(){
@@ -2082,11 +2093,13 @@ function toggleAllImport(){
 }
 
 function confirmImport(){
-  const toImport=importRows.filter(r=>r.sel);
-  if(!toImport.length){toast('Selecione ao menos uma transação');return;}
-  toImport.forEach(r=>D.transactions.push({id:uid(),type:r.type,desc:r.desc,amount:r.amount,date:r.date,cat:r.cat,accountId:1,cardId:null,installments:1}));
+  const toImport=importRows.filter(r=>r.sel&&!_isDupeImport(r));
+  const skipped=importRows.filter(r=>r.sel&&_isDupeImport(r)).length;
+  if(!toImport.length){toast(skipped?`${skipped} duplicada${skipped>1?'s':''} ignorada${skipped>1?'s':''}. Nada novo para importar.`:'Selecione ao menos uma transação');return;}
+  toImport.forEach(r=>D.transactions.push({id:uid(),type:r.type,desc:r.desc,amount:r.amount,date:r.date,cat:r.cat,accountId:1,cardId:null,installments:1,recurrentId:null}));
   save();importRows=[];document.getElementById('import-preview').style.display='none';
-  toast(`✓ ${toImport.length} transação${toImport.length!==1?'ões':''} importada${toImport.length!==1?'s':''}`);
+  const msg=`✓ ${toImport.length} importada${toImport.length!==1?'s':''}${skipped?` · ${skipped} duplicada${skipped>1?'s':''} ignorada${skipped>1?'s':''}` :''}`;
+  toast(msg);render();
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -2096,9 +2109,9 @@ function renderAccounts(){
   // KPI
   document.getElementById('acc-kpis').innerHTML=D.accounts.map(ac=>`
     <div class="acc-card" style="border-top:2px solid ${ac.color}">
-      <div class="acc-type">${ACC_TYPES[ac.type]||ac.type}</div>
+      <div class="acc-type">${ACC_TYPES[ac.type]||ac.type}${ac.currency&&ac.currency!=='BRL'?` · <span style="font-size:8px;background:var(--s3);border:1px solid var(--bd);border-radius:3px;padding:1px 4px">${ac.currency}</span>`:''}</div>
       <div class="acc-name">${ac.name}</div>
-      <div class="acc-bal" style="color:${ac.balance>=0?'var(--gn)':'var(--rd)'}">${fmt(ac.balance)}</div>
+      <div class="acc-bal" style="color:${ac.balance>=0?'var(--gn)':'var(--rd)'}">${ac.currency&&ac.currency!=='BRL'?(CUR_SYM[ac.currency]||ac.currency)+' ':''>${fmt(ac.balance)}${ac.currency&&ac.currency!=='BRL'?`<div style="font-size:10px;color:var(--tm);font-weight:400;margin-top:2px">≈ ${fmt(toBRL(ac.balance,ac.currency))} BRL</div>`:''}</div>
       <div class="acc-actions">
         <button class="btn sm" onclick="openMod('tx')" style="flex:1">+ Lançar</button>
         <button class="btn sm" onclick="editAccount('${ac.id}')" title="Editar">✎</button>
@@ -2562,7 +2575,7 @@ function aiCatApply(){
 }
 function renderProjecao(){
   const el=document.getElementById('dash-projecao');if(!el)return;
-  const accBal=D.accounts.reduce((s,a)=>s+a.balance,0);
+  const accBal=D.accounts.reduce((s,a)=>s+toBRL(a.balance,a.currency),0);
   const nets=[];
   for(let i=1;i<=3;i++){
     const d=new Date(curY,curM-i,1);const mm=d.getMonth(),yy=d.getFullYear();
@@ -2691,6 +2704,7 @@ function editAccount(id){
   document.getElementById('acc-type').value=a.type||'checking';
   document.getElementById('acc-bal').value=a.balance||0;
   document.getElementById('acc-color').value=a.color||'#4f8ef7';
+  document.getElementById('acc-currency').value=a.currency||'BRL';
   document.getElementById('ov-account').classList.add('open');
 }
 function saveAccount(){
@@ -2698,15 +2712,16 @@ function saveAccount(){
   const type=document.getElementById('acc-type').value;
   const balance=parseFloat(document.getElementById('acc-bal').value)||0;
   const color=document.getElementById('acc-color').value;
+  const currency=document.getElementById('acc-currency').value||'BRL';
   if(!name){toast('⚠ Informe o nome');return;}
   const editId=document.getElementById('ov-account').dataset.editId;
   if(editId){
     const a=D.accounts.find(x=>String(x.id)===String(editId));
-    if(a){a.name=name;a.type=type;a.balance=balance;a.color=color;}
+    if(a){a.name=name;a.type=type;a.balance=balance;a.color=color;a.currency=currency;}
     document.getElementById('ov-account').dataset.editId='';
     save();closeOv('ov-account');render();toast('✓ Conta atualizada');
   }else{
-    D.accounts.push({id:uid(),name,type,balance,color});
+    D.accounts.push({id:uid(),name,type,balance,color,currency});
     save();closeOv('ov-account');render();toast('✓ Conta adicionada');
   }
 }
@@ -2976,6 +2991,11 @@ ${budRows.map(b=>`<div class="bud-row">
   <div class="bud-vals">${fmt(b.spent)} de ${fmt(b.limit)} (${b.pct.toFixed(0)}%) ${b.ok?'✓':'⚠'}</div>
 </div>`).join('')}`:''}
 
+${D.goals.length?`<h2>Metas financeiras</h2>
+<table><thead><tr><th>Meta</th><th style="text-align:right">Acumulado</th><th style="text-align:right">Objetivo</th><th style="text-align:right">Progresso</th><th>Prazo</th></tr></thead><tbody>
+${D.goals.map(g=>{const pct=g.target>0?Math.min(100,g.current/g.target*100):0;return`<tr><td>${g.icon||'🎯'} ${g.name}</td><td style="text-align:right" class="gn">${fmt(g.current)}</td><td style="text-align:right">${fmt(g.target)}</td><td style="text-align:right;font-weight:600;color:${pct>=100?'#16a34a':'#2563eb'}">${pct.toFixed(0)}%</td><td>${g.deadline||'—'}</td></tr>`;}).join('')}
+</tbody></table>`:''}
+
 ${cardRows.length?`<h2>Cartões — Fatura atual</h2>
 ${cardRows.map(({card:c,cTx,total,fat})=>`<div class="card-block">
   <div class="card-name">${c.name}</div>
@@ -3028,12 +3048,30 @@ const DRIVE_KEY='fc_drive_file_id';
 let _gToken=null,_gTokenClient=null;
 
 function _setSyncDot(s,label){
+  const map={busy:'sy',error:'er',ok:'ok'};
+  const cls=map[s]||s||'';
   const dot=document.getElementById('sdot');
   const txt=document.getElementById('stxt');
   const status=document.getElementById('set-sync-status');
-  if(dot)dot.className='sdot '+(s||'');
+  const badge=document.getElementById('sync-badge');
+  if(dot)dot.className='sdot '+cls;
   if(txt)txt.textContent=label||'Sincronizar dados';
   if(status)status.textContent=label||'—';
+  if(badge){
+    if(cls==='sy'){
+      badge.style.display='flex';
+      badge.querySelector('.sb-dot').className='sdot sy';
+      badge.querySelector('.sb-txt').textContent=label||'Sincronizando…';
+      clearTimeout(badge._t);
+    }else if(cls==='ok'||cls==='er'){
+      badge.style.display='flex';
+      badge.querySelector('.sb-dot').className='sdot '+cls;
+      badge.querySelector('.sb-txt').textContent=label||'';
+      clearTimeout(badge._t);badge._t=setTimeout(()=>{badge.style.display='none';},2500);
+    }else{
+      badge.style.display='none';
+    }
+  }
 }
 
 function _updateDriveUI(){
@@ -3236,6 +3274,27 @@ async function doSync(){
   await _driveSync();
 }
 
+// ── MÚLTIPLAS MOEDAS ─────────────────────────────────────────────
+const CURRENCIES=['BRL','USD','EUR','GBP','ARS','CLP','UYU','JPY','CHF','CAD','AUD'];
+const CUR_SYM={BRL:'R$',USD:'US$',EUR:'€',GBP:'£',ARS:'$',CLP:'$',UYU:'$U',JPY:'¥',CHF:'Fr',CAD:'CA$',AUD:'A$'};
+function toBRL(amount,currency){
+  if(!currency||currency==='BRL')return amount;
+  const r=D.meta?.rates?.[currency];
+  return r?amount/r:amount;
+}
+async function fetchRates(){
+  try{
+    const stale=!D.meta?.ratesUpdated||Date.now()-new Date(D.meta.ratesUpdated).getTime()>3600000;
+    if(!stale)return;
+    const res=await fetch('https://api.frankfurter.app/latest?base=BRL');
+    if(!res.ok)return;
+    const data=await res.json();
+    if(!D.meta)D.meta={};
+    D.meta.rates=data.rates;D.meta.ratesUpdated=new Date().toISOString();
+    save();renderDash();
+  }catch(e){console.warn('Rates fetch:',e);}
+}
+fetchRates();
 window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){D=migrateData(JSON.parse(e.newValue));render();_setSyncDot('ok','Sync automático');toast('🔄 Atualizado de outro dispositivo');}});
 setInterval(()=>{if(_gToken)_driveSync();},30000);
 if(window.google?.accounts)_initGIS();
@@ -3261,6 +3320,25 @@ function toast(msg,dur=2600){const el=document.getElementById('toast');el.textCo
 })();
 document.getElementById('mLabel').textContent=`${MONTHS[curM]} ${curY}`;
 renderDash();
+// Prompt relatório automático na virada de mês
+(()=>{
+  const key='fc_last_month';
+  const now=`${curY}-${String(curM).padStart(2,'0')}`;
+  const last=localStorage.getItem(key);
+  if(last&&last!==now){
+    const [ly,lm]=last.split('-').map(Number);
+    const label=MONTHS[lm]+' '+ly;
+    setTimeout(()=>{
+      showConfirm(`Novo mês! Deseja gerar o relatório de ${label}?`,()=>{
+        const prev=curM===0?11:curM-1;const prevY=curM===0?curY-1:curY;
+        const old={curM,curY};curM=prev;curY=prevY;
+        exportReport('pdf');
+        curM=old.curM;curY=old.curY;
+      },{title:`Relatório de ${label}`,btnLabel:'Gerar PDF'});
+    },1200);
+  }
+  localStorage.setItem(key,now);
+})();
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape') document.querySelectorAll('.ov.open').forEach(o=>o.classList.remove('open'));
   if(e.key==='n'&&!document.querySelector('.ov.open')) openMod('tx');

@@ -913,8 +913,9 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
     <div class="sheet-title" id="sheet-acc-title">Nova conta</div>
     <div class="fg"><label class="fl">Nome</label><input class="fi" id="acc-name" placeholder="Ex: Conta Corrente Nubank"></div>
     <div class="fg"><label class="fl">Banco</label><input class="fi" id="acc-bank" placeholder="Ex: Nubank, Inter…"></div>
+    <div class="fg"><label class="fl">Moeda</label><select class="fs" id="acc-currency"><option value="BRL">BRL — Real</option><option value="USD">USD — Dólar</option><option value="EUR">EUR — Euro</option><option value="GBP">GBP — Libra</option><option value="ARS">ARS — Peso AR</option><option value="CLP">CLP — Peso CL</option><option value="JPY">JPY — Iene</option><option value="CHF">CHF — Franco</option></select></div>
     <div class="frow">
-      <div class="fg"><label class="fl">Saldo (R$)</label><input class="fi" id="acc-bal" type="number" inputmode="decimal" placeholder="0,00"></div>
+      <div class="fg"><label class="fl">Saldo</label><input class="fi" id="acc-bal" type="number" inputmode="decimal" placeholder="0,00"></div>
       <div class="fg"><label class="fl">Cor</label><input class="fi" id="acc-color" type="color" value="#4f7fc9"></div>
     </div>
     <button class="fbtn" onclick="saveAcc()">Salvar conta</button>
@@ -1187,7 +1188,14 @@ function mbGetFatura(card,offset=0){
   return{start:new Date(sy,sm,card.closing+1),end:new Date(ey,em,card.closing),due:new Date(dy,dm,card.due)};
 }
 function rCards(){
-  document.getElementById('acc-list').innerHTML=D.accounts.map(a=>`<div class="acc"><div class="acc-left"><div class="acc-dot" style="background:${a.color}"></div><div><div class="acc-name">${a.name}</div><div class="acc-bank">${a.bank||'—'}</div></div></div><div style="display:flex;align-items:center;gap:8px"><div class="acc-bal">${f(a.balance)}</div><button onclick="editAcc('${a.id}')" style="background:none;border:none;color:var(--muted);font-size:14px;padding:4px;cursor:pointer">✎</button></div></div>`).join('')||'<div class="empty">Nenhuma conta</div>';
+  document.getElementById('acc-list').innerHTML=D.accounts.map(a=>{
+    const cur=a.currency&&a.currency!=='BRL';
+    const curSym={BRL:'R$',USD:'US$',EUR:'€',GBP:'£',ARS:'$',CLP:'$',JPY:'¥',CHF:'Fr'};
+    const balStr=(cur?(curSym[a.currency]||a.currency)+' ':'')+f(a.balance);
+    const brlStr=cur?`<div style="font-size:9px;color:var(--muted);margin-top:1px">≈ ${f(toBRL(a.balance,a.currency))} BRL</div>`:'';
+    const curTag=cur?`<span style="font-size:8px;background:var(--s2);border:1px solid var(--edge);border-radius:3px;padding:1px 4px;margin-left:4px">${a.currency}</span>`:'';
+    return`<div class="acc"><div class="acc-left"><div class="acc-dot" style="background:${a.color}"></div><div><div class="acc-name">${a.name}${curTag}</div><div class="acc-bank">${a.bank||'—'}</div></div></div><div style="display:flex;align-items:center;gap:8px"><div><div class="acc-bal">${balStr}</div>${brlStr}</div><button onclick="editAcc('${a.id}')" style="background:none;border:none;color:var(--muted);font-size:14px;padding:4px;cursor:pointer">✎</button></div></div>`;
+  }).join('')||'<div class="empty">Nenhuma conta</div>';
 
   function mbGetFatura(card,offset=0){
     const today=new Date();const d=today.getDate(),m=today.getMonth(),y=today.getFullYear();
@@ -1630,6 +1638,7 @@ function editAcc(id){
   document.getElementById('acc-bank').value=a.bank||'';
   document.getElementById('acc-bal').value=a.balance||0;
   document.getElementById('acc-color').value=a.color||'#4f7fc9';
+  document.getElementById('acc-currency').value=a.currency||'BRL';
   document.getElementById('ov-acc').classList.add('open');
 }
 function delAccEdit(){
@@ -1643,15 +1652,16 @@ function saveAcc(){
   const bank=document.getElementById('acc-bank').value.trim();
   const balance=parseFloat(document.getElementById('acc-bal').value)||0;
   const color=document.getElementById('acc-color').value;
+  const currency=document.getElementById('acc-currency').value||'BRL';
   if(!name){toast('⚠️ Informe o nome');return;}
   const editId=document.getElementById('ov-acc').dataset.editId;
   if(editId){
     const a=D.accounts.find(x=>String(x.id)===String(editId));
-    if(a){a.name=name;a.bank=bank;a.balance=balance;a.color=color;}
+    if(a){a.name=name;a.bank=bank;a.balance=balance;a.color=color;a.currency=currency;}
     document.getElementById('ov-acc').dataset.editId='';
     save();closeSheet('ov-acc');rCards();toast('✅ Conta atualizada');
   }else{
-    D.accounts.push({id:uid(),name,bank,balance,type:'checking',color});
+    D.accounts.push({id:uid(),name,bank,balance,type:'checking',color,currency});
     save();closeSheet('ov-acc');rCards();toast('✅ Conta adicionada');
   }
 }
@@ -2432,6 +2442,25 @@ async function doSync(){
   await _driveSync();
 }
 
+// ── MÚLTIPLAS MOEDAS ─────────────────────────────────────────────
+function toBRL(amount,currency){
+  if(!currency||currency==='BRL')return amount;
+  const r=D.meta?.rates?.[currency];
+  return r?amount/r:amount;
+}
+async function fetchRates(){
+  try{
+    const stale=!D.meta?.ratesUpdated||Date.now()-new Date(D.meta.ratesUpdated).getTime()>3600000;
+    if(!stale)return;
+    const res=await fetch('https://api.frankfurter.app/latest?base=BRL');
+    if(!res.ok)return;
+    const data=await res.json();
+    if(!D.meta)D.meta={};
+    D.meta.rates=data.rates;D.meta.ratesUpdated=new Date().toISOString();
+    save();rCards();
+  }catch(e){console.warn('Rates fetch:',e);}
+}
+fetchRates();
 window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){D=mobileAdapt(JSON.parse(e.newValue));renderPage(curPg);setSyncStatus('ok','Sync automático');toast('🔄 Dados atualizados');}});
 setInterval(()=>{if(_gToken)_driveSync();},30000);
 
