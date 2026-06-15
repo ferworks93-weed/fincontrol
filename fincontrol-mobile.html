@@ -709,6 +709,20 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
       <button class="btn primary" style="flex:1" onclick="openSheet('inv')">+ Investimento</button>
       <button class="btn" style="flex:1" onclick="openSheet('goal')">+ Meta</button>
     </div>
+
+    <!-- VISÃO ANUAL -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:18px 0 8px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text)">Visão Anual</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button onclick="annualYear--; renderAnnualMobile()" style="background:none;border:none;color:var(--muted);font-size:16px;padding:2px 6px;cursor:pointer">‹</button>
+        <span id="annual-yr-lbl" style="font-size:11px;font-weight:600;color:var(--text)"></span>
+        <button onclick="annualYear++; renderAnnualMobile()" style="background:none;border:none;color:var(--muted);font-size:16px;padding:2px 6px;cursor:pointer">›</button>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:10px;padding:8px">
+      <div id="annual-summary" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;padding:0 4px"></div>
+      <div id="annual-grid" style="display:flex;flex-direction:column;gap:3px"></div>
+    </div>
   </div>
 
   <!-- SETTINGS -->
@@ -779,7 +793,9 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
         <div>Fernando de Araújo Meira</div>
         <div style="margin-top:6px">Dados salvos localmente no navegador.<br>Use a versão web para análises avançadas.</div>
       </div>
-      <button class="btn" style="width:100%;padding:10px;margin-top:12px;font-size:12px;border-color:var(--copper-b);color:var(--copper)" onclick="startOnboarding()">🎓 Ver tour do app</button>
+      <button class="btn" id="theme-toggle-btn" style="width:100%;padding:10px;margin-top:12px;font-size:12px" onclick="toggleDarkLight()"></button>
+      <button class="btn" style="width:100%;padding:10px;margin-top:8px;font-size:12px" onclick="openCustomize()">🎨 Personalizar tema e gráfico</button>
+      <button class="btn" style="width:100%;padding:10px;margin-top:8px;font-size:12px;border-color:var(--copper-b);color:var(--copper)" onclick="startOnboarding()">🎓 Ver tour do app</button>
     </div>
   </div>
 
@@ -822,18 +838,25 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sheet-hdl"></div>
     <div class="sheet-title" id="sheet-tx-title">Novo lançamento</div>
-    <div class="type-sel">
+    <div class="type-sel" style="grid-template-columns:1fr 1fr 1fr 1fr">
       <button class="type-btn" id="tb-income" onclick="selType('income')">💰 Receita</button>
       <button class="type-btn" id="tb-expense" onclick="selType('expense')">💸 Despesa</button>
       <button class="type-btn" id="tb-card" onclick="selType('card')">▭ Cartão</button>
+      <button class="type-btn" id="tb-transfer" onclick="selType('transfer')">⇄ Transfer.</button>
     </div>
     <div class="fg"><label class="fl">Descrição</label><input class="fi" id="tx-desc" placeholder="Ex: Salário, Mercado…"></div>
     <div class="frow">
       <div class="fg"><label class="fl">Valor (R$)</label><input class="fi" id="tx-amount" type="number" min="0" step="0.01" placeholder="0,00" inputmode="decimal"></div>
       <div class="fg"><label class="fl">Data</label><input class="fi" id="tx-date" type="date"></div>
     </div>
-    <div class="fg"><label class="fl">Categoria</label><select class="fs" id="tx-cat"></select></div>
+    <div class="fg" id="tx-cat-grp"><label class="fl">Categoria</label><select class="fs" id="tx-cat"></select></div>
     <div class="fg" id="tx-acc-grp"><label class="fl">Conta</label><select class="fs" id="tx-acc"></select></div>
+    <div id="tx-transfer-grp" style="display:none">
+      <div class="frow">
+        <div class="fg"><label class="fl">De (origem)</label><select class="fs" id="tx-tr-from"></select></div>
+        <div class="fg"><label class="fl">Para (destino)</label><select class="fs" id="tx-tr-to"></select></div>
+      </div>
+    </div>
     <div id="tx-card-grp" style="display:none">
       <div class="fg"><label class="fl">Cartão</label><select class="fs" id="tx-card-sel"></select></div>
       <div class="fg"><label class="fl">Parcelas</label><select class="fs" id="tx-install"><option value="1">À vista</option><option value="2">2×</option><option value="3">3×</option><option value="6">6×</option><option value="12">12×</option></select></div>
@@ -1257,6 +1280,79 @@ function rPortfolio(){
       </div>
     </div>`;
   }).join('')||'<div class="empty">Nenhum investimento</div>';
+
+  renderAnnualMobile();
+}
+
+let annualYear=new Date().getFullYear();
+function renderAnnualMobile(){
+  const lbl=document.getElementById('annual-yr-lbl');
+  if(lbl)lbl.textContent=annualYear;
+  const summary=document.getElementById('annual-summary');
+  const grid=document.getElementById('annual-grid');
+  if(!grid)return;
+
+  let yearInc=0,yearExp=0;
+  const rows=MO.map((name,m)=>{
+    const txs=D.transactions.filter(t=>{
+      if(t.skipped||t.type==='transfer')return false;
+      const d=new Date(t.date+'T12:00:00');
+      return d.getFullYear()===annualYear&&d.getMonth()===m;
+    });
+    const inc=txs.filter(t=>t.type==='income').reduce((a,t)=>a+t.amount,0);
+    const exp=txs.filter(t=>t.type!=='income').reduce((a,t)=>a+t.amount,0);
+    const bal=inc-exp;
+    yearInc+=inc;yearExp+=exp;
+    const isCurrentMonth=annualYear===curY&&m===curM;
+    const hasTx=txs.length>0;
+    const balColor=bal>=0?'var(--jade)':'var(--crimson)';
+    const isFuture=new Date(annualYear,m,1)>new Date(curY,curM,1)&&!(annualYear===curY&&m===curM);
+    return{name,inc,exp,bal,isCurrentMonth,hasTx,balColor,isFuture};
+  });
+
+  const yearBal=yearInc-yearExp;
+  if(summary){
+    summary.innerHTML=`
+      <div style="background:var(--jade-s);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:9px;color:var(--muted);margin-bottom:3px">Receitas</div>
+        <div style="font-size:12px;font-weight:700;color:var(--jade)">${f(yearInc)}</div>
+      </div>
+      <div style="background:var(--crimson-s);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:9px;color:var(--muted);margin-bottom:3px">Despesas</div>
+        <div style="font-size:12px;font-weight:700;color:var(--crimson)">${f(yearExp)}</div>
+      </div>
+      <div style="background:var(--s2);border-radius:8px;padding:8px;text-align:center;border:1px solid ${yearBal>=0?'rgba(46,184,122,.2)':'rgba(201,79,79,.2)'}">
+        <div style="font-size:9px;color:var(--muted);margin-bottom:3px">Saldo anual</div>
+        <div style="font-size:12px;font-weight:700;color:${yearBal>=0?'var(--jade)':'var(--crimson)'}">${yearBal>=0?'+':''}${f(yearBal)}</div>
+      </div>`;
+  }
+
+  const maxAbs=Math.max(...rows.map(r=>Math.max(r.inc,r.exp)),1);
+  grid.innerHTML=rows.map(r=>{
+    const incW=Math.round(r.inc/maxAbs*100);
+    const expW=Math.round(r.exp/maxAbs*100);
+    const opacity=r.isFuture?'.35':'1';
+    const highlight=r.isCurrentMonth?`border:1px solid var(--copper-b);background:var(--copper-s);`:`background:var(--s2);`;
+    return`<div style="${highlight}border-radius:8px;padding:7px 10px;opacity:${opacity};cursor:${r.hasTx?'pointer':'default'}"
+      onclick="${r.hasTx?`goTo('tx',document.querySelector('.nav-item:nth-child(2)'));curM=${rows.indexOf(r)};curY=${annualYear};updateMnLbl();rTx()`:''}">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:28px;font-size:10px;font-weight:${r.isCurrentMonth?'700':'500'};color:${r.isCurrentMonth?'var(--copper)':'var(--text)'}">${r.name.slice(0,3)}</div>
+        <div style="flex:1">
+          ${r.hasTx?`<div style="height:3px;background:var(--s3);border-radius:2px;margin-bottom:2px;overflow:hidden">
+            <div style="height:100%;width:${incW}%;background:var(--jade);border-radius:2px"></div>
+          </div>
+          <div style="height:3px;background:var(--s3);border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${expW}%;background:var(--crimson);border-radius:2px"></div>
+          </div>`:`<div style="font-size:9px;color:var(--muted)">Sem lançamentos</div>`}
+        </div>
+        <div style="text-align:right;min-width:64px">
+          ${r.hasTx?`<div style="font-size:10px;font-weight:600;color:${r.balColor}">${r.bal>=0?'+':''}${f(r.bal)}</div>
+          <div style="font-size:8px;color:var(--muted)">${r.inc>0?'↑'+f(r.inc):''}</div>`:
+          `<div style="font-size:9px;color:var(--muted)">—</div>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ════════════════════════════════════════════
@@ -1333,12 +1429,27 @@ function prepTx(type){
 }
 function selType(t){selTypeV=t;updateTxUI();}
 function updateTxUI(){
-  ['income','expense','card'].forEach(x=>{document.getElementById('tb-'+x).className='type-btn'+(x===selTypeV?' a'+x[0]:'');});
-  document.getElementById('tx-card-grp').style.display=selTypeV==='card'?'block':'none';
-  document.getElementById('tx-acc-grp').style.display=selTypeV==='card'?'none':'block';
-  document.getElementById('tx-cat').innerHTML=D.categories[selTypeV].map(c=>`<option>${c}</option>`).join('');
+  ['income','expense','card','transfer'].forEach(x=>{
+    const btn=document.getElementById('tb-'+x);
+    if(btn)btn.className='type-btn'+(x===selTypeV?' a'+x[0]:'');
+  });
+  const isTransfer=selTypeV==='transfer';
+  const isCard=selTypeV==='card';
+  document.getElementById('tx-card-grp').style.display=isCard?'block':'none';
+  document.getElementById('tx-transfer-grp').style.display=isTransfer?'block':'none';
+  document.getElementById('tx-acc-grp').style.display=(isCard||isTransfer)?'none':'block';
+  document.getElementById('tx-cat-grp').style.display=isTransfer?'none':'block';
+  if(!isTransfer&&!isCard){
+    const cats=D.categories[selTypeV]||[];
+    document.getElementById('tx-cat').innerHTML=cats.map(c=>`<option>${c}</option>`).join('');
+  }
+  if(isCard)document.getElementById('tx-cat').innerHTML=(D.categories.card||[]).map(c=>`<option>${c}</option>`).join('');
   document.getElementById('tx-acc').innerHTML=D.accounts.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
   document.getElementById('tx-card-sel').innerHTML=D.cards.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  const trFrom=document.getElementById('tx-tr-from');
+  const trTo=document.getElementById('tx-tr-to');
+  if(trFrom)trFrom.innerHTML=D.accounts.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+  if(trTo)trTo.innerHTML=D.accounts.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
 }
 
 // ════════════════════════════════════════════
@@ -1371,11 +1482,31 @@ function saveTx(){
   const desc=document.getElementById('tx-desc').value.trim();
   const amount=parseFloat(document.getElementById('tx-amount').value);
   const date=document.getElementById('tx-date').value;
+  if(!desc||!amount||!date){toast('⚠️ Preencha todos os campos');return;}
+
+  if(selTypeV==='transfer'){
+    const fromId=parseInt(document.getElementById('tx-tr-from').value)||null;
+    const toId=parseInt(document.getElementById('tx-tr-to').value)||null;
+    if(!fromId||!toId||fromId===toId){toast('⚠️ Selecione contas diferentes');return;}
+    const accFrom=D.accounts.find(a=>a.id===fromId);
+    const accTo=D.accounts.find(a=>a.id===toId);
+    if(!editId){
+      D.transactions.push({id:uid(),type:'transfer',desc,amount,date,cat:'Transferência',accountId:fromId,toAccountId:toId,cardId:null,installments:1,recurrentId:null});
+      if(accFrom)accFrom.balance-=amount;
+      if(accTo)accTo.balance+=amount;
+    } else {
+      const idx=D.transactions.findIndex(x=>x.id==editId);
+      if(idx>=0)D.transactions[idx]={...D.transactions[idx],desc,amount,date,accountId:fromId,toAccountId:toId};
+      document.getElementById('ov-tx').dataset.editId='';
+    }
+    save();closeSheet('ov-tx');renderPage(curPg);toast(editId?'✅ Editado':'✅ Transferência salva');
+    return;
+  }
+
   const cat=document.getElementById('tx-cat').value;
   const accountId=selTypeV!=='card'?parseInt(document.getElementById('tx-acc').value)||null:null;
   const cardId=selTypeV==='card'?parseInt(document.getElementById('tx-card-sel').value)||null:null;
   const installments=selTypeV==='card'?parseInt(document.getElementById('tx-install').value)||1:1;
-  if(!desc||!amount||!date){toast('⚠️ Preencha todos os campos');return;}
   if(editId){
     const idx=D.transactions.findIndex(x=>x.id==editId);
     if(idx>=0)D.transactions[idx]={...D.transactions[idx],type:selTypeV,desc,amount,date,cat,cardId,accountId};
@@ -1460,6 +1591,7 @@ function saveHomeConfig(cfg){
 }
 
 function rSettings(){
+  if(typeof updateThemeToggleBtn==='function')updateThemeToggleBtn();
   // Notification button state
   const nb=document.getElementById('mb-notif-btn');
   if(nb){
@@ -2419,9 +2551,23 @@ function resetMobileLayout(){
     document.querySelectorAll('.cs-item').forEach(el=>el.classList.toggle('active',el.dataset.cs===cs));
     document.getElementById('ov-customize').classList.add('open');
   }
+  function toggleDarkLight(){
+    const cur=localStorage.getItem('fc_theme')||'copper';
+    const next=cur==='claro'?'copper':'claro';
+    setTheme(next);
+    updateThemeToggleBtn();
+  }
+  function updateThemeToggleBtn(){
+    const btn=document.getElementById('theme-toggle-btn');
+    if(!btn)return;
+    const cur=localStorage.getItem('fc_theme')||'copper';
+    btn.textContent=cur==='claro'?'🌙 Mudar para tema escuro':'☀️ Mudar para tema claro';
+  }
   window.setTheme=setTheme;
   window.setChartStyle=setChartStyle;
   window.openCustomize=openCustomize;
+  window.toggleDarkLight=toggleDarkLight;
+  window.updateThemeToggleBtn=updateThemeToggleBtn;
   window.toggleAvatarMenu=function(){
     const m=document.getElementById('avatar-menu');
     const open=m.style.display==='none';
