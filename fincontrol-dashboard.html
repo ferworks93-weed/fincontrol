@@ -1707,7 +1707,7 @@ function renderTx() {
   document.getElementById('tx-table').innerHTML=list.map(t=>txRow(t)).join('')||`<tr><td colspan="7"><div class="empty"><div class="empty-icon">≡</div>Nenhum lançamento</div></td></tr>`;
 }
 function setFilt(f,btn){txFilt=f;document.querySelectorAll('#sc-transactions .chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTx();}
-function delTx(id){if(!confirm('Excluir este lançamento?'))return;D.transactions=D.transactions.filter(t=>t.id!==id);save();render();toast('Lançamento removido');}
+function delTx(id){if(!confirm('Excluir este lançamento?'))return;D.transactions=D.transactions.filter(t=>String(t.id)!==String(id));save();render();toast('Lançamento removido');}
 
 // ════════════════════════════════════════════════════════════════
 // RECURRING
@@ -1765,7 +1765,7 @@ function confirmRecAmt() {
     date:d.toISOString().slice(0,10),cat:r.cat,accountId:1,cardId:null,installments:1,recurringId:id});
   save(); closeOv('ov-confirm-rec'); render(); toast(`✓ ${r.desc} lançado com ${fmt(amt)}`);
 }
-function delRecurring(id){if(!confirm('Remover este recorrente?'))return;D.recurring=D.recurring.filter(r=>r.id!==id);save();renderRecurring();toast('Recorrente removido');}
+function delRecurring(id){if(!confirm('Remover este recorrente?'))return;D.recurring=D.recurring.filter(r=>String(r.id)!==String(id));save();renderRecurring();toast('Recorrente removido');}
 function saveRecurring(){
   const desc=document.getElementById('rec-desc').value.trim();
   const type=document.getElementById('rec-type').value;
@@ -1919,7 +1919,7 @@ function renderAccounts(){
                tooltip:{...CHART_BASE.plugins.tooltip,callbacks:{label:c=>` ${c.label}: ${fmt(c.raw)}`}}}}
   });
 }
-function delAccount(id){if(!confirm('Remover esta conta?'))return;D.accounts=D.accounts.filter(a=>a.id!==id);save();renderAccounts();toast('Conta removida');}
+function delAccount(id){if(!confirm('Remover esta conta?'))return;D.accounts=D.accounts.filter(a=>String(a.id)!==String(id));save();renderAccounts();toast('Conta removida');}
 
 // ════════════════════════════════════════════════════════════════
 // BUDGETS
@@ -1941,7 +1941,7 @@ function renderBudgets(){
                tooltip:{...CHART_BASE.plugins.tooltip,callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}}}}
   });
 }
-function delBudget(id){D.budgets=D.budgets.filter(b=>b.id!==id);save();renderBudgets();toast('Orçamento removido');}
+function delBudget(id){D.budgets=D.budgets.filter(b=>String(b.id)!==String(id));save();renderBudgets();toast('Orçamento removido');}
 
 // ════════════════════════════════════════════════════════════════
 // GOALS
@@ -1982,7 +1982,7 @@ function quickUpdateGoal(id,cur){
   if(isNaN(v))return;
   const g=D.goals.find(g=>g.id===id);if(g){g.current=v;save();renderGoals();toast('✓ Meta atualizada');}
 }
-function delGoal(id){if(!confirm('Remover meta?'))return;D.goals=D.goals.filter(g=>g.id!==id);save();renderGoals();toast('Meta removida');}
+function delGoal(id){if(!confirm('Remover meta?'))return;D.goals=D.goals.filter(g=>String(g.id)!==String(id));save();renderGoals();toast('Meta removida');}
 
 // ════════════════════════════════════════════════════════════════
 // CARDS
@@ -2030,7 +2030,7 @@ function renderCards(){
     </div>`;
   }).join('')||'<div class="empty">Nenhum parcelamento ativo</div>';
 }
-function delCard(id){if(!confirm('Remover cartão?'))return;D.cards=D.cards.filter(c=>c.id!==id);save();renderCards();toast('Cartão removido');}
+function delCard(id){if(!confirm('Remover cartão?'))return;D.cards=D.cards.filter(c=>String(c.id)!==String(id));save();renderCards();toast('Cartão removido');}
 
 // ════════════════════════════════════════════════════════════════
 // INVESTMENTS
@@ -2104,7 +2104,7 @@ function renderInvestments(){
       <div class="amt ${op.type==='resgate'?'amt-out':'amt-in'}">${op.type==='resgate'?'- ':'+'}${fmt(op.amount)}</div>
     </div>`).join('')||'<div class="empty">Nenhuma operação</div>';
 }
-function delInvest(id){if(!confirm('Remover ativo?'))return;D.investments=D.investments.filter(i=>i.id!==id);save();renderInvestments();toast('Ativo removido');}
+function delInvest(id){if(!confirm('Remover ativo?'))return;D.investments=D.investments.filter(i=>String(i.id)!==String(id));save();renderInvestments();toast('Ativo removido');}
 
 // ════════════════════════════════════════════════════════════════
 // ANNUAL

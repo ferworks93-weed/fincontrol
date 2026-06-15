@@ -1136,7 +1136,7 @@ function rPortfolio(){
       <div class="inv-track"><div class="inv-fill" style="width:${pct}%"></div></div>
       <div style="display:flex;gap:6px;margin-top:9px">
         <button onclick="openInvOp('${i.id}')" class="btn primary sm" style="flex:1">+ Operação</button>
-        <button onclick="if(confirm('Remover?')){D.investments=D.investments.filter(x=>x.id!=='${i.id}');save();rPortfolio();toast('🗑 Removido')}" class="btn danger sm">Remover</button>
+        <button onclick="if(confirm('Remover?')){D.investments=D.investments.filter(x=>String(x.id)!=='${i.id}');save();rPortfolio();toast('🗑 Removido')}" class="btn danger sm">Remover</button>
       </div>
     </div>`;
   }).join('')||'<div class="empty">Nenhum investimento</div>';
@@ -1245,7 +1245,7 @@ function editTx(id){
 }
 function delTxEdit(){
   const id=document.getElementById('ov-tx').dataset.editId;if(!id)return;
-  D.transactions=D.transactions.filter(x=>x.id!==id);
+  D.transactions=D.transactions.filter(x=>String(x.id)!==String(id));
   document.getElementById('ov-tx').dataset.editId='';
   save();closeSheet('ov-tx');renderPage(curPg);toast('🗑 Removido');
 }
