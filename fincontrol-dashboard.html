@@ -1533,8 +1533,8 @@ function renderDash() {
   });
   // Pending recurring
   const pendRec=getPendingRecurring();
-  if(pendRec.length) als.push({type:'info',m:`↻ ${pendRec.length} lançamento${pendRec.length>1?'s':''} recorrente${pendRec.length>1?'s':''} pendente${pendRec.length>1?'s':''} este mês`});
-  document.getElementById('dash-alerts').innerHTML=als.map(a=>`<div class="alert ${a.type}">${a.m}</div>`).join('');
+  if(pendRec.length) als.push({type:'info',action:'recurring',m:`↻ ${pendRec.length} lançamento${pendRec.length>1?'s':''} recorrente${pendRec.length>1?'s':''} pendente${pendRec.length>1?'s':''} este mês <span style="opacity:.6;font-size:10px">— clique para ver</span>`});
+  document.getElementById('dash-alerts').innerHTML=als.map(a=>`<div class="alert ${a.type}"${a.action?` style="cursor:pointer" onclick="goTo('${a.action}',document.querySelector('.nb[onclick*=\\'${a.action}\\']'))"`:''} >${a.m}</div>`).join('');
 
   // Charts
   const chartsRow=document.getElementById('dash-charts-row');
