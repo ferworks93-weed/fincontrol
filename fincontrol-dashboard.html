@@ -1202,13 +1202,13 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
 </div></div>
 
 <!-- Account -->
-<div class="ov" id="ov-account" onclick="closeOv('ov-account',event)">
+<div class="ov" id="ov-account" data-edit-id="" onclick="closeOv('ov-account',event)">
 <div class="modal" onclick="event.stopPropagation()">
-  <div class="modal-hd"><div class="modal-title">Nova conta</div><button class="modal-x" onclick="closeOv('ov-account')">✕</button></div>
+  <div class="modal-hd"><div class="modal-title" id="modal-acc-title">Nova conta</div><button class="modal-x" onclick="closeOv('ov-account')">✕</button></div>
   <div class="fg"><label class="fl">Nome da conta</label><input class="fi" id="acc-name" placeholder="Ex: Nubank Conta, Bradesco, Carteira"></div>
   <div class="fg-row">
     <div class="fg"><label class="fl">Tipo</label><select class="fs" id="acc-type"><option value="checking">Conta Corrente</option><option value="savings">Poupança</option><option value="wallet">Carteira Digital</option><option value="cash">Dinheiro</option></select></div>
-    <div class="fg"><label class="fl">Saldo inicial (R$)</label><input class="fi" id="acc-bal" type="number" placeholder="0,00" step="0.01"></div>
+    <div class="fg"><label class="fl">Saldo (R$)</label><input class="fi" id="acc-bal" type="number" placeholder="0,00" step="0.01"></div>
   </div>
   <div class="fg"><label class="fl">Cor</label><input class="fi" id="acc-color" type="color" value="#4f8ef7"></div>
   <button class="btn pri" style="width:100%;padding:9px;font-size:12px" onclick="saveAccount()">Salvar conta</button>
@@ -1270,15 +1270,15 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
 </div></div>
 
 <!-- Invest -->
-<div class="ov" id="ov-invest" onclick="closeOv('ov-invest',event)">
+<div class="ov" id="ov-invest" data-edit-id="" onclick="closeOv('ov-invest',event)">
 <div class="modal" onclick="event.stopPropagation()">
-  <div class="modal-hd"><div class="modal-title">Novo ativo</div><button class="modal-x" onclick="closeOv('ov-invest')">✕</button></div>
+  <div class="modal-hd"><div class="modal-title" id="modal-invest-title">Novo ativo</div><button class="modal-x" onclick="closeOv('ov-invest')">✕</button></div>
   <div class="fg"><label class="fl">Nome</label><input class="fi" id="iv-name" placeholder="Ex: IVVB11, CDB Nubank, XPML11..."></div>
   <div class="fg-row">
     <div class="fg"><label class="fl">Tipo</label><select class="fs" id="iv-type"><option>Renda Fixa</option><option>Ações / ETF</option><option>FII</option><option>Cripto</option><option>Previdência</option><option>Outro</option></select></div>
     <div class="fg"><label class="fl">Rendimento % a.a.</label><input class="fi" id="iv-ret" type="number" placeholder="12.5" step="0.1"></div>
   </div>
-  <div class="fg"><label class="fl">Aporte inicial (R$)</label><input class="fi" id="iv-init" type="number" placeholder="1000" step="0.01"></div>
+  <div class="fg" id="iv-init-grp"><label class="fl">Aporte inicial (R$)</label><input class="fi" id="iv-init" type="number" placeholder="1000" step="0.01"></div>
   <button class="btn pri" style="width:100%;padding:9px;font-size:12px" onclick="saveInvest()">Adicionar ativo</button>
 </div></div>
 
@@ -2071,6 +2071,7 @@ function renderAccounts(){
       <div class="acc-bal" style="color:${ac.balance>=0?'var(--gn)':'var(--rd)'}">${fmt(ac.balance)}</div>
       <div class="acc-actions">
         <button class="btn sm" onclick="openMod('tx')" style="flex:1">+ Lançar</button>
+        <button class="btn sm" onclick="editAccount(${ac.id})" title="Editar">✎</button>
         <button class="btn sm danger" onclick="delAccount(${ac.id})">✕</button>
       </div>
     </div>`).join('')+`<div style="display:flex;align-items:center;justify-content:center;background:var(--s1);border:1px dashed var(--bd2);border-radius:var(--r);cursor:pointer;transition:all .14s;min-height:80px" onclick="openMod('account')" onmouseover="this.style.borderColor='var(--cu)'" onmouseout="this.style.borderColor='var(--bd2)'"><div style="text-align:center;color:var(--tm)"><div style="font-size:20px;margin-bottom:4px">+</div><div style="font-size:10px">Nova conta</div></div></div>`;
@@ -2338,6 +2339,7 @@ function renderInvestments(){
         <button onclick="openMod('invest-op','aporte');document.getElementById('iv-op-inv').value='${i.id}'" class="btn sm">+ Aporte</button>
         <button onclick="openMod('invest-op','resgate');document.getElementById('iv-op-inv').value='${i.id}'" class="btn sm">− Resgate</button>
         <button onclick="document.getElementById('dv-inv-id').value='${i.id}';openOv('ov-div')" class="btn sm">◎ Provento</button>
+        <button onclick="editInvest('${i.id}')" class="btn sm" title="Editar">✎</button>
         <button onclick="delInvest('${i.id}')" class="btn sm danger">✕</button>
       </div>
     </div>`;
@@ -2486,12 +2488,12 @@ function closeOv(id,e){if(!e||e.target===document.getElementById(id))document.ge
 function openMod(type,sub=null){
   if(type==='tx')        {prepTx(sub||'expense');openOv('ov-tx');}
   if(type==='recurring') {prepRec();openOv('ov-recurring');}
-  if(type==='account')   {openOv('ov-account');}
+  if(type==='account')   {const ov=document.getElementById('ov-account');ov.dataset.editId='';document.getElementById('modal-acc-title').textContent='Nova conta';document.getElementById('acc-name').value='';document.getElementById('acc-type').value='checking';document.getElementById('acc-bal').value='';document.getElementById('acc-color').value='#4f8ef7';openOv('ov-account');}
   if(type==='transfer')  {prepTransfer();openOv('ov-transfer');}
   if(type==='budget')    {prepBudget();openOv('ov-budget');}
   if(type==='goal')      {document.getElementById('gl-deadline').value=new Date().toISOString().slice(0,10);openOv('ov-goal');}
   if(type==='card')      {document.getElementById('ov-card').dataset.editId='';document.getElementById('cd-modal-title').textContent='Novo cartão';['cd-name','cd-lim','cd-close','cd-due'].forEach(id=>document.getElementById(id).value='');openOv('ov-card');}
-  if(type==='invest')    {openOv('ov-invest');}
+  if(type==='invest')    {const ov=document.getElementById('ov-invest');ov.dataset.editId='';document.getElementById('modal-invest-title').textContent='Novo ativo';document.getElementById('iv-init-grp').style.display='';document.getElementById('iv-name').value='';document.getElementById('iv-ret').value='';document.getElementById('iv-init').value='';openOv('ov-invest');}
   if(type==='invest-op') {ivOpKind=sub||'aporte';document.getElementById('iv-op-title').textContent=sub==='resgate'?'Registrar resgate':'Registrar aporte';document.getElementById('iv-op-date').value=new Date().toISOString().slice(0,10);const sel=document.getElementById('iv-op-inv');sel.innerHTML=D.investments.map(i=>`<option value="${i.id}">${i.name}</option>`).join('');openOv('ov-invest-op');}
   if(type==='div')       {document.getElementById('dv-date').value=new Date().toISOString().slice(0,10);openOv('ov-div');}
   if(type==='report')    {openOv('ov-report');}
@@ -2581,14 +2583,32 @@ function saveTransfer(){
   save();closeOv('ov-transfer');render();toast('✓ Transferência registrada');
 }
 
+function editAccount(id){
+  const a=D.accounts.find(x=>String(x.id)===String(id));if(!a)return;
+  document.getElementById('ov-account').dataset.editId=id;
+  document.getElementById('modal-acc-title').textContent='Editar conta';
+  document.getElementById('acc-name').value=a.name||'';
+  document.getElementById('acc-type').value=a.type||'checking';
+  document.getElementById('acc-bal').value=a.balance||0;
+  document.getElementById('acc-color').value=a.color||'#4f8ef7';
+  document.getElementById('ov-account').classList.add('open');
+}
 function saveAccount(){
   const name=document.getElementById('acc-name').value.trim();
   const type=document.getElementById('acc-type').value;
   const balance=parseFloat(document.getElementById('acc-bal').value)||0;
   const color=document.getElementById('acc-color').value;
   if(!name){toast('⚠ Informe o nome');return;}
-  D.accounts.push({id:uid(),name,type,balance,color});
-  save();closeOv('ov-account');render();toast('✓ Conta adicionada');
+  const editId=document.getElementById('ov-account').dataset.editId;
+  if(editId){
+    const a=D.accounts.find(x=>String(x.id)===String(editId));
+    if(a){a.name=name;a.type=type;a.balance=balance;a.color=color;}
+    document.getElementById('ov-account').dataset.editId='';
+    save();closeOv('ov-account');render();toast('✓ Conta atualizada');
+  }else{
+    D.accounts.push({id:uid(),name,type,balance,color});
+    save();closeOv('ov-account');render();toast('✓ Conta adicionada');
+  }
 }
 
 function saveBudget(){
@@ -2642,15 +2662,33 @@ function saveCard(){
   }
 }
 
+function editInvest(id){
+  const i=D.investments.find(x=>String(x.id)===String(id));if(!i)return;
+  document.getElementById('ov-invest').dataset.editId=id;
+  document.getElementById('modal-invest-title').textContent='Editar ativo';
+  document.getElementById('iv-init-grp').style.display='none';
+  document.getElementById('iv-name').value=i.name||'';
+  document.getElementById('iv-type').value=i.type||'Renda Fixa';
+  document.getElementById('iv-ret').value=i.returnPct||0;
+  openOv('ov-invest');
+}
 function saveInvest(){
   const name=document.getElementById('iv-name').value.trim();
   const type=document.getElementById('iv-type').value;
-  const amount=parseFloat(document.getElementById('iv-init').value)||0;
   const returnPct=parseFloat(document.getElementById('iv-ret').value)||0;
   if(!name){toast('⚠ Informe o nome');return;}
-  const op={id:uid(),type:'aporte',date:new Date().toISOString().slice(0,10),amount,note:'Abertura'};
-  D.investments.push({id:uid(),name,type,amount,returnPct,dividends:[],operations:[op]});
-  save();closeOv('ov-invest');render();toast('✓ Ativo adicionado');
+  const editId=document.getElementById('ov-invest').dataset.editId;
+  if(editId){
+    const i=D.investments.find(x=>String(x.id)===String(editId));
+    if(i){i.name=name;i.type=type;i.returnPct=returnPct;}
+    document.getElementById('ov-invest').dataset.editId='';
+    save();closeOv('ov-invest');renderInvestments();toast('✓ Ativo atualizado');
+  }else{
+    const amount=parseFloat(document.getElementById('iv-init').value)||0;
+    const op={id:uid(),type:'aporte',date:new Date().toISOString().slice(0,10),amount,note:'Abertura'};
+    D.investments.push({id:uid(),name,type,amount,returnPct,dividends:[],operations:[op]});
+    save();closeOv('ov-invest');render();toast('✓ Ativo adicionado');
+  }
 }
 
 function saveInvestOp(){

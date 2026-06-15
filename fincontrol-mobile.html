@@ -899,10 +899,10 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
 </div>
 
 <!-- ACC SHEET -->
-<div class="ov" id="ov-acc" onclick="closeSheet('ov-acc',event)">
+<div class="ov" id="ov-acc" data-edit-id="" onclick="closeSheet('ov-acc',event)">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sheet-hdl"></div>
-    <div class="sheet-title">Nova conta</div>
+    <div class="sheet-title" id="sheet-acc-title">Nova conta</div>
     <div class="fg"><label class="fl">Nome</label><input class="fi" id="acc-name" placeholder="Ex: Conta Corrente Nubank"></div>
     <div class="fg"><label class="fl">Banco</label><input class="fi" id="acc-bank" placeholder="Ex: Nubank, Inter…"></div>
     <div class="frow">
@@ -910,6 +910,7 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
       <div class="fg"><label class="fl">Cor</label><input class="fi" id="acc-color" type="color" value="#4f7fc9"></div>
     </div>
     <button class="fbtn" onclick="saveAcc()">Salvar conta</button>
+    <button class="fbtn" id="acc-del-btn" style="display:none;background:var(--crimson);margin-top:6px" onclick="delAccEdit()">Excluir conta</button>
   </div>
 </div>
 
@@ -945,10 +946,10 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
 </div>
 
 <!-- GOAL SHEET -->
-<div class="ov" id="ov-goal" onclick="closeSheet('ov-goal',event)">
+<div class="ov" id="ov-goal" data-edit-id="" onclick="closeSheet('ov-goal',event)">
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="sheet-hdl"></div>
-    <div class="sheet-title">Nova meta</div>
+    <div class="sheet-title" id="sheet-goal-title">Nova meta</div>
     <div class="fg"><label class="fl">Nome</label><input class="fi" id="goal-name" placeholder="Ex: Reserva de emergência"></div>
     <div class="fg"><label class="fl">Ícone</label><input class="fi" id="goal-icon" placeholder="🎯" maxlength="4"></div>
     <div class="frow">
@@ -957,6 +958,7 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
     </div>
     <div class="fg"><label class="fl">Prazo</label><input class="fi" id="goal-deadline" type="date"></div>
     <button class="fbtn" onclick="saveGoal()">Salvar meta</button>
+    <button class="fbtn" id="goal-del-btn" style="display:none;background:var(--crimson);margin-top:6px" onclick="delGoalEdit()">Excluir meta</button>
   </div>
 </div>
 
@@ -1148,7 +1150,7 @@ function mbGetFatura(card,offset=0){
   return{start:new Date(sy,sm,card.closing+1),end:new Date(ey,em,card.closing),due:new Date(dy,dm,card.due)};
 }
 function rCards(){
-  document.getElementById('acc-list').innerHTML=D.accounts.map(a=>`<div class="acc"><div class="acc-left"><div class="acc-dot" style="background:${a.color}"></div><div><div class="acc-name">${a.name}</div><div class="acc-bank">${a.bank||'—'}</div></div></div><div class="acc-bal">${f(a.balance)}</div></div>`).join('')||'<div class="empty">Nenhuma conta</div>';
+  document.getElementById('acc-list').innerHTML=D.accounts.map(a=>`<div class="acc"><div class="acc-left"><div class="acc-dot" style="background:${a.color}"></div><div><div class="acc-name">${a.name}</div><div class="acc-bank">${a.bank||'—'}</div></div></div><div style="display:flex;align-items:center;gap:8px"><div class="acc-bal">${f(a.balance)}</div><button onclick="editAcc('${a.id}')" style="background:none;border:none;color:var(--muted);font-size:14px;padding:4px;cursor:pointer">✎</button></div></div>`).join('')||'<div class="empty">Nenhuma conta</div>';
 
   function mbGetFatura(card,offset=0){
     const today=new Date();const d=today.getDate(),m=today.getMonth(),y=today.getFullYear();
@@ -1263,7 +1265,7 @@ function rPortfolio(){
 
   document.getElementById('goals-list').innerHTML=D.goals.map(g=>{
     const pct=Math.min(100,g.current/g.target*100);const dl=new Date(g.deadline);const days=Math.ceil((dl-new Date())/864e5);
-    return`<div class="goal"><div class="goal-hd"><div><div class="goal-name">${g.name}</div><div style="font-size:9px;color:var(--muted);margin-top:1px">${days>0?days+'d restantes':'Encerrado'}</div></div><div class="goal-icon">${g.icon}</div></div><div class="goal-track"><div class="goal-fill" style="width:${pct}%"></div></div><div class="goal-meta"><span>${f(g.current)} / ${f(g.target)}</span><span class="goal-pct">${pct.toFixed(0)}%</span></div></div>`;
+    return`<div class="goal"><div class="goal-hd"><div><div class="goal-name">${g.name}</div><div style="font-size:9px;color:var(--muted);margin-top:1px">${days>0?days+'d restantes':'Encerrado'}</div></div><div style="display:flex;align-items:center;gap:6px"><div class="goal-icon">${g.icon}</div><button onclick="editGoal('${g.id}')" style="background:none;border:none;color:var(--muted);font-size:14px;padding:4px;cursor:pointer">✎</button></div></div><div class="goal-track"><div class="goal-fill" style="width:${pct}%"></div></div><div class="goal-meta"><span>${f(g.current)} / ${f(g.target)}</span><span class="goal-pct">${pct.toFixed(0)}%</span></div></div>`;
   }).join('')||'<div class="empty">Nenhuma meta</div>';
 
   document.getElementById('inv-list').innerHTML=D.investments.map(i=>{
@@ -1414,9 +1416,30 @@ function openSheet(type,sub=null){
   }
   if(type==='rec-confirm'){document.getElementById('rc-list').innerHTML=buildRecConfirm();document.getElementById('ov-rec-confirm').classList.add('open');}
   if(type==='card'){document.getElementById('ov-card').classList.add('open');}
-  if(type==='acc'){document.getElementById('ov-acc').classList.add('open');}
+  if(type==='acc'){
+    const ov=document.getElementById('ov-acc');
+    ov.dataset.editId='';
+    document.getElementById('sheet-acc-title').textContent='Nova conta';
+    document.getElementById('acc-del-btn').style.display='none';
+    document.getElementById('acc-name').value='';
+    document.getElementById('acc-bank').value='';
+    document.getElementById('acc-bal').value='';
+    document.getElementById('acc-color').value='#4f7fc9';
+    ov.classList.add('open');
+  }
   if(type==='inv'){document.getElementById('inv-date-grp')&&(document.getElementById('inv-date').value=new Date().toISOString().slice(0,10));document.getElementById('ov-inv').classList.add('open');}
-  if(type==='goal'){document.getElementById('goal-deadline').value='';document.getElementById('ov-goal').classList.add('open');}
+  if(type==='goal'){
+    const ov=document.getElementById('ov-goal');
+    ov.dataset.editId='';
+    document.getElementById('sheet-goal-title').textContent='Nova meta';
+    document.getElementById('goal-del-btn').style.display='none';
+    document.getElementById('goal-name').value='';
+    document.getElementById('goal-icon').value='';
+    document.getElementById('goal-target').value='';
+    document.getElementById('goal-current').value='';
+    document.getElementById('goal-deadline').value='';
+    ov.classList.add('open');
+  }
 }
 function openInvOp(id){
   document.getElementById('invop-id').value=id;
@@ -1533,14 +1556,39 @@ function saveCard(){
   D.cards.push({id:uid(),name,limit,closing,due,color});
   save();closeSheet('ov-card');rCards();toast('✅ Cartão adicionado');
 }
+function editAcc(id){
+  const a=D.accounts.find(x=>String(x.id)===String(id));if(!a)return;
+  document.getElementById('ov-acc').dataset.editId=id;
+  document.getElementById('sheet-acc-title').textContent='Editar conta';
+  document.getElementById('acc-del-btn').style.display='block';
+  document.getElementById('acc-name').value=a.name||'';
+  document.getElementById('acc-bank').value=a.bank||'';
+  document.getElementById('acc-bal').value=a.balance||0;
+  document.getElementById('acc-color').value=a.color||'#4f7fc9';
+  document.getElementById('ov-acc').classList.add('open');
+}
+function delAccEdit(){
+  const id=document.getElementById('ov-acc').dataset.editId;if(!id)return;
+  D.accounts=D.accounts.filter(x=>String(x.id)!==String(id));
+  document.getElementById('ov-acc').dataset.editId='';
+  save();closeSheet('ov-acc');rCards();toast('🗑 Conta removida');
+}
 function saveAcc(){
   const name=document.getElementById('acc-name').value.trim();
   const bank=document.getElementById('acc-bank').value.trim();
   const balance=parseFloat(document.getElementById('acc-bal').value)||0;
   const color=document.getElementById('acc-color').value;
   if(!name){toast('⚠️ Informe o nome');return;}
-  D.accounts.push({id:uid(),name,bank,balance,type:'checking',color});
-  save();closeSheet('ov-acc');rCards();toast('✅ Conta adicionada');
+  const editId=document.getElementById('ov-acc').dataset.editId;
+  if(editId){
+    const a=D.accounts.find(x=>String(x.id)===String(editId));
+    if(a){a.name=name;a.bank=bank;a.balance=balance;a.color=color;}
+    document.getElementById('ov-acc').dataset.editId='';
+    save();closeSheet('ov-acc');rCards();toast('✅ Conta atualizada');
+  }else{
+    D.accounts.push({id:uid(),name,bank,balance,type:'checking',color});
+    save();closeSheet('ov-acc');rCards();toast('✅ Conta adicionada');
+  }
 }
 function saveInv(){
   const name=document.getElementById('inv-name').value.trim();
@@ -1562,6 +1610,24 @@ function saveInvOp(){
   else{inv.operations.push({date,type,amount,note:''});if(type==='aporte')inv.amount+=amount;else if(type==='resgate')inv.amount=Math.max(0,inv.amount-amount);}
   save();closeSheet('ov-invop');rPortfolio();toast('✅ Operação registrada');
 }
+function editGoal(id){
+  const g=D.goals.find(x=>String(x.id)===String(id));if(!g)return;
+  document.getElementById('ov-goal').dataset.editId=id;
+  document.getElementById('sheet-goal-title').textContent='Editar meta';
+  document.getElementById('goal-del-btn').style.display='block';
+  document.getElementById('goal-name').value=g.name||'';
+  document.getElementById('goal-icon').value=g.icon||'🎯';
+  document.getElementById('goal-target').value=g.target||0;
+  document.getElementById('goal-current').value=g.current||0;
+  document.getElementById('goal-deadline').value=g.deadline||'';
+  document.getElementById('ov-goal').classList.add('open');
+}
+function delGoalEdit(){
+  const id=document.getElementById('ov-goal').dataset.editId;if(!id)return;
+  D.goals=D.goals.filter(x=>String(x.id)!==String(id));
+  document.getElementById('ov-goal').dataset.editId='';
+  save();closeSheet('ov-goal');rPortfolio();toast('🗑 Meta removida');
+}
 function saveGoal(){
   const name=document.getElementById('goal-name').value.trim();
   const icon=document.getElementById('goal-icon').value||'🎯';
@@ -1569,8 +1635,16 @@ function saveGoal(){
   const current=parseFloat(document.getElementById('goal-current').value)||0;
   const deadline=document.getElementById('goal-deadline').value;
   if(!name||!target){toast('⚠️ Preencha os campos');return;}
-  D.goals.push({id:uid(),name,icon,target,current,deadline});
-  save();closeSheet('ov-goal');rPortfolio();toast('✅ Meta salva');
+  const editId=document.getElementById('ov-goal').dataset.editId;
+  if(editId){
+    const g=D.goals.find(x=>String(x.id)===String(editId));
+    if(g){g.name=name;g.icon=icon;g.target=target;g.current=current;g.deadline=deadline;}
+    document.getElementById('ov-goal').dataset.editId='';
+    save();closeSheet('ov-goal');rPortfolio();toast('✅ Meta atualizada');
+  }else{
+    D.goals.push({id:uid(),name,icon,target,current,deadline});
+    save();closeSheet('ov-goal');rPortfolio();toast('✅ Meta salva');
+  }
 }
 
 // ════════════════════════════════════════════
