@@ -2964,11 +2964,13 @@ function mConfirmImport(){
   const toImport=mImportRows.filter(r=>r.sel);
   if(!toImport.length){toast('⚠️ Selecione ao menos uma transação');return;}
   toImport.forEach(r=>D.transactions.push({id:uid(),type:r.type,desc:r.desc,amount:r.amount,date:r.date,cat:r.cat,accountId:accId,cardId:null,installments:1,recurrentId:null,skipped:false}));
+  D.meta.lastSync=new Date().toISOString();
   save();
   mImportRows=[];
   closeSheet('ov-import');
   renderPage(curPg);
   toast(`✅ ${toImport.length} transaç${toImport.length===1?'ão':'ões'} importada${toImport.length===1?'':'s'}`);
+  if(_gToken)setTimeout(()=>_driveSync(),800);
 }
 
 // ── ONBOARDING ────────────────────────────────────────────────────
