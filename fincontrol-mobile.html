@@ -584,26 +584,32 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
       </div>
     </div>
     <div id="mb-savings">
-      <div class="card" style="margin-bottom:10px;padding:12px 14px" id="mb-savings-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--text);text-transform:uppercase">Meta de Economia</div>
-          <button onclick="toggleMbSavingsEdit()" style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 4px">✎</button>
+      <div class="card" style="margin-bottom:10px;padding:12px 14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--text);text-transform:uppercase">Meta de Economia</div>
+            <div id="mb-sg-month" style="font-size:10px;color:var(--muted);margin-top:1px"></div>
+          </div>
+          <button onclick="toggleMbSavingsEdit()" style="background:var(--s2);border:1px solid var(--s3);border-radius:6px;color:var(--muted);font-size:11px;padding:4px 10px;cursor:pointer">✎ Meta</button>
         </div>
         <div id="mb-sg-edit" style="display:none;margin-bottom:10px">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px" id="mb-sg-edit-label"></div>
           <div style="display:flex;gap:8px;align-items:center">
             <input id="mb-sg-input" type="number" min="0" step="100" placeholder="Ex: 1000" inputmode="decimal"
               style="flex:1;background:var(--s2);border:1px solid var(--accent);border-radius:8px;color:var(--text);font-size:13px;padding:6px 10px">
             <button onclick="saveMbSavingsGoal()" style="background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:12px;padding:6px 14px;cursor:pointer">OK</button>
+            <button onclick="document.getElementById('mb-sg-edit').style.display='none'" style="background:var(--s2);border:1px solid var(--s3);border-radius:8px;color:var(--muted);font-size:12px;padding:6px 10px;cursor:pointer">✕</button>
           </div>
         </div>
-        <div id="mb-sg-values" style="font-size:12px;color:var(--muted);margin-bottom:6px"></div>
-        <div style="height:7px;background:var(--s3);border-radius:4px;overflow:hidden">
+        <div id="mb-sg-values" style="font-size:12px;color:var(--muted);margin-bottom:5px"></div>
+        <div style="height:7px;background:var(--s3);border-radius:4px;overflow:hidden;margin-bottom:4px">
           <div id="mb-sg-bar" style="height:100%;border-radius:4px;transition:width .5s,background .3s;width:0%"></div>
         </div>
-        <div style="display:flex;justify-content:space-between;margin-top:4px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
           <span id="mb-sg-label" style="font-size:10px;color:var(--muted)"></span>
           <span id="mb-sg-pct" style="font-size:10px;font-weight:700"></span>
         </div>
+        <div id="mb-sg-history" style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px"></div>
       </div>
     </div>
     <div id="mb-quickact">
@@ -902,7 +908,7 @@ const CI={'Salário':'💼','Comissão':'🎯','Benefício refeição':'🍽️'
 
 function createEmptyData(){
   return {
-    meta:{version:3,lastSync:new Date(Date.now()+60000).toISOString(),driveFileId:null,monthlySavingsGoal:0},
+    meta:{version:3,lastSync:new Date(Date.now()+60000).toISOString(),driveFileId:null,savingsGoals:{}},
     categories:{
       income:['Salário','Comissão','Benefício refeição','Outros rendimentos','Freelance','Pix recebido'],
       expense:['Alimentação','Transporte','Moradia','Saúde','Lazer','Assinaturas','Vestuário','Educação','Combustível','Restaurante','Farmácia','Outros'],
@@ -941,7 +947,7 @@ function createDefaultData(){
     );
   }
   return {
-    meta:{version:3,lastSync:null,driveFileId:null,monthlySavingsGoal:0},
+    meta:{version:3,lastSync:null,driveFileId:null,savingsGoals:{}},
     categories:{
       income:['Salário','Comissão','Benefício refeição','Outros rendimentos','Freelance','Pix recebido'],
       expense:['Alimentação','Transporte','Moradia','Saúde','Lazer','Assinaturas','Vestuário','Educação','Combustível','Restaurante','Farmácia','Outros'],
@@ -1555,40 +1561,70 @@ function rHome(){
   renderMbSavingsGoal(inc,exp);
 }
 
+function mbSgKey(m,y){return`${y}-${String(m+1).padStart(2,'0')}`;}
 function renderMbSavingsGoal(inc,exp){
-  const goal=D.meta?.monthlySavingsGoal||0;
+  const goals=D.meta?.savingsGoals||{};
+  const key=mbSgKey(curM,curY);
+  const goal=goals[key]||0;
   const saved=(inc||0)-(exp||0);
   const pct=goal>0?Math.min(100,Math.max(0,saved/goal*100)):0;
   const color=pct>=100?'var(--jade)':pct>=50?'var(--accent)':'var(--crimson)';
   const el=id=>document.getElementById(id);
   if(!el('mb-sg-bar'))return;
+  el('mb-sg-month').textContent=`${MO[curM]} ${curY}`;
   if(goal===0){
-    el('mb-sg-values').textContent='Toque em ✎ para definir uma meta';
+    el('mb-sg-values').textContent='Toque em ✎ Meta para definir';
     el('mb-sg-bar').style.width='0%';
     el('mb-sg-label').textContent='';
     el('mb-sg-pct').textContent='';
-  } else {
-    el('mb-sg-values').textContent=`${f(saved)} poupado de ${f(goal)}`;
+  }else{
+    el('mb-sg-values').textContent=`${f(saved)} de ${f(goal)}`;
     el('mb-sg-bar').style.width=pct+'%';
     el('mb-sg-bar').style.background=color;
-    el('mb-sg-label').textContent=saved>=0?'Economia do mês':'Saldo negativo';
+    el('mb-sg-label').textContent=saved>=0?'Poupado este mês':'Saldo negativo';
     el('mb-sg-pct').style.color=color;
     el('mb-sg-pct').textContent=pct.toFixed(0)+'%';
   }
+  // Histórico 6 meses
+  const hist=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(curY,curM-i,1);const m=d.getMonth(),y=d.getFullYear();
+    const k=mbSgKey(m,y);const g=goals[k]||0;
+    const tx=D.transactions.filter(t=>inM(t,m,y)&&!t.skipped);
+    const sv=tx.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0)
+             -tx.filter(t=>t.type!=='income'&&t.type!=='transfer').reduce((s,t)=>s+t.amount,0);
+    const p=g>0?Math.min(100,Math.max(0,sv/g*100)):sv>0?30:0;
+    const c=g===0?'var(--s3)':sv>=g?'var(--jade)':sv>0?'var(--accent)':'var(--crimson)';
+    const cur=i===0;
+    hist.push(`<div style="text-align:center;opacity:${cur?1:.7}" onclick="mbSgEditMonth('${k}','${MO[m]} ${y}')">
+      <div style="font-size:8px;color:var(--muted);margin-bottom:3px;font-weight:${cur?700:400}">${MO[m].slice(0,3)}</div>
+      <div style="height:36px;background:var(--s3);border-radius:3px;overflow:hidden;position:relative">
+        <div style="position:absolute;bottom:0;left:0;right:0;height:${p}%;background:${c};border-radius:3px 3px 0 0;transition:height .4s"></div>
+      </div>
+      <div style="font-size:8px;color:${c};margin-top:2px;font-weight:600">${g>0?p.toFixed(0)+'%':'—'}</div>
+    </div>`);
+  }
+  el('mb-sg-history').innerHTML=hist.join('');
 }
 function toggleMbSavingsEdit(){
+  mbSgEditMonth(mbSgKey(curM,curY),`${MO[curM]} ${curY}`);
+}
+function mbSgEditMonth(key,label){
+  const goals=D.meta?.savingsGoals||{};
   const ed=document.getElementById('mb-sg-edit');
-  if(ed.style.display==='none'){
-    document.getElementById('mb-sg-input').value=D.meta?.monthlySavingsGoal||'';
-    ed.style.display='block';
-    document.getElementById('mb-sg-input').focus();
-  } else {
-    ed.style.display='none';
-  }
+  document.getElementById('mb-sg-edit-label').textContent=`Meta para ${label} (R$):`;
+  document.getElementById('mb-sg-input').value=goals[key]||'';
+  document.getElementById('mb-sg-input').dataset.key=key;
+  ed.style.display='block';
+  document.getElementById('mb-sg-input').focus();
 }
 function saveMbSavingsGoal(){
   if(!D.meta)D.meta={};
-  D.meta.monthlySavingsGoal=parseFloat(document.getElementById('mb-sg-input').value)||0;
+  if(!D.meta.savingsGoals)D.meta.savingsGoals={};
+  const key=document.getElementById('mb-sg-input').dataset.key||mbSgKey(curM,curY);
+  const val=parseFloat(document.getElementById('mb-sg-input').value)||0;
+  if(val===0)delete D.meta.savingsGoals[key];
+  else D.meta.savingsGoals[key]=val;
   document.getElementById('mb-sg-edit').style.display='none';
   save();rHome();toast('✓ Meta atualizada');
 }

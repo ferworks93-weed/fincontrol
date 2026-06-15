@@ -750,29 +750,31 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
   </div>
   <div class="mb" id="dash-savings-row">
     <div class="card" style="padding:14px 18px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
-        <div style="min-width:140px">
-          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--tm);text-transform:uppercase">Meta de Economia do Mês</div>
-          <div id="sg-values" style="font-size:12px;color:var(--td);margin-top:3px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--tm);text-transform:uppercase">Meta de Economia</div>
+          <div id="sg-month-label" style="font-size:11px;color:var(--td);margin-top:2px"></div>
         </div>
-        <div style="flex:1;min-width:160px">
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--td);margin-bottom:4px">
-            <span id="sg-label-left"></span><span id="sg-pct"></span>
-          </div>
-          <div style="height:8px;background:var(--s3);border-radius:4px;overflow:hidden">
-            <div id="sg-bar" style="height:100%;border-radius:4px;transition:width .5s,background .3s"></div>
-          </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div id="sg-values" style="font-size:13px;font-weight:600;color:var(--tm)"></div>
+          <button onclick="editSavingsGoal()" style="background:var(--s2);border:1px solid var(--bd);border-radius:6px;color:var(--tm);font-size:11px;padding:5px 12px;cursor:pointer;white-space:nowrap">✎ Definir meta</button>
         </div>
-        <button onclick="editSavingsGoal()" style="background:var(--s2);border:1px solid var(--bd);border-radius:6px;color:var(--tm);font-size:11px;padding:5px 12px;cursor:pointer;white-space:nowrap">✎ Editar meta</button>
       </div>
-      <div id="sg-edit" style="display:none;margin-top:12px;display:none">
+      <div id="sg-edit" style="display:none;margin-bottom:10px">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <label style="font-size:11px;color:var(--td)">Meta mensal (R$):</label>
+          <label style="font-size:11px;color:var(--td)" id="sg-edit-label">Meta para este mês (R$):</label>
           <input id="sg-input" type="number" min="0" step="100" style="background:var(--s2);border:1px solid var(--cu);border-radius:6px;color:var(--tm);font-size:13px;padding:5px 10px;width:130px">
           <button onclick="saveSavingsGoal()" style="background:var(--cu);border:none;border-radius:6px;color:#fff;font-size:11px;padding:5px 14px;cursor:pointer">Salvar</button>
           <button onclick="document.getElementById('sg-edit').style.display='none'" style="background:var(--s2);border:1px solid var(--bd);border-radius:6px;color:var(--td);font-size:11px;padding:5px 10px;cursor:pointer">Cancelar</button>
         </div>
       </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--td);margin-bottom:4px">
+        <span id="sg-label-left"></span><span id="sg-pct" style="font-weight:700"></span>
+      </div>
+      <div style="height:8px;background:var(--s3);border-radius:4px;overflow:hidden;margin-bottom:14px">
+        <div id="sg-bar" style="height:100%;border-radius:4px;transition:width .5s,background .3s;width:0%"></div>
+      </div>
+      <div id="sg-history" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px"></div>
     </div>
   </div>
   <div class="g-main mb" id="dash-charts-row">
@@ -1312,7 +1314,7 @@ const COLORS = ['#4f8ef7','#34c77b','#b87333','#d95f5f','#8b7cf8','#e8a838','#06
 
 function createEmptyData(){
   return {
-    meta:{version:3,lastSync:new Date(Date.now()+60000).toISOString(),driveFileId:null,monthlySavingsGoal:0},
+    meta:{version:3,lastSync:new Date(Date.now()+60000).toISOString(),driveFileId:null,savingsGoals:{}},
     categories:{
       income:['Salário','Comissão','Benefício refeição','Outros rendimentos','Freelance','Pix recebido'],
       expense:['Alimentação','Transporte','Moradia','Saúde','Lazer','Assinaturas','Vestuário','Educação','Combustível','Restaurante','Farmácia','Outros'],
@@ -1351,7 +1353,7 @@ function createDefaultData(){
     );
   }
   return {
-    meta:{version:3,lastSync:null,driveFileId:null,monthlySavingsGoal:0},
+    meta:{version:3,lastSync:null,driveFileId:null,savingsGoals:{}},
     categories:{
       income:['Salário','Comissão','Benefício refeição','Outros rendimentos','Freelance','Pix recebido'],
       expense:['Alimentação','Transporte','Moradia','Saúde','Lazer','Assinaturas','Vestuário','Educação','Combustível','Restaurante','Farmácia','Outros'],
@@ -1724,8 +1726,11 @@ function renderDash() {
   renderSavingsGoal();
 }
 
+function sgKey(m,y){return`${y}-${String(m+1).padStart(2,'0')}`;}
 function renderSavingsGoal(){
-  const goal=D.meta?.monthlySavingsGoal||0;
+  const goals=D.meta?.savingsGoals||{};
+  const key=sgKey(curM,curY);
+  const goal=goals[key]||0;
   const mTx=D.transactions.filter(t=>inM(t)&&!t.skipped);
   const inc=mTx.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
   const exp=mTx.filter(t=>t.type!=='income'&&t.type!=='transfer').reduce((s,t)=>s+t.amount,0);
@@ -1735,30 +1740,64 @@ function renderSavingsGoal(){
   const row=document.getElementById('dash-savings-row');
   if(row) row.style.display=show('savings')?'':'none';
   const el=id=>document.getElementById(id);
-  if(!el('sg-bar')) return;
+  if(!el('sg-bar'))return;
+  el('sg-month-label').textContent=`${MONTHS[curM]} ${curY}`;
   if(goal===0){
     el('sg-values').textContent='Nenhuma meta definida';
     el('sg-label-left').textContent='';
     el('sg-pct').textContent='';
     el('sg-bar').style.width='0%';
-  } else {
-    el('sg-values').textContent=`${fmt(saved)} poupado de ${fmt(goal)}`;
-    el('sg-label-left').textContent=saved>=0?'Economia do mês':'Saldo negativo';
+    el('sg-bar').style.background='var(--s3)';
+  }else{
+    el('sg-values').textContent=`${fmt(saved)} de ${fmt(goal)}`;
+    el('sg-label-left').textContent=saved>=0?'Poupado este mês':'Saldo negativo';
     el('sg-pct').textContent=pct.toFixed(0)+'%';
+    el('sg-pct').style.color=color;
     el('sg-bar').style.width=pct+'%';
     el('sg-bar').style.background=color;
   }
+  // Histórico 6 meses
+  const hist=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(curY,curM-i,1);const m=d.getMonth(),y=d.getFullYear();
+    const k=sgKey(m,y);const g=goals[k]||0;
+    const tx=D.transactions.filter(t=>inM(t,m,y)&&!t.skipped);
+    const sv=tx.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0)
+             -tx.filter(t=>t.type!=='income'&&t.type!=='transfer').reduce((s,t)=>s+t.amount,0);
+    const p=g>0?Math.min(100,Math.max(0,sv/g*100)):sv>0?30:0;
+    const c=g===0?'var(--s3)':sv>=g?'var(--vt)':sv>0?'var(--bl)':'var(--rd)';
+    const cur=i===0;
+    hist.push(`<div style="text-align:center;cursor:pointer;opacity:${cur?1:.75}" onclick="editSavingsGoalMonth('${k}','${MONTHS[m]} ${y}')" title="Clique para definir meta de ${MONTHS[m]}">
+      <div style="font-size:9px;color:var(--td);margin-bottom:4px;font-weight:${cur?700:400}">${MONTHS[m].slice(0,3)}</div>
+      <div style="height:48px;background:var(--s3);border-radius:4px;overflow:hidden;position:relative" title="${g>0?fmt(sv)+' / '+fmt(g):'Sem meta — clique para definir'}">
+        <div style="position:absolute;bottom:0;left:0;right:0;height:${p}%;background:${c};border-radius:4px 4px 0 0;transition:height .4s"></div>
+      </div>
+      <div style="font-size:8px;color:${c};margin-top:3px;font-weight:600">${g>0?p.toFixed(0)+'%':'—'}</div>
+      <div style="font-size:8px;color:var(--td);margin-top:1px">${g>0?fmt(g):'+ meta'}</div>
+    </div>`);
+  }
+  el('sg-history').innerHTML=hist.join('');
 }
 function editSavingsGoal(){
-  const ed=document.getElementById('sg-edit');
-  document.getElementById('sg-input').value=D.meta?.monthlySavingsGoal||'';
-  ed.style.display=ed.style.display==='none'?'block':'none';
+  editSavingsGoalMonth(sgKey(curM,curY),`${MONTHS[curM]} ${curY}`);
+}
+function editSavingsGoalMonth(key,label){
+  const goals=D.meta?.savingsGoals||{};
+  document.getElementById('sg-edit-label').textContent=`Meta para ${label} (R$):`;
+  document.getElementById('sg-input').value=goals[key]||'';
+  document.getElementById('sg-input').dataset.key=key;
+  document.getElementById('sg-edit').style.display='block';
+  document.getElementById('sg-input').focus();
 }
 function saveSavingsGoal(){
-  if(!D.meta) D.meta={};
-  D.meta.monthlySavingsGoal=parseFloat(document.getElementById('sg-input').value)||0;
+  if(!D.meta)D.meta={};
+  if(!D.meta.savingsGoals)D.meta.savingsGoals={};
+  const key=document.getElementById('sg-input').dataset.key||sgKey(curM,curY);
+  const val=parseFloat(document.getElementById('sg-input').value)||0;
+  if(val===0)delete D.meta.savingsGoals[key];
+  else D.meta.savingsGoals[key]=val;
   document.getElementById('sg-edit').style.display='none';
-  save(); renderSavingsGoal(); toast('✓ Meta atualizada');
+  save();renderSavingsGoal();toast('✓ Meta atualizada');
 }
 
 // ════════════════════════════════════════════════════════════════
