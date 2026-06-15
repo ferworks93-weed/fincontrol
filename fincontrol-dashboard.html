@@ -1283,6 +1283,18 @@ const TYPE_LBL = {income:'Receita',expense:'Despesa',card:'Cartão',transfer:'Tr
 const ICONS = {'Salário':'💼','Comissão':'🎯','Benefício refeição':'🍽️','Outros rendimentos':'💵','Alimentação':'🛒','Transporte':'🚗','Moradia':'🏠','Saúde':'💊','Lazer':'🎮','Assinaturas':'📱','Vestuário':'👕','Educação':'📚','Outros':'📌','default':'·'};
 const COLORS = ['#4f8ef7','#34c77b','#b87333','#d95f5f','#8b7cf8','#e8a838','#06b6d4','#ec4899','#10b981','#f43f5e'];
 
+function createEmptyData(){
+  return {
+    meta:{version:3,lastSync:new Date(Date.now()+60000).toISOString(),driveFileId:null},
+    categories:{
+      income:['Salário','Comissão','Benefício refeição','Outros rendimentos','Freelance','Pix recebido'],
+      expense:['Alimentação','Transporte','Moradia','Saúde','Lazer','Assinaturas','Vestuário','Educação','Combustível','Restaurante','Farmácia','Outros'],
+      card:['Alimentação','Transporte','Saúde','Lazer','Assinaturas','Vestuário','Educação','Restaurante','Outros']
+    },
+    accounts:[{id:1,name:'Conta Corrente',bank:'',balance:0,type:'checking',color:'#4f8ef7'}],
+    cards:[],budgets:[],goals:[],recurrents:[],recurring:[],investments:[],transactions:[],
+  };
+}
 function createDefaultData(){
   const recurrents=[
     {id:1,desc:'Salário',           type:'income', cat:'Salário',           amount:8500, variable:false,day:5, active:true,cardId:null,accountId:1},
@@ -2439,9 +2451,7 @@ function exportCSV(){document.getElementById('rep-period').value='month';exportR
 function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);save();render();toast('✓ Dados restaurados');}catch{toast('❌ Arquivo inválido');}};r.readAsText(f);}
 function confirmClearAll(){document.getElementById('clear-confirm').style.display='block';}
 function clearAll(){
-  D=createDefaultData();
-  D.meta.lastSync=new Date(Date.now()+60000).toISOString(); // local mais novo que Drive
-  D.meta.driveFileId=null;
+  D=createEmptyData();
   localStorage.removeItem(KEY);
   localStorage.removeItem(DRIVE_KEY);
   save();

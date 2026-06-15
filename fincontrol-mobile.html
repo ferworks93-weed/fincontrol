@@ -877,6 +877,18 @@ let KEY='fincontrol_v3';
 const MO=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const CI={'Salário':'💼','Comissão':'🎯','Benefício refeição':'🍽️','Outros rendimentos':'💵','Freelance':'🖥️','Alimentação':'🛒','Transporte':'🚗','Moradia':'🏠','Saúde':'💊','Lazer':'🎮','Assinaturas':'📱','Vestuário':'👕','Educação':'📚','Combustível':'⛽','Restaurante':'🍴','Farmácia':'💊','Outros':'📌'};
 
+function createEmptyData(){
+  return {
+    meta:{version:3,lastSync:new Date(Date.now()+60000).toISOString(),driveFileId:null},
+    categories:{
+      income:['Salário','Comissão','Benefício refeição','Outros rendimentos','Freelance','Pix recebido'],
+      expense:['Alimentação','Transporte','Moradia','Saúde','Lazer','Assinaturas','Vestuário','Educação','Combustível','Restaurante','Farmácia','Outros'],
+      card:['Alimentação','Transporte','Saúde','Lazer','Assinaturas','Vestuário','Educação','Restaurante','Outros']
+    },
+    accounts:[{id:1,name:'Conta Corrente',bank:'',balance:0,type:'checking',color:'#4f8ef7'}],
+    cards:[],budgets:[],goals:[],recurrents:[],recurring:[],investments:[],transactions:[],
+  };
+}
 function createDefaultData(){
   const recurrents=[
     {id:1,desc:'Salário',           type:'income', cat:'Salário',           amount:8500, variable:false,day:5, active:true,cardId:null,accountId:1},
@@ -1535,9 +1547,7 @@ function importMobileJSON(e){
   r.readAsText(file);
 }
 function clearMobileData(){
-  D=mobileAdapt(createDefaultData());
-  D.meta.lastSync=new Date(Date.now()+60000).toISOString(); // local mais novo que Drive
-  D.meta.driveFileId=null;
+  D=mobileAdapt(createEmptyData());
   localStorage.removeItem(KEY);
   localStorage.removeItem(DRIVE_KEY);
   save();
