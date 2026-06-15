@@ -1081,7 +1081,8 @@ function rCards(){
     let em=m,ey=y;if(d>card.closing)em++;
     em+=offset;while(em<0){em+=12;ey--;}while(em>11){em-=12;ey++;}
     let sm=em-1,sy=ey;if(sm<0){sm+=12;sy--;}
-    return{start:new Date(sy,sm,card.closing+1),end:new Date(ey,em,card.closing),due:new Date(ey,em,card.due)};
+    let dm=card.due<card.closing?em+1:em,dy=ey;if(dm>11){dm-=12;dy++;}
+    return{start:new Date(sy,sm,card.closing+1),end:new Date(ey,em,card.closing),due:new Date(dy,dm,card.due)};
   }
   const mbFmtD=dt=>`${dt.getDate()} ${MO[dt.getMonth()].slice(0,3)}`;
   document.getElementById('cc-list').innerHTML=D.cards.map(c=>{
