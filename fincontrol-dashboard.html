@@ -748,6 +748,33 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px" id="fc-grid"></div>
     </div>
   </div>
+  <div class="mb" id="dash-savings-row">
+    <div class="card" style="padding:14px 18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div style="min-width:140px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--tm);text-transform:uppercase">Meta de Economia do Mês</div>
+          <div id="sg-values" style="font-size:12px;color:var(--td);margin-top:3px"></div>
+        </div>
+        <div style="flex:1;min-width:160px">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--td);margin-bottom:4px">
+            <span id="sg-label-left"></span><span id="sg-pct"></span>
+          </div>
+          <div style="height:8px;background:var(--s3);border-radius:4px;overflow:hidden">
+            <div id="sg-bar" style="height:100%;border-radius:4px;transition:width .5s,background .3s"></div>
+          </div>
+        </div>
+        <button onclick="editSavingsGoal()" style="background:var(--s2);border:1px solid var(--bd);border-radius:6px;color:var(--tm);font-size:11px;padding:5px 12px;cursor:pointer;white-space:nowrap">✎ Editar meta</button>
+      </div>
+      <div id="sg-edit" style="display:none;margin-top:12px;display:none">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label style="font-size:11px;color:var(--td)">Meta mensal (R$):</label>
+          <input id="sg-input" type="number" min="0" step="100" style="background:var(--s2);border:1px solid var(--cu);border-radius:6px;color:var(--tm);font-size:13px;padding:5px 10px;width:130px">
+          <button onclick="saveSavingsGoal()" style="background:var(--cu);border:none;border-radius:6px;color:#fff;font-size:11px;padding:5px 14px;cursor:pointer">Salvar</button>
+          <button onclick="document.getElementById('sg-edit').style.display='none'" style="background:var(--s2);border:1px solid var(--bd);border-radius:6px;color:var(--td);font-size:11px;padding:5px 10px;cursor:pointer">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="g-main mb" id="dash-charts-row">
     <div class="card">
       <div class="card-hd">
@@ -1285,7 +1312,7 @@ const COLORS = ['#4f8ef7','#34c77b','#b87333','#d95f5f','#8b7cf8','#e8a838','#06
 
 function createEmptyData(){
   return {
-    meta:{version:3,lastSync:new Date(Date.now()+60000).toISOString(),driveFileId:null},
+    meta:{version:3,lastSync:new Date(Date.now()+60000).toISOString(),driveFileId:null,monthlySavingsGoal:0},
     categories:{
       income:['Salário','Comissão','Benefício refeição','Outros rendimentos','Freelance','Pix recebido'],
       expense:['Alimentação','Transporte','Moradia','Saúde','Lazer','Assinaturas','Vestuário','Educação','Combustível','Restaurante','Farmácia','Outros'],
@@ -1324,7 +1351,7 @@ function createDefaultData(){
     );
   }
   return {
-    meta:{version:3,lastSync:null,driveFileId:null},
+    meta:{version:3,lastSync:null,driveFileId:null,monthlySavingsGoal:0},
     categories:{
       income:['Salário','Comissão','Benefício refeição','Outros rendimentos','Freelance','Pix recebido'],
       expense:['Alimentação','Transporte','Moradia','Saúde','Lazer','Assinaturas','Vestuário','Educação','Combustível','Restaurante','Farmácia','Outros'],
@@ -1693,6 +1720,45 @@ function renderDash() {
   if(tableRow) tableRow.style.display=show('table')?'':'none';
   const recent=[...mTx].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
   document.getElementById('d-table').innerHTML=recent.map(t=>txRow(t,false)).join('')||`<tr><td colspan="6"><div class="empty"><div class="empty-icon">≡</div>Nenhum lançamento</div></td></tr>`;
+
+  renderSavingsGoal();
+}
+
+function renderSavingsGoal(){
+  const goal=D.meta?.monthlySavingsGoal||0;
+  const mTx=D.transactions.filter(t=>inM(t)&&!t.skipped);
+  const inc=mTx.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const exp=mTx.filter(t=>t.type!=='income'&&t.type!=='transfer').reduce((s,t)=>s+t.amount,0);
+  const saved=inc-exp;
+  const pct=goal>0?Math.min(100,Math.max(0,saved/goal*100)):0;
+  const color=pct>=100?'var(--vt)':pct>=50?'var(--bl)':'var(--rd)';
+  const row=document.getElementById('dash-savings-row');
+  if(row) row.style.display=show('savings')?'':'none';
+  const el=id=>document.getElementById(id);
+  if(!el('sg-bar')) return;
+  if(goal===0){
+    el('sg-values').textContent='Nenhuma meta definida';
+    el('sg-label-left').textContent='';
+    el('sg-pct').textContent='';
+    el('sg-bar').style.width='0%';
+  } else {
+    el('sg-values').textContent=`${fmt(saved)} poupado de ${fmt(goal)}`;
+    el('sg-label-left').textContent=saved>=0?'Economia do mês':'Saldo negativo';
+    el('sg-pct').textContent=pct.toFixed(0)+'%';
+    el('sg-bar').style.width=pct+'%';
+    el('sg-bar').style.background=color;
+  }
+}
+function editSavingsGoal(){
+  const ed=document.getElementById('sg-edit');
+  document.getElementById('sg-input').value=D.meta?.monthlySavingsGoal||'';
+  ed.style.display=ed.style.display==='none'?'block':'none';
+}
+function saveSavingsGoal(){
+  if(!D.meta) D.meta={};
+  D.meta.monthlySavingsGoal=parseFloat(document.getElementById('sg-input').value)||0;
+  document.getElementById('sg-edit').style.display='none';
+  save(); renderSavingsGoal(); toast('✓ Meta atualizada');
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -2684,7 +2750,7 @@ document.addEventListener('keydown',e=>{
 });
 
 // ── LAYOUT ENGINE (Dashboard) ────────────────────────────────────
-const _DL=['d-kpi-row','dash-forecast-row','dash-charts-row','dash-widgets-row','dash-table-row'];
+const _DL=['d-kpi-row','dash-forecast-row','dash-savings-row','dash-charts-row','dash-widgets-row','dash-table-row'];
 const _DLK='fc_layout_dash';
 let _dlDragEl=null;
 function initDashLayout(){

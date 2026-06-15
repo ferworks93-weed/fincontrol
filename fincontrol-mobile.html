@@ -583,6 +583,29 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px" id="hfc-grid"></div>
       </div>
     </div>
+    <div id="mb-savings">
+      <div class="card" style="margin-bottom:10px;padding:12px 14px" id="mb-savings-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--text);text-transform:uppercase">Meta de Economia</div>
+          <button onclick="toggleMbSavingsEdit()" style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 4px">✎</button>
+        </div>
+        <div id="mb-sg-edit" style="display:none;margin-bottom:10px">
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="mb-sg-input" type="number" min="0" step="100" placeholder="Ex: 1000" inputmode="decimal"
+              style="flex:1;background:var(--s2);border:1px solid var(--accent);border-radius:8px;color:var(--text);font-size:13px;padding:6px 10px">
+            <button onclick="saveMbSavingsGoal()" style="background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:12px;padding:6px 14px;cursor:pointer">OK</button>
+          </div>
+        </div>
+        <div id="mb-sg-values" style="font-size:12px;color:var(--muted);margin-bottom:6px"></div>
+        <div style="height:7px;background:var(--s3);border-radius:4px;overflow:hidden">
+          <div id="mb-sg-bar" style="height:100%;border-radius:4px;transition:width .5s,background .3s;width:0%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <span id="mb-sg-label" style="font-size:10px;color:var(--muted)"></span>
+          <span id="mb-sg-pct" style="font-size:10px;font-weight:700"></span>
+        </div>
+      </div>
+    </div>
     <div id="mb-quickact">
       <div class="sec">Ações rápidas</div>
       <div class="qa">
@@ -879,7 +902,7 @@ const CI={'Salário':'💼','Comissão':'🎯','Benefício refeição':'🍽️'
 
 function createEmptyData(){
   return {
-    meta:{version:3,lastSync:new Date(Date.now()+60000).toISOString(),driveFileId:null},
+    meta:{version:3,lastSync:new Date(Date.now()+60000).toISOString(),driveFileId:null,monthlySavingsGoal:0},
     categories:{
       income:['Salário','Comissão','Benefício refeição','Outros rendimentos','Freelance','Pix recebido'],
       expense:['Alimentação','Transporte','Moradia','Saúde','Lazer','Assinaturas','Vestuário','Educação','Combustível','Restaurante','Farmácia','Outros'],
@@ -918,7 +941,7 @@ function createDefaultData(){
     );
   }
   return {
-    meta:{version:3,lastSync:null,driveFileId:null},
+    meta:{version:3,lastSync:null,driveFileId:null,monthlySavingsGoal:0},
     categories:{
       income:['Salário','Comissão','Benefício refeição','Outros rendimentos','Freelance','Pix recebido'],
       expense:['Alimentação','Transporte','Moradia','Saúde','Lazer','Assinaturas','Vestuário','Educação','Combustível','Restaurante','Farmácia','Outros'],
@@ -1528,6 +1551,46 @@ function rHome(){
       recentDiv.innerHTML=recent.map(txCard).join('')||'<div class="empty"><div class="empty-icon">≡</div>Nenhum lançamento este mês</div>';
     }
   }
+
+  renderMbSavingsGoal(inc,exp);
+}
+
+function renderMbSavingsGoal(inc,exp){
+  const goal=D.meta?.monthlySavingsGoal||0;
+  const saved=(inc||0)-(exp||0);
+  const pct=goal>0?Math.min(100,Math.max(0,saved/goal*100)):0;
+  const color=pct>=100?'var(--jade)':pct>=50?'var(--accent)':'var(--crimson)';
+  const el=id=>document.getElementById(id);
+  if(!el('mb-sg-bar'))return;
+  if(goal===0){
+    el('mb-sg-values').textContent='Toque em ✎ para definir uma meta';
+    el('mb-sg-bar').style.width='0%';
+    el('mb-sg-label').textContent='';
+    el('mb-sg-pct').textContent='';
+  } else {
+    el('mb-sg-values').textContent=`${f(saved)} poupado de ${f(goal)}`;
+    el('mb-sg-bar').style.width=pct+'%';
+    el('mb-sg-bar').style.background=color;
+    el('mb-sg-label').textContent=saved>=0?'Economia do mês':'Saldo negativo';
+    el('mb-sg-pct').style.color=color;
+    el('mb-sg-pct').textContent=pct.toFixed(0)+'%';
+  }
+}
+function toggleMbSavingsEdit(){
+  const ed=document.getElementById('mb-sg-edit');
+  if(ed.style.display==='none'){
+    document.getElementById('mb-sg-input').value=D.meta?.monthlySavingsGoal||'';
+    ed.style.display='block';
+    document.getElementById('mb-sg-input').focus();
+  } else {
+    ed.style.display='none';
+  }
+}
+function saveMbSavingsGoal(){
+  if(!D.meta)D.meta={};
+  D.meta.monthlySavingsGoal=parseFloat(document.getElementById('mb-sg-input').value)||0;
+  document.getElementById('mb-sg-edit').style.display='none';
+  save();rHome();toast('✓ Meta atualizada');
 }
 
 function mDelCat(type,cat){
@@ -1912,7 +1975,7 @@ function toast(msg,dur=2600){const el=document.getElementById('toast');el.textCo
 // ════════════════════════════════════════════
 // INIT
 // ── MOBILE LAYOUT ENGINE ─────────────────────────────────────────
-const _ML=['mb-hero','mb-forecast','mb-quickact','mb-chart','mb-budgets','mb-recent'];
+const _ML=['mb-hero','mb-forecast','mb-savings','mb-quickact','mb-chart','mb-budgets','mb-recent'];
 const _MLK='fc_layout_mobile';
 let _mlDragEl=null;
 function initMobileLayout(){
