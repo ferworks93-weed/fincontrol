@@ -617,14 +617,20 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
       <span style="font-size:11px;color:var(--td)">☁</span>
     </div>
     <div style="margin-bottom:8px">
-      <button onclick="openCustomize()" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:7px 10px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-sm);cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--s3)'" onmouseout="this.style.background='var(--s2)'">
-        <span style="font-size:10px;color:var(--tm);font-weight:500">Personalizar</span>
-        <button class="thm-btn" id="thm-btn" aria-label="Personalizar" style="pointer-events:none"></button>
+      <button id="thm-btn" onclick="openCustomize()" style="display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-sm);cursor:pointer;transition:background .15s;color:var(--tm);font-size:10px;font-weight:500" onmouseover="this.style.background='var(--s3)'" onmouseout="this.style.background='var(--s2)'">
+        <span style="font-size:15px;line-height:1">⊞</span> Personalizar
       </button>
     </div>
-    <div class="sb-user">
-      <div class="ava">FA</div>
-      <div><div class="un">Fernando</div><div class="ur">Controle pessoal</div></div>
+    <div class="sb-user" style="position:relative;cursor:pointer" onclick="toggleDashAvatarMenu()">
+      <div class="ava" id="dash-ava">FA</div>
+      <div><div class="un" id="dash-un">Fernando</div><div class="ur">Controle pessoal</div></div>
+      <!-- Avatar menu -->
+      <div id="dash-avatar-menu" style="display:none;position:absolute;bottom:calc(100% + 6px);left:0;right:0;background:var(--s2);border:1px solid var(--bd2);border-radius:var(--r);padding:6px;z-index:600;box-shadow:0 -8px 24px rgba(0,0,0,.5)">
+        <button onclick="openDashProfile();toggleDashAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:7px 10px;font-size:11px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px">👤 Perfil</button>
+        <button onclick="goTo('settings',null);toggleDashAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:7px 10px;font-size:11px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px">⚙ Configurações</button>
+        <button onclick="syncAction();toggleDashAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:7px 10px;font-size:11px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px">↻ Sincronizar agora</button>
+        <button onclick="openCustomize();toggleDashAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--tx);padding:7px 10px;font-size:11px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px">⊞ Personalizar</button>
+      </div>
     </div>
   </div>
 </aside>
@@ -2669,5 +2675,100 @@ window.goTo=function(sc,el){if(_origGoTo)_origGoTo(sc,el);if(window.innerWidth<7
     </div>
   </div>
 </div>
+
+<!-- PROFILE MODAL -->
+<div class="ov" id="ov-profile-dash" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="cust-modal" onclick="event.stopPropagation()" style="max-width:400px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-size:15px;font-weight:700">Perfil do Usuário</div>
+      <button onclick="document.getElementById('ov-profile-dash').classList.remove('open')" style="background:none;border:none;color:var(--tm);font-size:20px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div style="display:flex;justify-content:center;margin-bottom:20px">
+      <div id="dash-profile-ava" style="width:56px;height:56px;border-radius:50%;background:var(--cu-s);border:2px solid var(--cu);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:var(--cu)">FA</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+      <div><label style="font-size:10px;color:var(--tm);font-weight:600;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Nome</label>
+        <input id="dash-prof-name" type="text" placeholder="Seu nome completo" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-sm);padding:8px 10px;color:var(--tx);font-size:13px;font-family:var(--font)"></div>
+      <div><label style="font-size:10px;color:var(--tm);font-weight:600;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Idade</label>
+        <input id="dash-prof-age" type="number" placeholder="Ex: 30" style="width:120px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-sm);padding:8px 10px;color:var(--tx);font-size:13px;font-family:var(--font)"></div>
+      <div><label style="font-size:10px;color:var(--tm);font-weight:600;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">E-mail</label>
+        <input id="dash-prof-email" type="email" placeholder="seu@email.com" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-sm);padding:8px 10px;color:var(--tx);font-size:13px;font-family:var(--font)"></div>
+    </div>
+    <button onclick="saveDashProfile()" style="width:100%;background:var(--cu);border:none;border-radius:var(--r-sm);padding:10px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);margin-bottom:16px">Salvar perfil</button>
+    <div style="border-top:1px solid var(--bd);padding-top:16px">
+      <div style="font-size:10px;color:var(--tm);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Suporte</div>
+      <div id="dash-report-box" style="display:none;margin-bottom:10px">
+        <label style="font-size:10px;color:var(--tm);display:block;margin-bottom:4px">Descreva o problema</label>
+        <textarea id="dash-report-msg" rows="4" placeholder="Descreva o que aconteceu..." style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-sm);padding:8px 10px;color:var(--tx);font-size:12px;font-family:var(--font);resize:none;line-height:1.5"></textarea>
+      </div>
+      <button id="dash-report-btn" onclick="toggleDashReport()" style="width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-sm);padding:9px;font-size:12px;color:var(--tx);cursor:pointer;font-family:var(--font)">🐛 Reportar problema</button>
+      <button id="dash-report-send" onclick="sendDashReport()" style="display:none;width:100%;margin-top:8px;background:var(--rd);border:none;border-radius:var(--r-sm);padding:9px;font-size:12px;color:#fff;cursor:pointer;font-family:var(--font);font-weight:600">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PROF_KEY='fc_profile';
+function _loadProf(){return JSON.parse(localStorage.getItem(PROF_KEY)||'{}');}
+function _initials(name){return(name||'FA').trim().split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()||'FA';}
+
+function toggleDashAvatarMenu(){
+  const m=document.getElementById('dash-avatar-menu');
+  const open=m.style.display==='none';
+  m.style.display=open?'block':'none';
+  if(open){setTimeout(()=>document.addEventListener('click',function h(e){
+    if(!document.querySelector('.sb-user').contains(e.target)){m.style.display='none';document.removeEventListener('click',h);}
+  }),0);}
+}
+
+function openDashProfile(){
+  const p=_loadProf();
+  document.getElementById('dash-prof-name').value=p.name||'';
+  document.getElementById('dash-prof-age').value=p.age||'';
+  document.getElementById('dash-prof-email').value=p.email||'';
+  document.getElementById('dash-profile-ava').textContent=_initials(p.name);
+  document.getElementById('dash-report-box').style.display='none';
+  document.getElementById('dash-report-send').style.display='none';
+  document.getElementById('dash-report-btn').textContent='🐛 Reportar problema';
+  document.getElementById('dash-report-msg').value='';
+  document.getElementById('ov-profile-dash').classList.add('open');
+}
+
+function saveDashProfile(){
+  const name=document.getElementById('dash-prof-name').value.trim();
+  const age=document.getElementById('dash-prof-age').value.trim();
+  const email=document.getElementById('dash-prof-email').value.trim();
+  localStorage.setItem(PROF_KEY,JSON.stringify({name,age,email}));
+  const ini=_initials(name);
+  document.getElementById('dash-ava').textContent=ini;
+  document.getElementById('dash-profile-ava').textContent=ini;
+  if(name){document.getElementById('dash-un').textContent=name;}
+  toast('✅ Perfil salvo');
+}
+
+function toggleDashReport(){
+  const box=document.getElementById('dash-report-box');
+  const send=document.getElementById('dash-report-send');
+  const btn=document.getElementById('dash-report-btn');
+  const open=box.style.display==='none';
+  box.style.display=open?'block':'none';
+  send.style.display=open?'block':'none';
+  btn.textContent=open?'Cancelar':'🐛 Reportar problema';
+}
+
+function sendDashReport(){
+  const msg=document.getElementById('dash-report-msg').value.trim();
+  if(!msg){toast('⚠️ Escreva uma mensagem antes de enviar');return;}
+  const p=_loadProf();
+  const subject=encodeURIComponent('FinControl — Reporte de problema');
+  const body=encodeURIComponent(`Usuário: ${p.name||'—'}\nIdade: ${p.age||'—'}\nE-mail: ${p.email||'—'}\n\nProblema:\n${msg}\n\n---\nFinControl v3`);
+  window.open(`mailto:suporte@fincontrol.app?subject=${subject}&body=${body}`);
+  toast('📧 Abrindo seu e-mail...');
+  toggleDashReport();
+}
+
+// Carregar iniciais ao iniciar
+(function(){const p=_loadProf();if(p.name){const ini=_initials(p.name);document.getElementById('dash-ava').textContent=ini;document.getElementById('dash-un').textContent=p.name;}})();
+</script>
 </body>
 </html>
