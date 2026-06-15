@@ -1034,9 +1034,16 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
         <div><div class="setting-lbl">Exportar CSV</div><div class="setting-sub">Lançamentos do mês para Excel</div></div>
         <button class="btn sm" onclick="exportCSV()">Exportar</button>
       </div>
-      <div class="setting-row">
-        <div><div class="setting-lbl">Limpar dados</div><div class="setting-sub">Remove todos os lançamentos</div></div>
-        <button class="btn sm danger" onclick="clearAll()">Limpar</button>
+      <div class="setting-row" id="clear-row">
+        <div><div class="setting-lbl">Zerar todos os dados</div><div class="setting-sub">Remove lançamentos, contas, metas e orçamentos</div></div>
+        <button class="btn sm danger" onclick="confirmClearAll()">Zerar</button>
+      </div>
+      <div id="clear-confirm" style="display:none;background:rgba(217,95,95,.1);border:1px solid var(--rd);border-radius:var(--r-sm);padding:12px;margin-top:6px">
+        <div style="font-size:11px;color:var(--rd);font-weight:600;margin-bottom:8px">⚠ Esta ação é irreversível. Todos os dados serão apagados.</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn sm danger" onclick="clearAll()" style="flex:1">Confirmar e zerar</button>
+          <button class="btn sm" onclick="document.getElementById('clear-confirm').style.display='none'" style="flex:1">Cancelar</button>
+        </div>
       </div>
       <div style="margin-top:16px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd)">Sincronização</div>
       <div class="setting-row">
@@ -2430,7 +2437,8 @@ td{padding:7px 10px;border-bottom:1px solid #f0f0f0}
 function exportJSON(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,2)],{type:'application/json'}));a.download='fincontrol-backup.json';a.click();toast('📥 Backup exportado');}
 function exportCSV(){document.getElementById('rep-period').value='month';exportReport('csv');}
 function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);save();render();toast('✓ Dados restaurados');}catch{toast('❌ Arquivo inválido');}};r.readAsText(f);}
-function clearAll(){if(!confirm('Apagar todos os dados locais?'))return;localStorage.removeItem(KEY);D=createDefaultData();save();render();toast('Dados limpos');}
+function confirmClearAll(){document.getElementById('clear-confirm').style.display='block';}
+function clearAll(){localStorage.removeItem(KEY);D=createDefaultData();save();render();document.getElementById('clear-confirm').style.display='none';toast('🗑 Dados zerados');}
 
 // ════════════════════════════════════════════════════════════════
 // GOOGLE DRIVE SYNC

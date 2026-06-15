@@ -718,7 +718,14 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
       <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="exportMobileJSON()">⬇ Exportar backup JSON</button>
       <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="document.getElementById('m-import-json').click()">⬆ Importar backup JSON</button>
       <input type="file" id="m-import-json" accept=".json" style="display:none" onchange="importMobileJSON(event)">
-      <button class="btn danger" style="width:100%;padding:9px" onclick="clearMobileData()">🗑 Limpar todos os dados</button>
+      <button class="btn danger" style="width:100%;padding:9px" onclick="document.getElementById('m-clear-confirm').style.display='block'">🗑 Zerar todos os dados</button>
+      <div id="m-clear-confirm" style="display:none;background:rgba(217,95,95,.1);border:1px solid var(--crimson);border-radius:var(--r-sm);padding:12px;margin-top:8px">
+        <div style="font-size:11px;color:var(--crimson);font-weight:600;margin-bottom:10px;line-height:1.5">⚠ Esta ação é irreversível.<br>Todos os dados serão apagados.</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn danger" style="flex:1;padding:9px;font-size:12px" onclick="clearMobileData()">Confirmar</button>
+          <button class="btn" style="flex:1;padding:9px;font-size:12px" onclick="document.getElementById('m-clear-confirm').style.display='none'">Cancelar</button>
+        </div>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:10px">
@@ -1528,8 +1535,9 @@ function importMobileJSON(e){
   r.readAsText(file);
 }
 function clearMobileData(){
-  if(!confirm('Apagar TODOS os dados? Esta ação é irreversível.'))return;
-  localStorage.removeItem(KEY);D=defaultData();save();renderPage(curPg);toast('🗑 Dados limpos');
+  localStorage.removeItem(KEY);D=defaultData();save();
+  document.getElementById('m-clear-confirm').style.display='none';
+  renderPage(curPg);toast('🗑 Dados zerados');
 }
 
 // ════════════════════════════════════════════
