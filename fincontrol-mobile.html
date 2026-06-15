@@ -1489,6 +1489,7 @@ function prepTx(type){
   selTypeV=type;
   document.getElementById('tx-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('tx-desc').value='';document.getElementById('tx-amount').value='';
+  const hint=document.getElementById('ai-cat-hint');if(hint)hint.style.display='none';
   updateTxUI();
 }
 function selType(t){selTypeV=t;updateTxUI();}
