@@ -775,6 +775,8 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
       <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="exportMobilePDF()">🖨️ Relatório PDF — mês atual</button>
       <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="exportMobileJSON()">⬇ Exportar backup JSON</button>
       <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="document.getElementById('m-import-json').click()">⬆ Importar backup JSON</button>
+      <button class="btn" style="width:100%;padding:9px;margin-bottom:8px;border-color:var(--copper-b);color:var(--copper)" onclick="document.getElementById('m-import-ofx').click()">📄 Importar extrato OFX / CSV</button>
+      <input type="file" id="m-import-ofx" accept=".ofx,.csv,.txt" style="display:none" onchange="mImportFile(event)">
       <input type="file" id="m-import-json" accept=".json" style="display:none" onchange="importMobileJSON(event)">
       <button class="btn danger" style="width:100%;padding:9px" onclick="document.getElementById('m-clear-confirm').style.display='block'">🗑 Zerar todos os dados</button>
       <div id="m-clear-confirm" style="display:none;background:rgba(217,95,95,.1);border:1px solid var(--crimson);border-radius:var(--r-sm);padding:12px;margin-top:8px">
@@ -2671,6 +2673,101 @@ function resetMobileLayout(){
   document.querySelectorAll('.cs-item').forEach(el=>el.classList.toggle('active',el.dataset.cs===(localStorage.getItem('fc_chart')||'bars')));
 })();
 
+// ── IMPORT OFX / CSV ─────────────────────────────────────────────
+let mImportRows=[];
+function mImportFile(e){
+  const file=e.target.files[0];if(!file)return;
+  e.target.value='';
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const text=ev.target.result;
+    mImportRows=[];
+    if(file.name.toLowerCase().endsWith('.ofx')||text.includes('<OFX>')||text.includes('<STMTTRN>')){
+      mParseOFX(text);
+    } else {
+      mParseCSV(text);
+    }
+    if(!mImportRows.length){toast('⚠️ Nenhuma transação encontrada no arquivo');return;}
+    mRenderImport();
+    document.getElementById('ov-import').classList.add('open');
+  };
+  reader.readAsText(file,'utf-8');
+}
+function mParseCSV(text){
+  const lines=text.split('\n').filter(l=>l.trim());
+  lines.forEach((line,i)=>{
+    if(i===0)return;
+    const cols=line.split(/[,;]/).map(c=>c.replace(/"/g,'').trim());
+    if(cols.length<3)return;
+    const dateRaw=cols[0]||cols[1];
+    const desc=cols[1]||cols[2]||'Importado';
+    let amount=parseFloat((cols[3]||cols[2]||'0').replace(',','.'));
+    if(isNaN(amount))return;
+    const date=mParseDate(dateRaw);if(!date)return;
+    mImportRows.push({sel:true,date,desc,amount:Math.abs(amount),type:amount<0?'expense':'income',cat:amount<0?'Outros':'Outros rendimentos'});
+  });
+}
+function mParseOFX(text){
+  const txs=text.match(/<STMTTRN>[\s\S]*?<\/STMTTRN>/g)||[];
+  txs.forEach(block=>{
+    const get=tag=>{const m=block.match(new RegExp(`<${tag}>([^<\r\n]+)`));return m?m[1].trim():'';};
+    const dtPosted=get('DTPOSTED')||get('DTUSER');
+    const amount=parseFloat(get('TRNAMT').replace(',','.'));
+    const memo=get('MEMO')||get('NAME')||'Importado';
+    if(!dtPosted||isNaN(amount))return;
+    const y=dtPosted.slice(0,4),mo=dtPosted.slice(4,6),d=dtPosted.slice(6,8);
+    mImportRows.push({sel:true,date:`${y}-${mo}-${d}`,desc:memo,amount:Math.abs(amount),type:amount<0?'expense':'income',cat:amount<0?'Outros':'Outros rendimentos'});
+  });
+}
+function mParseDate(s){
+  if(!s)return null;
+  const dm=s.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+  if(dm)return`${dm[3]}-${dm[2]}-${dm[1]}`;
+  const iso=s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if(iso)return`${iso[1]}-${iso[2]}-${iso[3]}`;
+  return null;
+}
+function mRenderImport(){
+  const accSel=document.getElementById('m-import-acc');
+  if(accSel)accSel.innerHTML=D.accounts.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+  document.getElementById('m-import-count').textContent=`${mImportRows.length} transaç${mImportRows.length===1?'ão':'ões'}`;
+  const cats=[...D.categories.expense,...D.categories.income].filter((v,i,a)=>a.indexOf(v)===i);
+  document.getElementById('m-import-rows').innerHTML=mImportRows.map((r,i)=>`
+    <div style="background:var(--s2);border-radius:10px;padding:10px 12px;border:1px solid ${r.sel?'var(--copper-b)':'var(--edge)'}">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <input type="checkbox" ${r.sel?'checked':''} onchange="mImportRows[${i}].sel=this.checked;this.closest('div[style]').style.borderColor=this.checked?'var(--copper-b)':'var(--edge)'"
+          style="margin-top:2px;accent-color:var(--copper);width:15px;height:15px;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.desc}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${r.date}</div>
+          <select style="margin-top:6px;width:100%;background:var(--s3);border:1px solid var(--edge);border-radius:6px;color:var(--text);font-size:10px;padding:4px 8px"
+            onchange="mImportRows[${i}].cat=this.value;mImportRows[${i}].type=D.categories.income.includes(this.value)?'income':'expense'">
+            ${cats.map(c=>`<option ${c===r.cat?'selected':''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:13px;font-weight:700;color:${r.type==='income'?'var(--jade)':'var(--crimson)'}">${r.type==='income'?'+':'-'}${f(r.amount)}</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function mToggleAllImport(){
+  const allSel=mImportRows.every(r=>r.sel);
+  mImportRows.forEach(r=>r.sel=!allSel);
+  mRenderImport();
+}
+function mConfirmImport(){
+  const accId=parseInt(document.getElementById('m-import-acc').value)||null;
+  const toImport=mImportRows.filter(r=>r.sel);
+  if(!toImport.length){toast('⚠️ Selecione ao menos uma transação');return;}
+  toImport.forEach(r=>D.transactions.push({id:uid(),type:r.type,desc:r.desc,amount:r.amount,date:r.date,cat:r.cat,accountId:accId,cardId:null,installments:1,recurrentId:null,skipped:false}));
+  save();
+  mImportRows=[];
+  closeSheet('ov-import');
+  renderPage(curPg);
+  toast(`✅ ${toImport.length} transaç${toImport.length===1?'ão':'ões'} importada${toImport.length===1?'':'s'}`);
+}
+
 // ── ONBOARDING ────────────────────────────────────────────────────
 const OB_STEPS=[
   {
@@ -2894,6 +2991,26 @@ function obRender(){
   else{nextBtn.onclick=()=>obStep(1);}
 }
 </script>
+
+<!-- IMPORT SHEET -->
+<div class="ov" id="ov-import" onclick="if(event.target===this)closeSheet('ov-import')">
+  <div class="sheet" onclick="event.stopPropagation()" style="max-height:92vh;overflow-y:auto;padding-bottom:calc(env(safe-area-inset-bottom,0px)+16px)">
+    <div class="sheet-hdl"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="sheet-title" style="margin:0">Importar extrato</div>
+      <span id="m-import-count" style="font-size:10px;color:var(--muted)"></span>
+    </div>
+    <div class="fg" style="margin-bottom:10px">
+      <label class="fl">Conta destino</label>
+      <select class="fs" id="m-import-acc"></select>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn" style="flex:1;padding:8px;font-size:11px" onclick="mToggleAllImport()">Marcar / Desmarcar tudo</button>
+      <button class="btn primary" style="flex:1;padding:8px;font-size:11px;font-weight:700" onclick="mConfirmImport()">✓ Importar selecionados</button>
+    </div>
+    <div id="m-import-rows" style="display:flex;flex-direction:column;gap:6px"></div>
+  </div>
+</div>
 
 <!-- CUSTOMIZATION SHEET -->
 <div class="ov" id="ov-customize" onclick="if(event.target===this)this.classList.remove('open')">
