@@ -724,6 +724,7 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
         <button onclick="annualYear--; renderAnnualMobile()" style="background:none;border:none;color:var(--muted);font-size:16px;padding:2px 6px;cursor:pointer">‹</button>
         <span id="annual-yr-lbl" style="font-size:11px;font-weight:600;color:var(--text)"></span>
         <button onclick="annualYear++; renderAnnualMobile()" style="background:none;border:none;color:var(--muted);font-size:16px;padding:2px 6px;cursor:pointer">›</button>
+        <button onclick="exportAnnualReportMobile()" style="background:var(--s2);border:1px solid var(--edge);color:var(--text);border-radius:6px;padding:3px 9px;font-size:10px;cursor:pointer">⬇ PDF</button>
       </div>
     </div>
     <div class="card" style="margin-bottom:10px;padding:8px">
@@ -883,6 +884,7 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
       <div class="fg"><label class="fl">Cartão</label><select class="fs" id="tx-card-sel"></select></div>
       <div class="fg"><label class="fl">Parcelas</label><select class="fs" id="tx-install"><option value="1">À vista</option><option value="2">2×</option><option value="3">3×</option><option value="6">6×</option><option value="12">12×</option></select></div>
     </div>
+    <div class="fg"><label class="fl">Observação (opcional)</label><input class="fi" id="tx-note" placeholder="Ex: Dividiu com alguém, reembolso pendente…" style="font-size:11px"></div>
     <button class="fbtn" onclick="saveTx()">Salvar lançamento</button>
     <button id="tx-del-btn" class="fbtn" style="display:none;margin-top:6px;background:#e53935" onclick="delTxEdit()">Excluir lançamento</button>
   </div>
@@ -1184,7 +1186,7 @@ function rTx(){
   container.innerHTML=globalBanner+(list.map(t=>{
     const isIn=t.type==='income';const icon=CI[t.cat]||'📌';const card=t.cardId?gc(t.cardId):null;
     const monthLabel=q?`<span style="font-size:10px;color:var(--td);margin-left:4px">${t.date?.slice(0,7)||''}</span>`:'';
-    return`<div class="tx swipeable" data-id="${t.id}" onclick="editTx('${t.id}')"><div class="tx-ico ${t.type}">${icon}</div><div class="tx-body"><div class="tx-name">${t.desc}${monthLabel}</div><div class="tx-sub">${t.cat}${card?` · ${card.name}`:''}</div></div><div class="tx-right"><div class="tx-amt ${isIn?'pos':'neg'}">${isIn?'+':'-'} ${f(t.amount)}</div><div class="tx-date">${ds(t.date)}</div></div><div class="swipe-del-hint">🗑</div></div>`;
+    return`<div class="tx swipeable" data-id="${t.id}" onclick="editTx('${t.id}')"><div class="tx-ico ${t.type}">${icon}</div><div class="tx-body"><div class="tx-name">${t.desc}${monthLabel}</div><div class="tx-sub">${t.cat}${card?` · ${card.name}`:''}${t.note?`<div style="font-size:9px;color:var(--muted);font-style:italic;margin-top:1px">📝 ${t.note}</div>`:''}</div></div><div class="tx-right"><div class="tx-amt ${isIn?'pos':'neg'}">${isIn?'+':'-'} ${f(t.amount)}</div><div class="tx-date">${ds(t.date)}</div></div><div class="swipe-del-hint">🗑</div></div>`;
   }).join('')||'<div class="empty"><div class="empty-icon">≡</div>Nenhum lançamento</div>');
   applySwipeToDelete(container);
 }
@@ -1422,6 +1424,80 @@ function renderAnnualMobile(){
   }).join('');
 }
 
+function exportAnnualReportMobile(){
+  const year=annualYear;
+  const now=new Date().toLocaleDateString('pt-BR');
+  const MO_PT=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  let totI=0,totE=0;
+  const months=MO_PT.map((name,m)=>{
+    const tx=D.transactions.filter(t=>{if(t.skipped||t.type==='transfer')return false;const d=new Date(t.date+'T12:00:00');return d.getFullYear()===year&&d.getMonth()===m;});
+    const inc=tx.filter(t=>t.type==='income').reduce((a,t)=>a+t.amount,0);
+    const exp=tx.filter(t=>t.type!=='income').reduce((a,t)=>a+t.amount,0);
+    totI+=inc;totE+=exp;
+    return{name,inc,exp,bal:inc-exp,count:tx.length};
+  });
+  const totBal=totI-totE;
+  const savRate=totI>0?((totI-totE)/totI*100).toFixed(1):'0.0';
+  const catExp={};
+  D.transactions.filter(t=>{const d=new Date(t.date+'T12:00:00');return d.getFullYear()===year&&t.type!=='income'&&t.type!=='transfer'&&!t.skipped;})
+    .forEach(t=>catExp[t.cat]=(catExp[t.cat]||0)+t.amount);
+  const topCats=Object.entries(catExp).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório Anual ${year}</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a1a;background:#fff;font-size:12px;line-height:1.5}
+.page{max-width:820px;margin:0 auto;padding:24px 20px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;padding-bottom:14px;border-bottom:2px solid #111}
+.logo{font-size:18px;font-weight:800;letter-spacing:-.04em}.logo span{color:#b87333}
+.period{font-size:14px;font-weight:700}.sub{font-size:10px;color:#888;margin-top:2px}
+h2{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#999;margin:20px 0 8px;padding-bottom:4px;border-bottom:1px solid #eee}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:4px}
+.kpi{padding:10px 12px;border-radius:8px;background:#f8f8f8;border:1px solid #eee}
+.kpi-l{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#999;margin-bottom:3px}
+.kpi-v{font-size:15px;font-weight:700}
+.gn{color:#16a34a}.rd{color:#dc2626}.vt{color:#7c3aed}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{padding:5px 8px;border-bottom:2px solid #e5e5e5;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#999;background:#fafafa}
+td{padding:6px 8px;border-bottom:1px solid #f0f0f0}
+.in{color:#16a34a;font-weight:600}.out{color:#dc2626;font-weight:600}
+.bal-pos{color:#16a34a;font-weight:700}.bal-neg{color:#dc2626;font-weight:700}
+.total-row{background:#fafafa;font-weight:700;border-top:2px solid #e5e5e5}
+.footer{margin-top:22px;padding-top:10px;border-top:1px solid #e5e5e5;font-size:10px;color:#aaa;display:flex;justify-content:space-between}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body><div class="page">
+<div class="header">
+  <div><div class="logo">Fin<span>Control</span></div><div class="sub">Relatório Anual</div></div>
+  <div style="text-align:right"><div class="period">Ano ${year}</div><div class="sub">${now}</div></div>
+</div>
+<h2>Resumo do ano</h2>
+<div class="kpis">
+  <div class="kpi"><div class="kpi-l">Receitas</div><div class="kpi-v gn">${f(totI)}</div></div>
+  <div class="kpi"><div class="kpi-l">Despesas</div><div class="kpi-v rd">${f(totE)}</div></div>
+  <div class="kpi"><div class="kpi-l">Saldo líquido</div><div class="kpi-v ${totBal>=0?'gn':'rd'}">${totBal>=0?'+':''}${f(totBal)}</div></div>
+  <div class="kpi"><div class="kpi-l">Taxa de poupança</div><div class="kpi-v vt">${savRate}%</div></div>
+</div>
+<h2>Evolução mensal</h2>
+<table>
+<thead><tr><th>Mês</th><th>Receitas</th><th>Despesas</th><th>Saldo</th><th>#</th></tr></thead>
+<tbody>
+${months.map(mo=>`<tr>
+  <td style="font-weight:500">${mo.name}</td>
+  <td class="in">${mo.inc>0?f(mo.inc):'—'}</td>
+  <td class="out">${mo.exp>0?f(mo.exp):'—'}</td>
+  <td class="${mo.bal>=0?'bal-pos':'bal-neg'}">${mo.inc>0||mo.exp>0?(mo.bal>=0?'+':'')+f(mo.bal):'—'}</td>
+  <td style="color:#999">${mo.count||'—'}</td>
+</tr>`).join('')}
+<tr class="total-row"><td>Total ${year}</td><td class="in">${f(totI)}</td><td class="out">${f(totE)}</td><td class="${totBal>=0?'bal-pos':'bal-neg'}">${totBal>=0?'+':''}${f(totBal)}</td><td style="color:#999">${months.reduce((a,m)=>a+m.count,0)}</td></tr>
+</tbody></table>
+${topCats.length?`<h2>Principais despesas por categoria</h2>
+<table><thead><tr><th>Categoria</th><th>Total</th><th>% das despesas</th></tr></thead><tbody>
+${topCats.map(([cat,val])=>`<tr><td>${cat}</td><td class="out">${f(val)}</td><td style="color:#999">${totE>0?(val/totE*100).toFixed(1):0}%</td></tr>`).join('')}
+</tbody></table>`:''}
+<div class="footer"><span>FinControl</span><span>${now}</span></div>
+</div><script>window.print()<\/script></body></html>`);
+  w.document.close();
+}
+
 // ════════════════════════════════════════════
 // RECURRENTS CONFIRM
 // ════════════════════════════════════════════
@@ -1532,6 +1608,7 @@ function prepTx(type){
   selTypeV=type;
   document.getElementById('tx-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('tx-desc').value='';document.getElementById('tx-amount').value='';
+  document.getElementById('tx-note').value='';
   const hint=document.getElementById('ai-cat-hint');if(hint)hint.style.display='none';
   updateTxUI();
 }
@@ -1575,6 +1652,7 @@ function editTx(id){
   document.getElementById('tx-amount').value=t.amount;
   document.getElementById('tx-date').value=t.date;
   document.getElementById('tx-cat').value=t.cat;
+  document.getElementById('tx-note').value=t.note||'';
   if(t.type!=='card'){const el=document.getElementById('tx-acc');if(el)el.value=t.accountId||'';}
   if(t.type==='card'){const el=document.getElementById('tx-card-sel');if(el)el.value=t.cardId||'';}
   ov.classList.add('open');
@@ -1590,6 +1668,7 @@ function saveTx(){
   const desc=document.getElementById('tx-desc').value.trim();
   const amount=parseFloat(document.getElementById('tx-amount').value);
   const date=document.getElementById('tx-date').value;
+  const note=document.getElementById('tx-note').value.trim();
   if(!desc||!amount||!date){toast('⚠️ Preencha todos os campos');return;}
 
   if(selTypeV==='transfer'){
@@ -1617,17 +1696,17 @@ function saveTx(){
   const installments=selTypeV==='card'?parseInt(document.getElementById('tx-install').value)||1:1;
   if(editId){
     const idx=D.transactions.findIndex(x=>x.id==editId);
-    if(idx>=0)D.transactions[idx]={...D.transactions[idx],type:selTypeV,desc,amount,date,cat,cardId,accountId};
+    if(idx>=0)D.transactions[idx]={...D.transactions[idx],type:selTypeV,desc,amount,date,cat,cardId,accountId,note};
     document.getElementById('ov-tx').dataset.editId='';
   } else {
     if(selTypeV==='card'&&installments>1){
       const sid=uid();const perAmt=Math.round(amount/installments*100)/100;
       for(let p=0;p<installments;p++){
         const d=new Date(date+'T12:00:00');d.setMonth(d.getMonth()+p);
-        D.transactions.push({id:uid(),type:'card',desc,amount:perAmt,date:d.toISOString().slice(0,10),cat,cardId,accountId:null,installments,installCurrent:p+1,installTotal:installments,seriesId:sid,recurrentId:null});
+        D.transactions.push({id:uid(),type:'card',desc,amount:perAmt,date:d.toISOString().slice(0,10),cat,cardId,accountId:null,installments,installCurrent:p+1,installTotal:installments,seriesId:sid,recurrentId:null,note:p===0?note:''});
       }
     }else{
-      D.transactions.push({id:uid(),type:selTypeV,desc,amount,date,cat,cardId,accountId,installments,recurrentId:null});
+      D.transactions.push({id:uid(),type:selTypeV,desc,amount,date,cat,cardId,accountId,installments,recurrentId:null,note});
     }
   }
   save();closeSheet('ov-tx');renderPage(curPg);toast(editId?'✅ Editado':'✅ Lançamento salvo');
