@@ -2167,7 +2167,7 @@ function renderAccounts(){
     <div class="acc-card" style="border-top:2px solid ${ac.color}">
       <div class="acc-type">${ACC_TYPES[ac.type]||ac.type}${ac.currency&&ac.currency!=='BRL'?` · <span style="font-size:8px;background:var(--s3);border:1px solid var(--bd);border-radius:3px;padding:1px 4px">${ac.currency}</span>`:''}</div>
       <div class="acc-name">${ac.name}</div>
-      <div class="acc-bal" style="color:${ac.balance>=0?'var(--gn)':'var(--rd)'}">${ac.currency&&ac.currency!=='BRL'?(CUR_SYM[ac.currency]||ac.currency)+' ':''>${fmt(ac.balance)}${ac.currency&&ac.currency!=='BRL'?`<div style="font-size:10px;color:var(--tm);font-weight:400;margin-top:2px">≈ ${fmt(toBRL(ac.balance,ac.currency))} BRL</div>`:''}</div>
+      <div class="acc-bal" style="color:${ac.balance>=0?'var(--gn)':'var(--rd)'}">${ac.currency&&ac.currency!=='BRL'?(CUR_SYM[ac.currency]||ac.currency)+' ':''}${fmt(ac.balance)}${ac.currency&&ac.currency!=='BRL'?`<div style="font-size:10px;color:var(--tm);font-weight:400;margin-top:2px">≈ ${fmt(toBRL(ac.balance,ac.currency))} BRL</div>`:''}</div>
       <div class="acc-actions">
         <button class="btn sm" onclick="openMod('tx')" style="flex:1">+ Lançar</button>
         <button class="btn sm" onclick="editAccount('${ac.id}')" title="Editar">✎</button>
