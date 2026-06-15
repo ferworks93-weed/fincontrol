@@ -731,6 +731,7 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
         <span id="mLabel"></span>
         <button onclick="chMonth(1)">›</button>
       </div>
+      <div id="offline-indicator" style="display:none;align-items:center;gap:5px;background:var(--am);color:#000;font-size:10px;font-weight:600;padding:4px 10px;border-radius:12px">📵 Offline</div>
       <button class="btn" onclick="openSearch()" title="Buscar (/)">🔍</button>
       <button class="btn" onclick="openMod('report')">↓ Relatório</button>
       <button class="btn pri" onclick="openMod('tx')">+ Lançamento</button>
@@ -1118,6 +1119,16 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
           <button id="drive-sync-btn" class="btn sm" style="display:none" onclick="doSync()">↻ Sync</button>
           <button id="drive-disconnect-btn" class="btn sm danger" style="display:none" onclick="driveDisconnect()">Desconectar</button>
         </div>
+      </div>
+      <div style="margin-top:16px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd)">Segurança — Criptografia E2E</div>
+      <div class="setting-row" style="align-items:flex-start;flex-direction:column;gap:8px">
+        <div><div class="setting-lbl">Senha de criptografia</div><div class="setting-sub">Dados criptografados com AES-256 antes de ir ao Drive. A chave nunca sai do seu dispositivo.</div></div>
+        <div style="display:flex;gap:6px;width:100%">
+          <input id="crypto-pwd-input" type="password" class="fi" placeholder="Senha de criptografia…" style="flex:1;font-size:11px">
+          <button class="btn sm" onclick="setCryptoPassword(document.getElementById('crypto-pwd-input').value)">Aplicar</button>
+          <button class="btn sm danger" onclick="setCryptoPassword('');document.getElementById('crypto-pwd-input').value=''">Remover</button>
+        </div>
+        <div id="crypto-status" style="font-size:10px;color:var(--tm)">🔓 Criptografia desativada — dados enviados ao Drive sem encriptação</div>
       </div>
       <div style="margin-top:16px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd)">Atalhos de Teclado</div>
       <div style="font-size:11px;color:var(--tm);line-height:1.8">
@@ -1530,6 +1541,12 @@ const save = () => {
     msg.textContent = '⚠️ Erro ao salvar: armazenamento cheio. Exporte um backup imediatamente.';
     document.body.appendChild(msg);
     setTimeout(()=>msg.remove(), 6000);
+  }
+  // BroadcastChannel — notifica outras abas em tempo real
+  if(typeof _bc!=='undefined'&&_bc) _bc.postMessage({type:'sync',key:KEY,d:D});
+  // IndexedDB — enfileira quando offline
+  if(!navigator.onLine&&typeof _idb!=='undefined'&&_idb){
+    try{const tx=_idb.transaction('queue','readwrite');tx.objectStore('queue').put({id:'pending',ts:Date.now(),data:JSON.stringify(D)});}catch(e){}
   }
   // Atualiza timestamp e agenda sync imediato ao Drive
   D.meta.lastSync = new Date().toISOString();
@@ -3257,7 +3274,8 @@ async function _driveSync(){
     let fileId=D.meta.driveFileId||localStorage.getItem(DRIVE_KEY);
     if(!fileId)fileId=await _driveFindFile();
     if(fileId){
-      const remote=await _driveDownload(fileId);
+      const rawRemote=await _driveDownload(fileId);
+      const remote=rawRemote?.fc_encrypted?await _decryptFromDrive(rawRemote):rawRemote;
       if(remote?.meta){
         const prev=JSON.stringify({t:D.transactions?.length,a:D.accounts?.length});
         D=migrateData(mergeDatasets(D,remote));
@@ -3268,11 +3286,12 @@ async function _driveSync(){
     D.meta.lastSync=new Date().toISOString();
     D.meta.driveFileId=fileId||null;
     save();
-    if(fileId){await _driveUpdate(fileId,JSON.stringify(D));}
-    else{fileId=await _driveCreate(JSON.stringify(D));D.meta.driveFileId=fileId;save();}
+    const payload=await _encryptForDrive(D);
+    if(fileId){await _driveUpdate(fileId,payload);}
+    else{fileId=await _driveCreate(payload);D.meta.driveFileId=fileId;save();}
     localStorage.setItem(DRIVE_KEY,fileId);
     const t=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    _setSyncDot('ok',`Drive ☁ ${t}`);
+    _setSyncDot('ok',`Drive ☁ ${_cryptoKey?'🔐 ':''} ${t}`);
   }catch(e){
     console.error('Drive sync:',e);
     _setSyncDot('error','Erro no sync');
@@ -3311,6 +3330,86 @@ async function doSync(){
     driveConnect();return;
   }
   await _driveSync();
+}
+
+// ── FASE 4: INFRAESTRUTURA ───────────────────────────────────────
+
+// BroadcastChannel — sync em tempo real entre abas
+const _bc='BroadcastChannel'in window?new BroadcastChannel('fincontrol'):null;
+if(_bc){
+  _bc.onmessage=e=>{
+    if(e.data?.type==='sync'&&e.data?.key===KEY){
+      const prev=JSON.stringify({t:D.transactions?.length,a:D.accounts?.length});
+      D=migrateData(mergeDatasets(D,e.data.d));
+      if(JSON.stringify({t:D.transactions?.length,a:D.accounts?.length})!==prev){render();_setSyncDot('ok','Sync ⚡ tempo real');}
+    }
+  };
+}
+
+// IndexedDB — fila offline
+let _idb=null;
+(()=>{if(!window.indexedDB)return;const r=indexedDB.open('fc_queue',1);r.onupgradeneeded=e=>e.target.result.createObjectStore('queue',{keyPath:'id'});r.onsuccess=e=>{_idb=e.target.result;};})();
+
+async function _flushOfflineQueue(){
+  if(!_idb||!_gToken)return;
+  const tx=_idb.transaction('queue','readwrite');
+  const store=tx.objectStore('queue');
+  const req=store.get('pending');
+  req.onsuccess=async()=>{
+    if(!req.result)return;
+    try{
+      const queued=JSON.parse(req.result.data);
+      D=migrateData(mergeDatasets(D,queued));
+      save();await _driveSync();
+      _idb.transaction('queue','readwrite').objectStore('queue').delete('pending');
+      toast('☁ Dados offline sincronizados');
+    }catch(e){console.warn('Queue flush:',e);}
+  };
+}
+
+window.addEventListener('online',()=>{
+  const ind=document.getElementById('offline-indicator');if(ind)ind.style.display='none';
+  toast('📶 Conexão restaurada — sincronizando…');
+  _flushOfflineQueue();
+});
+window.addEventListener('offline',()=>{
+  const ind=document.getElementById('offline-indicator');if(ind)ind.style.display='flex';
+  toast('📵 Offline — dados salvos localmente');
+});
+if(!navigator.onLine){const ind=document.getElementById('offline-indicator');if(ind)ind.style.display='flex';}
+
+// Criptografia E2E (AES-GCM 256 via SubtleCrypto)
+let _cryptoKey=null;
+async function _deriveKey(pwd,salt){
+  const mat=await crypto.subtle.importKey('raw',new TextEncoder().encode(pwd),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},mat,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function setCryptoPassword(pwd){
+  const st=document.getElementById('crypto-status');
+  if(!pwd){_cryptoKey=null;if(st)st.textContent='🔓 Criptografia desativada — dados enviados ao Drive sem encriptação';toast('🔓 Criptografia desativada');return;}
+  let saltB64=localStorage.getItem('fc_crypto_salt');
+  let salt;
+  if(saltB64){salt=Uint8Array.from(atob(saltB64),c=>c.charCodeAt(0));}
+  else{salt=crypto.getRandomValues(new Uint8Array(16));localStorage.setItem('fc_crypto_salt',btoa(String.fromCharCode(...salt)));}
+  try{
+    _cryptoKey=await _deriveKey(pwd,salt);
+    if(st)st.textContent='🔐 Criptografia ativa — dados encriptados antes de ir ao Drive';
+    toast('🔐 Criptografia E2E ativada');
+  }catch(e){toast('❌ Erro ao ativar criptografia');}
+}
+async function _encryptForDrive(data){
+  if(!_cryptoKey)return JSON.stringify(data);
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const enc=await crypto.subtle.encrypt({name:'AES-GCM',iv},_cryptoKey,new TextEncoder().encode(JSON.stringify(data)));
+  return JSON.stringify({fc_encrypted:true,iv:btoa(String.fromCharCode(...iv)),data:btoa(String.fromCharCode(...new Uint8Array(enc)))});
+}
+async function _decryptFromDrive(raw){
+  if(!raw?.fc_encrypted)return raw;
+  if(!_cryptoKey)throw new Error('Dados criptografados — insira sua senha em Configurações > Segurança');
+  const iv=Uint8Array.from(atob(raw.iv),c=>c.charCodeAt(0));
+  const enc=Uint8Array.from(atob(raw.data),c=>c.charCodeAt(0));
+  const dec=await crypto.subtle.decrypt({name:'AES-GCM',iv},_cryptoKey,enc);
+  return JSON.parse(new TextDecoder().decode(dec));
 }
 
 // ── MÚLTIPLAS MOEDAS ─────────────────────────────────────────────

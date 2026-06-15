@@ -759,6 +759,15 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
     </div>
 
     <div class="card" style="margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:12px">🔐 Criptografia E2E</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">Dados encriptados com AES-256 antes de ir ao Drive. A chave nunca sai do dispositivo.</div>
+      <input id="m-crypto-pwd" type="password" class="fi" placeholder="Senha de criptografia…" style="margin-bottom:8px">
+      <button class="fbtn" onclick="setCryptoPassword(document.getElementById('m-crypto-pwd').value)">Ativar criptografia</button>
+      <button class="fbtn" style="background:var(--s2);color:var(--crimson);border:1px solid var(--edge);margin-top:6px" onclick="setCryptoPassword('');document.getElementById('m-crypto-pwd').value=''">Remover senha</button>
+      <div id="m-crypto-status" style="font-size:10px;color:var(--muted);margin-top:8px">🔓 Desativada</div>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
       <div style="font-size:12px;font-weight:600;margin-bottom:12px">📋 Personalizar Início</div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Escolha quais seções exibir na tela Início</div>
       <div id="home-sections-cfg"></div>
@@ -1101,6 +1110,10 @@ let D=mobileAdapt(JSON.parse(localStorage.getItem(KEY)||'null'));
 const save=()=>{
   D.meta.lastSync=new Date().toISOString();
   try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){toast('⚠️ Erro ao salvar: armazenamento cheio. Exporte um backup.');}
+  if(typeof _bc!=='undefined'&&_bc)_bc.postMessage({type:'sync',key:KEY,d:D});
+  if(!navigator.onLine&&typeof _idb!=='undefined'&&_idb){
+    try{const tx=_idb.transaction('queue','readwrite');tx.objectStore('queue').put({id:'pending',ts:Date.now(),data:JSON.stringify(D)});}catch(e){}
+  }
   clearTimeout(save._t);
   save._t=setTimeout(()=>{if(typeof _driveSync==='function'&&window._gToken)_driveSync();},1500);
 };
@@ -2404,7 +2417,8 @@ async function _driveSync(){
     let fileId=D.meta.driveFileId||localStorage.getItem(DRIVE_KEY);
     if(!fileId)fileId=await _driveFindFile();
     if(fileId){
-      const remote=await _driveDownload(fileId);
+      const rawRemote=await _driveDownload(fileId);
+      const remote=rawRemote?.fc_encrypted?await _decryptFromDrive(rawRemote):rawRemote;
       if(remote?.meta){
         const prev=JSON.stringify({t:D.transactions?.length,c:D.cards?.length});
         D=mobileAdapt(mergeDatasets(D,remote));
@@ -2415,11 +2429,12 @@ async function _driveSync(){
     D.meta.lastSync=new Date().toISOString();
     D.meta.driveFileId=fileId||null;
     save();
-    if(fileId){await _driveUpdate(fileId,JSON.stringify(D));}
-    else{fileId=await _driveCreate(JSON.stringify(D));D.meta.driveFileId=fileId;save();}
+    const payload=await _encryptForDrive(D);
+    if(fileId){await _driveUpdate(fileId,payload);}
+    else{fileId=await _driveCreate(payload);D.meta.driveFileId=fileId;save();}
     localStorage.setItem(DRIVE_KEY,fileId);
     const t=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    setSyncStatus('ok',`Drive ☁ ${t}`);
+    setSyncStatus('ok',`Drive ☁ ${_cryptoKey?'🔐 ':''}${t}`);
   }catch(e){
     console.error('Drive sync:',e);
     setSyncStatus('error','Erro no sync');
@@ -2456,6 +2471,85 @@ async function doSync(){
     driveConnect();return;
   }
   await _driveSync();
+}
+
+// ── FASE 4: INFRAESTRUTURA ───────────────────────────────────────
+
+// BroadcastChannel — sync em tempo real entre abas
+const _bc='BroadcastChannel'in window?new BroadcastChannel('fincontrol'):null;
+if(_bc){
+  _bc.onmessage=e=>{
+    if(e.data?.type==='sync'&&e.data?.key===KEY){
+      const prev=JSON.stringify({t:D.transactions?.length,c:D.cards?.length});
+      D=mobileAdapt(mergeDatasets(D,e.data.d));
+      if(JSON.stringify({t:D.transactions?.length,c:D.cards?.length})!==prev){renderPage(curPg);setSyncStatus('ok','Sync ⚡ tempo real');}
+    }
+  };
+}
+
+// IndexedDB — fila offline
+let _idb=null;
+(()=>{if(!window.indexedDB)return;const r=indexedDB.open('fc_queue',1);r.onupgradeneeded=e=>e.target.result.createObjectStore('queue',{keyPath:'id'});r.onsuccess=e=>{_idb=e.target.result;};})();
+
+async function _flushOfflineQueue(){
+  if(!_idb||!window._gToken)return;
+  const tx=_idb.transaction('queue','readwrite');
+  const store=tx.objectStore('queue');
+  const req=store.get('pending');
+  req.onsuccess=async()=>{
+    if(!req.result)return;
+    try{
+      const queued=JSON.parse(req.result.data);
+      D=mobileAdapt(mergeDatasets(D,queued));
+      save();await _driveSync();
+      _idb.transaction('queue','readwrite').objectStore('queue').delete('pending');
+      toast('☁ Dados offline sincronizados');
+    }catch(e){console.warn('Queue flush:',e);}
+  };
+}
+
+window.addEventListener('online',()=>{
+  toast('📶 Conexão restaurada — sincronizando…');
+  _flushOfflineQueue();
+});
+window.addEventListener('offline',()=>toast('📵 Offline — dados salvos localmente'));
+
+// Criptografia E2E (AES-GCM 256 via SubtleCrypto)
+let _cryptoKey=null;
+async function _deriveKey(pwd,salt){
+  const mat=await crypto.subtle.importKey('raw',new TextEncoder().encode(pwd),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},mat,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function setCryptoPassword(pwd){
+  const st=document.getElementById('m-crypto-status');
+  if(!pwd){
+    _cryptoKey=null;
+    if(st)st.textContent='🔓 Desativada';
+    toast('🔓 Criptografia desativada');return;
+  }
+  let saltB64=localStorage.getItem('fc_crypto_salt');
+  let salt;
+  if(saltB64){salt=Uint8Array.from(atob(saltB64),c=>c.charCodeAt(0));}
+  else{salt=crypto.getRandomValues(new Uint8Array(16));localStorage.setItem('fc_crypto_salt',btoa(String.fromCharCode(...salt)));}
+  try{
+    _cryptoKey=await _deriveKey(pwd,salt);
+    if(st)st.textContent='🔐 Ativa — dados encriptados antes do Drive';
+    toast('🔐 Criptografia E2E ativada');
+  }catch(e){toast('❌ Erro ao ativar criptografia');}
+}
+async function _encryptForDrive(data){
+  if(!_cryptoKey)return JSON.stringify(data);
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const enc=await crypto.subtle.encrypt({name:'AES-GCM',iv},_cryptoKey,new TextEncoder().encode(JSON.stringify(data)));
+  return JSON.stringify({fc_encrypted:true,iv:btoa(String.fromCharCode(...iv)),data:btoa(String.fromCharCode(...new Uint8Array(enc)))});
+}
+async function _decryptFromDrive(raw){
+  if(!raw?.fc_encrypted)return raw;
+  if(!_cryptoKey)throw new Error('Dados criptografados — insira sua senha em Configurações');
+  const iv=Uint8Array.from(atob(raw.iv),c=>c.charCodeAt(0));
+  const enc=Uint8Array.from(atob(raw.data),c=>c.charCodeAt(0));
+  const dec=await crypto.subtle.decrypt({name:'AES-GCM',iv},_cryptoKey,enc);
+  return JSON.parse(new TextDecoder().decode(dec));
 }
 
 // ── MÚLTIPLAS MOEDAS ─────────────────────────────────────────────
