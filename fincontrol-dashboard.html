@@ -2438,7 +2438,18 @@ function exportJSON(){const a=document.createElement('a');a.href=URL.createObjec
 function exportCSV(){document.getElementById('rep-period').value='month';exportReport('csv');}
 function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);save();render();toast('✓ Dados restaurados');}catch{toast('❌ Arquivo inválido');}};r.readAsText(f);}
 function confirmClearAll(){document.getElementById('clear-confirm').style.display='block';}
-function clearAll(){localStorage.removeItem(KEY);D=createDefaultData();save();document.getElementById('clear-confirm').style.display='none';goTo('dashboard',document.querySelector('.nb[onclick*="dashboard"]'));renderDash();toast('🗑 Dados zerados');}
+function clearAll(){
+  D=createDefaultData();
+  D.meta.lastSync=new Date(Date.now()+60000).toISOString(); // local mais novo que Drive
+  D.meta.driveFileId=null;
+  localStorage.removeItem(KEY);
+  localStorage.removeItem(DRIVE_KEY);
+  save();
+  document.getElementById('clear-confirm').style.display='none';
+  const nb=document.querySelector('.nb[onclick*="dashboard"]');
+  goTo('dashboard',nb);renderDash();
+  toast('🗑 Dados zerados');
+}
 
 // ════════════════════════════════════════════════════════════════
 // GOOGLE DRIVE SYNC
