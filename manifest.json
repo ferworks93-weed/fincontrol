@@ -1,0 +1,36 @@
+{
+  "name": "FinControl",
+  "short_name": "FinControl",
+  "description": "Controle financeiro pessoal",
+  "start_url": "./fincontrol-mobile.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#b87333",
+  "orientation": "portrait-primary",
+  "lang": "pt-BR",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Novo Lançamento",
+      "short_name": "Novo",
+      "description": "Adicionar um lançamento rapidamente",
+      "url": "./fincontrol-mobile.html#new-tx",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    }
+  ]
+}
