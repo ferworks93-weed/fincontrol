@@ -226,7 +226,8 @@
 
 /* ── THEME PICKER ─────────────────────────────────────────────── */
 .thm-wrap{position:relative;display:flex;align-items:center}
-.thm-btn{width:28px;height:28px;border-radius:50%;border:2px solid var(--edge2);cursor:pointer;padding:0;transition:transform .14s;overflow:hidden;background:conic-gradient(#b8722e 0 25%,#8b5cf6 25% 50%,#00c98c 50% 75%,#d946ef 75%);flex-shrink:0}
+.thm-btn{width:28px;height:28px;border-radius:8px;border:1.5px solid var(--edge2);cursor:pointer;padding:0;transition:transform .14s,background .14s;background:var(--s2);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.thm-btn::before{content:'⊞';font-size:16px;line-height:1}
 .thm-btn:active{transform:scale(.88)}
 .thm-panel{display:none;position:absolute;top:calc(100% + 10px);right:0;background:var(--s2);border:1px solid var(--edge2);border-radius:14px;padding:12px 14px;z-index:500;box-shadow:0 12px 32px rgba(0,0,0,.5);animation:sup .16s ease;white-space:nowrap}
 .thm-panel.open{display:block}
@@ -482,7 +483,17 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <button class="thm-btn" id="thm-btn" onclick="openCustomize()" aria-label="Personalizar"></button>
-      <div class="avatar">FA</div>
+      <div class="avatar" onclick="toggleAvatarMenu()" style="cursor:pointer;position:relative">FA
+        <div id="avatar-menu" style="display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--s2);border:1px solid var(--edge2);border-radius:12px;padding:8px;z-index:600;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,.5)">
+          <div style="padding:8px 10px 10px;border-bottom:1px solid var(--edge);margin-bottom:6px">
+            <div style="font-weight:600;font-size:13px">Fernando</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:1px" id="avatar-sync-status">—</div>
+          </div>
+          <button onclick="goAvatar('settings');toggleAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--text);padding:8px 10px;font-size:12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px"><span>⚙</span> Configurações</button>
+          <button onclick="doSync();toggleAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--text);padding:8px 10px;font-size:12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px"><span>↻</span> Sincronizar agora</button>
+          <button onclick="openCustomize();toggleAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--text);padding:8px 10px;font-size:12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px"><span>⊞</span> Personalizar</button>
+        </div>
+      </div>
     </div>
   </div>
   <div class="sync-row" onclick="doSync()">
@@ -1861,6 +1872,23 @@ function toast(msg,dur=2600){const el=document.getElementById('toast');el.textCo
   window.setTheme=setTheme;
   window.setChartStyle=setChartStyle;
   window.openCustomize=openCustomize;
+  window.toggleAvatarMenu=function(){
+    const m=document.getElementById('avatar-menu');
+    const open=m.style.display==='none';
+    m.style.display=open?'block':'none';
+    if(open){
+      const sl=document.getElementById('syncLbl');
+      const as=document.getElementById('avatar-sync-status');
+      if(as&&sl)as.textContent=sl.textContent;
+      setTimeout(()=>document.addEventListener('click',function h(e){
+        if(!document.querySelector('.avatar').contains(e.target)){m.style.display='none';document.removeEventListener('click',h);}
+      }),0);
+    }
+  };
+  window.goAvatar=function(pg){
+    const btn=document.querySelector(`.nav-item[onclick*="'${pg}'"]`);
+    goTo(pg,btn);
+  };
   const saved=localStorage.getItem('fc_theme')||'copper';
   document.documentElement.setAttribute('data-theme',saved);
   if(bgMap[saved]){const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=bgMap[saved];}

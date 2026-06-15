@@ -225,7 +225,8 @@
 
 /* ── THEME PICKER (dashboard) ─────────────────────────────────── */
 .thm-wrap{position:relative}
-.thm-btn{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bd2);cursor:pointer;padding:0;transition:transform .14s;overflow:hidden;background:conic-gradient(#b87333 0 25%,#8b5cf6 25% 50%,#00c98c 50% 75%,#d946ef 75%);flex-shrink:0;display:block}
+.thm-btn{width:26px;height:26px;border-radius:7px;border:1.5px solid var(--bd2);cursor:pointer;padding:0;transition:transform .14s,background .14s;background:var(--s3);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--tm);font-size:15px}
+.thm-btn::before{content:'⊞'}
 .thm-btn:active{transform:scale(.88)}
 .thm-panel{display:none;position:absolute;bottom:calc(100% + 8px);left:0;right:0;background:var(--s2);border:1px solid var(--bd2);border-radius:var(--r);padding:12px 8px;z-index:500;box-shadow:0 -8px 28px rgba(0,0,0,.45);animation:fadeUp .15s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
