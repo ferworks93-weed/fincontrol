@@ -1,5 +1,5 @@
-const CACHE = 'fincontrol-v4';
-const STATIC = ['./manifest.json', './icon.svg'];
+const CACHE = 'fincontrol-v5';
+const STATIC = ['./manifest.json', './icon.svg', './login-bg.jpg'];
 const HTML   = ['./fincontrol-mobile', './fincontrol-dashboard', './fincontrol-mobile.html', './fincontrol-dashboard.html'];
 
 self.addEventListener('install', e => {
@@ -22,22 +22,25 @@ self.addEventListener('fetch', e => {
   const isHtml = HTML.some(p => url.pathname.endsWith(p.replace('./', ''))) || url.pathname === '/fincontrol/';
 
   if (isHtml) {
-    // Network first para HTMLs — sempre pega versão nova, usa cache só offline
+    // Network first para HTMLs
     e.respondWith(
       fetch(e.request).then(resp => {
-        const clone = resp.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
+        if (resp && resp.status === 200) {
+          const clone = resp.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
         return resp;
       }).catch(() => caches.match(e.request))
     );
   } else {
-    // Cache first para assets estáticos (ícones, manifest)
+    // Cache first para assets
     e.respondWith(
       caches.match(e.request).then(cached => {
         if (cached) return cached;
         return fetch(e.request).then(resp => {
           if (!resp || resp.status !== 200 || resp.type === 'opaque') return resp;
-          caches.open(CACHE).then(c => c.put(e.request, resp.clone()));
+          const clone = resp.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
           return resp;
         });
       })
