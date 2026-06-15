@@ -1087,6 +1087,11 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
           <button class="btn sm" onclick="document.getElementById('clear-confirm').style.display='none'" style="flex:1">Cancelar</button>
         </div>
       </div>
+      <div style="margin-top:16px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd)">Notificações</div>
+      <div class="setting-row">
+        <div><div class="setting-lbl">Vencimento de fatura</div><div class="setting-sub" id="notif-status">Avisa 3 dias antes do vencimento do cartão</div></div>
+        <button class="btn sm" id="notif-btn" onclick="enableNotifs()">Ativar</button>
+      </div>
       <div style="margin-top:16px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd)">Sincronização</div>
       <div class="setting-row">
         <div><div class="setting-lbl">Google Drive</div><div class="setting-sub" id="set-sync-status">—</div></div>
@@ -1654,6 +1659,16 @@ function renderDash() {
   // Pending recurring
   const pendRec=getPendingRecurring();
   if(pendRec.length) als.push({type:'info',action:'recurring',m:`↻ ${pendRec.length} lançamento${pendRec.length>1?'s':''} recorrente${pendRec.length>1?'s':''} pendente${pendRec.length>1?'s':''} este mês <span style="opacity:.6;font-size:10px">— clique para ver</span>`});
+  // Card due alerts
+  D.cards.forEach(c=>{
+    const fat=getFatura(c,0);const today2=new Date();
+    const dD=Math.round((fat.due-today2)/(1000*60*60*24));
+    const total=txsInFatura(c,0).reduce((a,t)=>a+t.amount,0);
+    if(dD>=0&&dD<=3){
+      const lbl=dD===0?'vence <strong>hoje</strong>!':`vence em <strong>${dD} dia${dD>1?'s':''}</strong>`;
+      als.push({type:dD<=1?'danger':'warn',m:`💳 Fatura ${c.name} ${lbl}${total>0?' — '+fmt(total):''}${dD===0?' · Pague para evitar juros':''}`});
+    }
+  });
   document.getElementById('dash-alerts').innerHTML=als.map(a=>`<div class="alert ${a.type}"${a.action?` style="cursor:pointer" onclick="goTo('${a.action}',document.querySelector('.nb[onclick*=\\'${a.action}\\']'))"`:''} >${a.m}</div>`).join('');
 
   // Charts
@@ -2221,6 +2236,31 @@ function renderCards(){
 }
 function delCard(id){if(!confirm('Remover cartão?'))return;D.cards=D.cards.filter(c=>String(c.id)!==String(id));save();renderCards();toast('Cartão removido');}
 
+function checkCardNotifs(){
+  if(!('Notification'in window)||Notification.permission!=='granted')return;
+  const todayKey=new Date().toISOString().slice(0,10);
+  if(localStorage.getItem('fc_notif_last')===todayKey)return;
+  localStorage.setItem('fc_notif_last',todayKey);
+  const today=new Date();
+  D.cards.forEach(c=>{
+    const fat=getFatura(c,0);
+    const dD=Math.round((fat.due-today)/(1000*60*60*24));
+    const total=txsInFatura(c,0).reduce((a,t)=>a+t.amount,0);
+    if(dD>=0&&dD<=3&&total>0){
+      const lbl=dD===0?'vence hoje!':`vence em ${dD} dia${dD>1?'s':''}`;
+      try{new Notification(`💳 ${c.name} — Fatura ${lbl}`,{body:`Valor: ${fmt(total)} · Vencimento: ${fat.due.toLocaleDateString('pt-BR')}`,icon:'./icon.svg',tag:`card-due-${c.id}-${todayKey}`});}catch(e){}
+    }
+  });
+}
+function enableNotifs(){
+  if(!('Notification'in window)){toast('⚠ Seu browser não suporta notificações');return;}
+  Notification.requestPermission().then(p=>{
+    if(p==='granted'){localStorage.removeItem('fc_notif_last');checkCardNotifs();toast('✓ Notificações ativadas');}
+    else toast('⚠ Permissão negada');
+    renderSettings();
+  });
+}
+
 // ════════════════════════════════════════════════════════════════
 // INVESTMENTS
 // ════════════════════════════════════════════════════════════════
@@ -2351,6 +2391,15 @@ function renderAnnual(){
 // SETTINGS
 // ════════════════════════════════════════════════════════════════
 function renderSettings(){
+  // Notification button state
+  const nb=document.getElementById('notif-btn');
+  const ns=document.getElementById('notif-status');
+  if(nb&&ns){
+    const p='Notification'in window?Notification.permission:'denied';
+    if(p==='granted'){nb.textContent='Ativado ✓';nb.disabled=true;ns.textContent='Notificações ativas — avisa 3 dias antes do vencimento';}
+    else if(p==='denied'){nb.textContent='Bloqueado';nb.disabled=true;ns.textContent='Permissão negada pelo browser. Libere nas configurações do site.';}
+    else{nb.textContent='Ativar';nb.disabled=false;}
+  }
   // Dash section config
   const DASH_SECTIONS = [
     {id:'kpis',    label:'KPIs — Receitas, Despesas, Saldo, Patrimônio', default:true},
@@ -3040,6 +3089,7 @@ function resetDashLayout(){
   toast('Layout padrão restaurado');
 }
 initDashLayout();
+checkCardNotifs();
 
 // ── SIDEBAR MOBILE TOGGLE ────────────────────────────────────────
 function toggleSidebar(){

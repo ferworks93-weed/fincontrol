@@ -749,6 +749,7 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
 
     <div class="card" style="margin-bottom:10px">
       <div style="font-size:12px;font-weight:600;margin-bottom:12px">💾 Dados</div>
+      <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" id="mb-notif-btn" onclick="enableMobileNotifs()">🔔 Ativar notificações de vencimento</button>
       <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="exportMobilePDF()">🖨️ Relatório PDF — mês atual</button>
       <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="exportMobileJSON()">⬇ Exportar backup JSON</button>
       <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="document.getElementById('m-import-json').click()">⬆ Importar backup JSON</button>
@@ -1078,6 +1079,14 @@ function setFilt(flt,btn){txFilt=flt;document.querySelectorAll('#pg-tx .chip').f
 // ════════════════════════════════════════════
 // CARDS & ACCOUNTS
 // ════════════════════════════════════════════
+function mbGetFatura(card,offset=0){
+  const today=new Date();const d=today.getDate(),m=today.getMonth(),y=today.getFullYear();
+  let em=m,ey=y;if(d>card.closing)em++;
+  em+=offset;while(em<0){em+=12;ey--;}while(em>11){em-=12;ey++;}
+  let sm=em-1,sy=ey;if(sm<0){sm+=12;sy--;}
+  let dm=card.due<card.closing?em+1:em,dy=ey;if(dm>11){dm-=12;dy++;}
+  return{start:new Date(sy,sm,card.closing+1),end:new Date(ey,em,card.closing),due:new Date(dy,dm,card.due)};
+}
 function rCards(){
   document.getElementById('acc-list').innerHTML=D.accounts.map(a=>`<div class="acc"><div class="acc-left"><div class="acc-dot" style="background:${a.color}"></div><div><div class="acc-name">${a.name}</div><div class="acc-bank">${a.bank||'—'}</div></div></div><div class="acc-bal">${f(a.balance)}</div></div>`).join('')||'<div class="empty">Nenhuma conta</div>';
 
@@ -1420,6 +1429,14 @@ function saveHomeConfig(cfg){
 }
 
 function rSettings(){
+  // Notification button state
+  const nb=document.getElementById('mb-notif-btn');
+  if(nb){
+    const p='Notification'in window?Notification.permission:'denied';
+    if(p==='granted'){nb.textContent='🔔 Notificações ativas ✓';nb.disabled=true;}
+    else if(p==='denied'){nb.textContent='🔕 Notificações bloqueadas';nb.disabled=true;}
+    else{nb.textContent='🔔 Ativar notificações de vencimento';nb.disabled=false;}
+  }
   // Sync dots mirror
   const dot=document.getElementById('syncDot');
   const dot2=document.getElementById('syncDot2');
@@ -1518,6 +1535,15 @@ function rHome(){
   // Alerts
   const als=[];
   D.budgets.forEach(b=>{const sp=mTx.filter(t=>t.cat===b.category&&t.type!=='income').reduce((a,t)=>a+t.amount,0);const pct=sp/b.limit*100;if(pct>=100)als.push({t:'danger',m:`🚨 <b>${b.category}</b> esgotado`});else if(pct>=80)als.push({t:'warn',m:`⚠️ <b>${b.category}</b> em ${pct.toFixed(0)}%`});});
+  D.cards.forEach(c=>{
+    const fat=mbGetFatura(c,0);const today2=new Date();
+    const dD=Math.round((fat.due-today2)/(1000*60*60*24));
+    const total=D.transactions.filter(t=>{if(t.type!=='card'||String(t.cardId)!==String(c.id)||t.skipped)return false;const dt=new Date(t.date+'T12:00:00');return dt>=fat.start&&dt<=fat.end;}).reduce((a,t)=>a+t.amount,0);
+    if(dD>=0&&dD<=3&&total>0){
+      const lbl=dD===0?'vence <b>hoje</b>!':`vence em <b>${dD}d</b>`;
+      als.push({t:dD<=1?'danger':'warn',m:`💳 ${c.name} ${lbl} — ${f(total)}`});
+    }
+  });
   document.getElementById('alerts').innerHTML=als.map(a=>`<div class="alert ${a.t}">${a.m}</div>`).join('');
 
   // Balance hero
@@ -1744,6 +1770,30 @@ ${cats.length?cats.map(([cat,val])=>`<div class="cat-row">
 <script>window.print()<\/script></body></html>`);
   toast('🖨️ Abrindo para imprimir / PDF');
 }
+function checkCardNotifs(){
+  if(!('Notification'in window)||Notification.permission!=='granted')return;
+  const todayKey=new Date().toISOString().slice(0,10);
+  if(localStorage.getItem('fc_notif_last')===todayKey)return;
+  localStorage.setItem('fc_notif_last',todayKey);
+  const today=new Date();
+  D.cards.forEach(c=>{
+    const fat=mbGetFatura(c,0);
+    const dD=Math.round((fat.due-today)/(1000*60*60*24));
+    const total=D.transactions.filter(t=>{if(t.type!=='card'||String(t.cardId)!==String(c.id)||t.skipped)return false;const dt=new Date(t.date+'T12:00:00');return dt>=fat.start&&dt<=fat.end;}).reduce((a,t)=>a+t.amount,0);
+    if(dD>=0&&dD<=3&&total>0){
+      const lbl=dD===0?'vence hoje!':`vence em ${dD} dia${dD>1?'s':''}`;
+      try{new Notification(`💳 ${c.name} — Fatura ${lbl}`,{body:`Valor: ${f(total)} · Vencimento: ${fat.due.toLocaleDateString('pt-BR')}`,icon:'./icon.svg',tag:`card-due-${c.id}-${todayKey}`});}catch(e){}
+    }
+  });
+}
+function enableMobileNotifs(){
+  if(!('Notification'in window)){toast('⚠ Browser não suporta notificações');return;}
+  Notification.requestPermission().then(p=>{
+    if(p==='granted'){localStorage.removeItem('fc_notif_last');checkCardNotifs();toast('✓ Notificações ativadas');}
+    else toast('⚠ Permissão negada');
+    rSettings();
+  });
+}
 function exportMobileJSON(){
   const blob=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
@@ -1945,6 +1995,7 @@ async function doSync(){
 window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){D=mobileAdapt(JSON.parse(e.newValue));renderPage(curPg);setSyncStatus('ok','Sync automático');toast('🔄 Dados atualizados');}});
 setInterval(()=>{if(_gToken)_driveSync();},30000);
 if(window.google?.accounts)_initGIS();
+checkCardNotifs();
 
 // ── VOICE INPUT ──────────────────────────────────────────────
 (()=>{
