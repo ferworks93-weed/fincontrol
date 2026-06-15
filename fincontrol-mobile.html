@@ -970,6 +970,18 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
   </div>
 </div>
 
+<!-- CONFIRM SHEET -->
+<div class="ov" id="ov-confirm" onclick="closeSheet('ov-confirm',event)">
+  <div class="sheet" onclick="event.stopPropagation()" style="padding-bottom:calc(var(--safe) + 22px)">
+    <div class="sheet-hdl"></div>
+    <div class="sheet-title" id="confirm-msg" style="font-size:13px;font-weight:500;line-height:1.5;color:var(--text)"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px">
+      <button class="fbtn sec" onclick="closeSheet('ov-confirm')">Cancelar</button>
+      <button id="confirm-ok" class="fbtn" style="background:var(--crimson)">Excluir</button>
+    </div>
+  </div>
+</div>
+
 <!-- BUDGET SHEET -->
 <div class="ov" id="ov-bud" data-edit-id="" onclick="closeSheet('ov-bud',event)">
   <div class="sheet" onclick="event.stopPropagation()">
@@ -1309,7 +1321,7 @@ function rPortfolio(){
       <div class="inv-track"><div class="inv-fill" style="width:${pct}%"></div></div>
       <div style="display:flex;gap:6px;margin-top:9px">
         <button onclick="openInvOp('${i.id}')" class="btn primary sm" style="flex:1">+ Operação</button>
-        <button onclick="if(confirm('Remover?')){markDeleted('${i.id}');D.investments=D.investments.filter(x=>String(x.id)!=='${i.id}');save();rPortfolio();toast('🗑 Removido')}" class="btn danger sm">Remover</button>
+        <button onclick="mConfirm('Remover ${i.name}? O histórico de operações será perdido.',()=>{markDeleted('${i.id}');D.investments=D.investments.filter(x=>String(x.id)!=='${i.id}');save();rPortfolio();toast('🗑 Removido')})" class="btn danger sm">Remover</button>
       </div>
     </div>`;
   }).join('')||'<div class="empty">Nenhum investimento</div>';
@@ -1430,6 +1442,15 @@ function confirmAllFixed(){
 // ════════════════════════════════════════════
 // SHEETS
 // ════════════════════════════════════════════
+function mConfirm(msg,cb,btnLabel='Excluir'){
+  document.getElementById('confirm-msg').textContent=msg;
+  const btn=document.getElementById('confirm-ok');
+  btn.textContent=btnLabel;
+  btn.removeEventListener('click',btn._mch||null);
+  const h=()=>{closeSheet('ov-confirm');cb();btn.removeEventListener('click',h);};
+  btn._mch=h;btn.addEventListener('click',h);
+  document.getElementById('ov-confirm').classList.add('open');
+}
 function openSheet(type,sub=null){
   if(type==='tx'){
     const ov=document.getElementById('ov-tx');

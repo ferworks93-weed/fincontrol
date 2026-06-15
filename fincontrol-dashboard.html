@@ -1315,6 +1315,17 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
   <button class="btn pri" style="width:100%;padding:9px;font-size:12px" onclick="saveDiv()">Registrar provento</button>
 </div></div>
 
+<!-- Confirm Dialog -->
+<div class="ov" id="ov-confirm" onclick="closeOv('ov-confirm',event)">
+<div class="modal" onclick="event.stopPropagation()" style="max-width:380px">
+  <div class="modal-hd"><div class="modal-title" id="confirm-title">Confirmar</div></div>
+  <div id="confirm-msg" style="font-size:12px;color:var(--tm);margin-bottom:18px;line-height:1.5"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <button class="btn" style="padding:10px;font-size:12px" onclick="closeOv('ov-confirm')">Cancelar</button>
+    <button id="confirm-ok" class="btn danger" style="padding:10px;font-size:12px">Excluir</button>
+  </div>
+</div></div>
+
 <!-- Report -->
 <div class="ov" id="ov-report" onclick="closeOv('ov-report',event)">
 <div class="modal" onclick="event.stopPropagation()">
@@ -1906,14 +1917,15 @@ function setFlowPeriod(n,btn){
 }
 function setFilt(f,btn){txFilt=f;document.querySelectorAll('#sc-transactions .chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTx();}
 function delTx(id){
-  if(!confirm('Excluir este lançamento?'))return;
-  const t=D.transactions.find(t=>String(t.id)===String(id));
-  if(t && t.type!=='card' && t.accountId){
-    const acc=D.accounts.find(a=>a.id===t.accountId);
-    if(acc) acc.balance+=t.type==='income'?-t.amount:t.amount;
-  }
-  markDeleted(id);D.transactions=D.transactions.filter(t=>String(t.id)!==String(id));
-  save();render();toast('Lançamento removido');
+  showConfirm('Excluir este lançamento? Esta ação não pode ser desfeita.',()=>{
+    const t=D.transactions.find(t=>String(t.id)===String(id));
+    if(t && t.type!=='card' && t.accountId){
+      const acc=D.accounts.find(a=>a.id===t.accountId);
+      if(acc) acc.balance+=t.type==='income'?-t.amount:t.amount;
+    }
+    markDeleted(id);D.transactions=D.transactions.filter(t=>String(t.id)!==String(id));
+    save();render();toast('Lançamento removido');
+  });
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1972,7 +1984,7 @@ function confirmRecAmt() {
     date:d.toISOString().slice(0,10),cat:r.cat,accountId:1,cardId:null,installments:1,recurringId:id});
   save(); closeOv('ov-confirm-rec'); render(); toast(`✓ ${r.desc} lançado com ${fmt(amt)}`);
 }
-function delRecurring(id){if(!confirm('Remover este recorrente?'))return;markDeleted(id);D.recurring=D.recurring.filter(r=>String(r.id)!==String(id));save();renderRecurring();toast('Recorrente removido');}
+function delRecurring(id){showConfirm('Remover este recorrente?',()=>{markDeleted(id);D.recurring=D.recurring.filter(r=>String(r.id)!==String(id));save();renderRecurring();toast('Recorrente removido');});}
 function saveRecurring(){
   const desc=document.getElementById('rec-desc').value.trim();
   const type=document.getElementById('rec-type').value;
@@ -2127,7 +2139,7 @@ function renderAccounts(){
                tooltip:{...CHART_BASE.plugins.tooltip,callbacks:{label:c=>` ${c.label}: ${fmt(c.raw)}`}}}}
   });
 }
-function delAccount(id){if(!confirm('Remover esta conta?'))return;markDeleted(id);D.accounts=D.accounts.filter(a=>String(a.id)!==String(id));save();renderAccounts();toast('Conta removida');}
+function delAccount(id){showConfirm('Remover esta conta? O saldo será perdido.',()=>{markDeleted(id);D.accounts=D.accounts.filter(a=>String(a.id)!==String(id));save();renderAccounts();toast('Conta removida');});}
 
 // ════════════════════════════════════════════════════════════════
 // BUDGETS
@@ -2190,7 +2202,7 @@ function quickUpdateGoal(id,cur){
   if(isNaN(v))return;
   const g=D.goals.find(g=>g.id===id);if(g){g.current=v;save();renderGoals();toast('✓ Meta atualizada');}
 }
-function delGoal(id){if(!confirm('Remover meta?'))return;markDeleted(id);D.goals=D.goals.filter(g=>String(g.id)!==String(id));save();renderGoals();toast('Meta removida');}
+function delGoal(id){showConfirm('Remover esta meta?',()=>{markDeleted(id);D.goals=D.goals.filter(g=>String(g.id)!==String(id));save();renderGoals();toast('Meta removida');});}
 
 // ════════════════════════════════════════════════════════════════
 // CARDS
@@ -2283,7 +2295,7 @@ function renderCards(){
     </div>`;
   }).join('')||'<div class="empty">Nenhum parcelamento este mês</div>';
 }
-function delCard(id){if(!confirm('Remover cartão?'))return;markDeleted(id);D.cards=D.cards.filter(c=>String(c.id)!==String(id));save();renderCards();toast('Cartão removido');}
+function delCard(id){showConfirm('Remover este cartão? O histórico de faturas será mantido.',()=>{markDeleted(id);D.cards=D.cards.filter(c=>String(c.id)!==String(id));save();renderCards();toast('Cartão removido');});}
 
 function checkCardNotifs(){
   if(!('Notification'in window)||Notification.permission!=='granted')return;
@@ -2383,7 +2395,7 @@ function renderInvestments(){
       <div class="amt ${op.type==='resgate'?'amt-out':'amt-in'}">${op.type==='resgate'?'- ':'+'}${fmt(op.amount)}</div>
     </div>`).join('')||'<div class="empty">Nenhuma operação</div>';
 }
-function delInvest(id){if(!confirm('Remover ativo?'))return;markDeleted(id);D.investments=D.investments.filter(i=>String(i.id)!==String(id));save();renderInvestments();toast('Ativo removido');}
+function delInvest(id){showConfirm('Remover este ativo? O histórico de operações será perdido.',()=>{markDeleted(id);D.investments=D.investments.filter(i=>String(i.id)!==String(id));save();renderInvestments();toast('Ativo removido');});}
 
 // ════════════════════════════════════════════════════════════════
 // ANNUAL
@@ -2503,6 +2515,17 @@ function toggleDashSection(id,btn){
 // ════════════════════════════════════════════════════════════════
 function openOv(id){document.getElementById(id).classList.add('open');}
 function closeOv(id,e){if(!e||e.target===document.getElementById(id))document.getElementById(id).classList.remove('open');}
+function showConfirm(msg,cb,{title='Confirmar exclusão',btnLabel='Excluir'}={}){
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-msg').textContent=msg;
+  const btn=document.getElementById('confirm-ok');
+  btn.textContent=btnLabel;
+  const handler=()=>{closeOv('ov-confirm');cb();btn.removeEventListener('click',handler);};
+  btn.removeEventListener('click',btn._cfh||null);
+  btn._cfh=handler;
+  btn.addEventListener('click',handler);
+  openOv('ov-confirm');
+}
 
 function openMod(type,sub=null){
   if(type==='tx')        {prepTx(sub||'expense');openOv('ov-tx');}
