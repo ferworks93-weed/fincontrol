@@ -2466,6 +2466,8 @@ function resetMobileLayout(){
   }
   updateMnLbl();if(_sess)rHome();initMobileLayout();
   if(D.meta?.lastSync)setSyncStatus('ok',`Última sync: ${new Date(D.meta.lastSync).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`);
+  // Aviso de recorrentes pendentes — delay para home renderizar primeiro
+  if(_sess)setTimeout(checkRecReminder, 800);
 })();
 (()=>{
   let startY=0,pulling=false;
@@ -2676,6 +2678,45 @@ function resetMobileLayout(){
   document.querySelectorAll('.cust-item[data-t]').forEach(el=>el.classList.toggle('active',el.dataset.t===saved));
   document.querySelectorAll('.cs-item').forEach(el=>el.classList.toggle('active',el.dataset.cs===(localStorage.getItem('fc_chart')||'bars')));
 })();
+
+// ── RECURRING REMINDER ───────────────────────────────────────────
+function checkRecReminder(){
+  // Chave de dispensa: fc_rec_dismissed_YYYY-MM
+  const monthKey=`fc_rec_dismissed_${curY}-${String(curM+1).padStart(2,'0')}`;
+  if(localStorage.getItem(monthKey)==='1')return; // já dispensou este mês
+
+  const launched=new Set(D.transactions.filter(t=>inM(t)&&t.recurrentId).map(t=>t.recurrentId));
+  const pending=(D.recurrents||[]).filter(r=>r.active!==false&&!launched.has(r.id));
+  if(!pending.length)return;
+
+  // Preenche o modal
+  document.getElementById('rec-reminder-title').textContent=
+    `${pending.length} lançamento${pending.length>1?'s':''} pendente${pending.length>1?'s':''}`;
+  document.getElementById('rec-reminder-sub').textContent=
+    `${MO[curM]} ${curY} — confirme para manter o histórico correto`;
+
+  const colors={income:'var(--jade)',expense:'var(--crimson)',card:'var(--cobalt)',transfer:'var(--muted)'};
+  document.getElementById('rec-reminder-list').innerHTML=pending.map(r=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--s2);border-radius:8px;padding:9px 12px">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--text)">${r.desc}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:1px">
+          ${r.variable?'Valor variável':'R$ '+r.amount?.toLocaleString('pt-BR',{minimumFractionDigits:2})||'—'} · Dia ${r.day}
+        </div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:${colors[r.type]||'var(--text)'}">
+        ${r.type==='income'?'↑':'↓'} ${r.type==='income'?'Receita':r.type==='card'?'Cartão':'Despesa'}
+      </div>
+    </div>`).join('');
+
+  document.getElementById('ov-rec-reminder').style.display='flex';
+}
+
+function dismissRecReminder(){
+  const monthKey=`fc_rec_dismissed_${curY}-${String(curM+1).padStart(2,'0')}`;
+  localStorage.setItem(monthKey,'1');
+  document.getElementById('ov-rec-reminder').style.display='none';
+}
 
 // ── QR CODE EXPORT ───────────────────────────────────────────────
 function openQRExport(){
@@ -3079,6 +3120,24 @@ function obRender(){
   else{nextBtn.onclick=()=>obStep(1);}
 }
 </script>
+
+<!-- RECURRING REMINDER MODAL -->
+<div id="ov-rec-reminder" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);align-items:flex-end;justify-content:center">
+  <div style="background:var(--s1);border-radius:24px 24px 0 0;width:100%;padding:20px 18px calc(env(safe-area-inset-bottom,0px)+20px)">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <div style="width:42px;height:42px;border-radius:12px;background:var(--copper-s);border:1px solid var(--copper-b);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📋</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--text)" id="rec-reminder-title">Lançamentos pendentes</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px" id="rec-reminder-sub"></div>
+      </div>
+    </div>
+    <div id="rec-reminder-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;max-height:200px;overflow-y:auto"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" style="flex:1;padding:12px;font-size:12px" onclick="dismissRecReminder()">Depois</button>
+      <button class="btn primary" style="flex:1;padding:12px;font-size:13px;font-weight:700" onclick="dismissRecReminder();openSheet('rec-confirm')">Confirmar agora →</button>
+    </div>
+  </div>
+</div>
 
 <!-- QR EXPORT MODAL -->
 <div id="ov-qr" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.75);align-items:center;justify-content:center" onclick="if(event.target===this)document.getElementById('ov-qr').style.display='none'">
