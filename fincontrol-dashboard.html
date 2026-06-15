@@ -1605,8 +1605,8 @@ function calcPatrimonioHistory(){
     const accBal=Math.max(0,accNow+adj);
     const invBal=D.investments.reduce((tot,inv)=>{
       const ops=(inv.operations||[]).filter(op=>new Date((op.date||'2000-01-01')+'T12:00:00')<=eom);
-      const ap=ops.filter(op=>(op.type||op.kind)==='aporte').reduce((s,op)=>s+op.amount,0);
-      const re=ops.filter(op=>(op.type||op.kind)==='resgate').reduce((s,op)=>s+op.amount,0);
+      const ap=ops.filter(op=>op.type==='aporte').reduce((s,op)=>s+op.amount,0);
+      const re=ops.filter(op=>op.type==='resgate').reduce((s,op)=>s+op.amount,0);
       return tot+ap-re;
     },0);
     values.push(accBal+invBal);
