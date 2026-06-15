@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>FinControl</title>
+<script>(()=>{const s=localStorage.getItem('fc_font_size');if(s)document.documentElement.style.zoom=s;})()</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async onload="if(typeof _initGIS==='function')_initGIS()"></script>
 <style>
@@ -575,6 +576,12 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
   /* Topbar title visible on mobile */
   .tb-r{gap:6px}
 }
+/* Font size selector */
+.fz-opts{display:flex;gap:6px;margin-top:8px}
+.fz-opt{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;background:var(--s2);border:1.5px solid var(--bd2);border-radius:var(--r-sm);cursor:pointer;transition:border-color .15s,background .15s;font-family:var(--font);color:var(--tx)}
+.fz-opt.active{border-color:var(--cu);background:var(--cu-s)}
+.fz-opt span:first-child{line-height:1;font-weight:600;color:var(--tx)}
+.fz-opt span:last-child{font-size:9px;color:var(--tm)}
 /* Layout drag controls */
 [data-lid]{position:relative}
 .lc{position:absolute;top:6px;right:8px;display:flex;gap:3px;z-index:6;pointer-events:none}
@@ -2767,6 +2774,15 @@ window.goTo=function(sc,el){if(_origGoTo)_origGoTo(sc,el);if(window.innerWidth<7
         <input id="dash-prof-email" type="email" placeholder="seu@email.com" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-sm);padding:8px 10px;color:var(--tx);font-size:13px;font-family:var(--font)"></div>
     </div>
     <button onclick="saveDashProfile()" style="width:100%;background:var(--cu);border:none;border-radius:var(--r-sm);padding:10px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);margin-bottom:16px">Salvar perfil</button>
+    <div style="border-top:1px solid var(--bd);padding-top:16px;margin-bottom:16px">
+      <div style="font-size:10px;color:var(--tm);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Tamanho da fonte</div>
+      <div class="fz-opts" id="fz-opts-dash">
+        <button class="fz-opt" data-fz="0.88" onclick="setFontSize(0.88)"><span style="font-size:10px">Aa</span><span>Pequena</span></button>
+        <button class="fz-opt" data-fz="1"    onclick="setFontSize(1)">   <span style="font-size:13px">Aa</span><span>Normal</span></button>
+        <button class="fz-opt" data-fz="1.1"  onclick="setFontSize(1.1)"> <span style="font-size:15px">Aa</span><span>Grande</span></button>
+        <button class="fz-opt" data-fz="1.2"  onclick="setFontSize(1.2)"> <span style="font-size:17px">Aa</span><span>Maior</span></button>
+      </div>
+    </div>
     <div style="border-top:1px solid var(--bd);padding-top:16px">
       <div style="font-size:10px;color:var(--tm);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Suporte</div>
       <div id="dash-report-box" style="display:none;margin-bottom:10px">
@@ -2783,6 +2799,12 @@ window.goTo=function(sc,el){if(_origGoTo)_origGoTo(sc,el);if(window.innerWidth<7
 const PROF_KEY='fc_profile';
 function _loadProf(){return JSON.parse(localStorage.getItem(PROF_KEY)||'{}');}
 function _initials(name){return(name||'FA').trim().split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()||'FA';}
+
+function setFontSize(scale){
+  document.documentElement.style.zoom=scale;
+  localStorage.setItem('fc_font_size',scale);
+  document.querySelectorAll('.fz-opt').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.fz)===scale));
+}
 
 function toggleDashAvatarMenu(){
   const m=document.getElementById('dash-avatar-menu');
@@ -2803,6 +2825,8 @@ function openDashProfile(){
   document.getElementById('dash-report-send').style.display='none';
   document.getElementById('dash-report-btn').textContent='🐛 Reportar problema';
   document.getElementById('dash-report-msg').value='';
+  const fz=parseFloat(localStorage.getItem('fc_font_size')||'1');
+  document.querySelectorAll('#fz-opts-dash .fz-opt').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.fz)===fz));
   document.getElementById('ov-profile-dash').classList.add('open');
 }
 

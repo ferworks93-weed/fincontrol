@@ -12,6 +12,7 @@
 <link rel="apple-touch-icon" href="icon.svg">
 <script src="https://accounts.google.com/gsi/client" async onload="if(typeof _initGIS==='function')_initGIS()"></script>
 <title>FinControl</title>
+<script>(()=>{const s=localStorage.getItem('fc_font_size');if(s)document.documentElement.style.zoom=s;})()</script>
 <style>
 :root{
   --void:#0a0a0a; --s1:#131313; --s2:#1a1a1a; --s3:#222; --s4:#2a2a2a;
@@ -470,6 +471,12 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
 .empty{text-align:center;padding:28px 15px;color:var(--muted);font-size:12px}
 .empty-icon{font-size:28px;margin-bottom:7px;opacity:.5}
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--edge2);border-radius:2px}
+/* Font size selector */
+.fz-opts{display:flex;gap:6px;margin-top:8px}
+.fz-opt{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px;background:var(--s2);border:1.5px solid var(--edge2);border-radius:var(--r-sm);cursor:pointer;transition:border-color .15s,background .15s;font-family:var(--font);color:var(--text);-webkit-tap-highlight-color:transparent}
+.fz-opt.active{border-color:var(--copper);background:var(--copper-s)}
+.fz-opt span:first-child{line-height:1;font-weight:600;color:var(--text)}
+.fz-opt span:last-child{font-size:9px;color:var(--muted)}
 /* Layout drag */
 [data-lid]{position:relative}
 .lc{position:absolute;top:6px;right:6px;display:flex;gap:3px;z-index:6;opacity:.22;transition:opacity .2s}
@@ -2008,6 +2015,12 @@ function resetMobileLayout(){
   const PROF_KEY='fc_profile';
   function _loadProfile(){return JSON.parse(localStorage.getItem(PROF_KEY)||'{}');}
 
+  window.setFontSize=function(scale){
+    document.documentElement.style.zoom=scale;
+    localStorage.setItem('fc_font_size',scale);
+    document.querySelectorAll('.fz-opt').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.fz)===scale));
+  };
+
   window.openProfile=function(){
     const p=_loadProfile();
     document.getElementById('prof-name').value=p.name||'';
@@ -2021,6 +2034,8 @@ function resetMobileLayout(){
     document.getElementById('report-send-btn').style.display='none';
     document.getElementById('report-btn').textContent='🐛 Reportar problema';
     document.getElementById('report-msg').value='';
+    const fz=parseFloat(localStorage.getItem('fc_font_size')||'1');
+    document.querySelectorAll('#fz-opts-mobile .fz-opt').forEach(b=>b.classList.toggle('active',parseFloat(b.dataset.fz)===fz));
     document.getElementById('ov-profile').classList.add('open');
   };
 
@@ -2212,6 +2227,17 @@ function resetMobileLayout(){
     </div>
 
     <button class="fbtn" onclick="saveProfile()" style="margin-bottom:12px">Salvar perfil</button>
+
+    <!-- Tamanho da fonte -->
+    <div style="border-top:1px solid var(--edge);padding-top:16px;margin-bottom:16px">
+      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px">TAMANHO DA FONTE</div>
+      <div class="fz-opts" id="fz-opts-mobile">
+        <button class="fz-opt" data-fz="0.88" onclick="setFontSize(0.88)"><span style="font-size:10px">Aa</span><span>Pequena</span></button>
+        <button class="fz-opt" data-fz="1"    onclick="setFontSize(1)">   <span style="font-size:13px">Aa</span><span>Normal</span></button>
+        <button class="fz-opt" data-fz="1.1"  onclick="setFontSize(1.1)"> <span style="font-size:15px">Aa</span><span>Grande</span></button>
+        <button class="fz-opt" data-fz="1.2"  onclick="setFontSize(1.2)"> <span style="font-size:17px">Aa</span><span>Maior</span></button>
+      </div>
+    </div>
 
     <!-- Reportar problema -->
     <div style="border-top:1px solid var(--edge);padding-top:16px;margin-top:4px">
