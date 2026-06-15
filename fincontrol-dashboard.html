@@ -1542,14 +1542,14 @@ const save = () => {
     document.body.appendChild(msg);
     setTimeout(()=>msg.remove(), 6000);
   }
+  // Atualiza timestamp ANTES de transmitir para merge correto nas abas receptoras
+  D.meta.lastSync = new Date().toISOString();
   // BroadcastChannel — notifica outras abas em tempo real
   if(typeof _bc!=='undefined'&&_bc) _bc.postMessage({type:'sync',key:KEY,d:D});
   // IndexedDB — enfileira quando offline
   if(!navigator.onLine&&typeof _idb!=='undefined'&&_idb){
     try{const tx=_idb.transaction('queue','readwrite');tx.objectStore('queue').put({id:'pending',ts:Date.now(),data:JSON.stringify(D)});}catch(e){}
   }
-  // Atualiza timestamp e agenda sync imediato ao Drive
-  D.meta.lastSync = new Date().toISOString();
   clearTimeout(save._syncTimer);
   save._syncTimer = setTimeout(()=>{ if(typeof _driveSync==='function'&&_gToken) _driveSync(); }, 1500);
 };
