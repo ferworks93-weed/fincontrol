@@ -575,6 +575,16 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
   /* Topbar title visible on mobile */
   .tb-r{gap:6px}
 }
+/* Layout drag controls */
+[data-lid]{position:relative}
+.lc{position:absolute;top:6px;right:8px;display:flex;gap:3px;z-index:6;pointer-events:none}
+[data-lid]:hover .lc,.lc:focus-within{pointer-events:auto;opacity:1!important}
+.lc-btn{width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:3px;background:var(--s3);border:1px solid var(--bd);font-size:10px;color:var(--tm);opacity:.22;cursor:pointer;user-select:none;transition:opacity .15s;padding:0;line-height:1;font-family:inherit;pointer-events:auto}
+.lc-btn:hover{opacity:.85;color:var(--tx)}
+.lc-drag{cursor:grab}.lc-drag:active{cursor:grabbing}
+[data-lid].ld-dragging{opacity:.3}
+[data-lid].ld-over-top{outline:2px solid var(--cu);outline-offset:2px}
+[data-lid].ld-over-bot{outline:2px solid var(--cu);outline-offset:2px}
 </style>
 </head>
 <body>
@@ -956,6 +966,10 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
       <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd)">Personalizar Dashboard</div>
       <div style="font-size:11px;color:var(--tm);margin-bottom:10px">Escolha quais seções exibir no Dashboard principal:</div>
       <div id="dash-sections-cfg"></div>
+      <div class="setting-row" style="margin-top:14px">
+        <div><div class="setting-lbl">Restaurar layout</div><div class="setting-sub">Volta a ordem e visibilidade padrão dos cards</div></div>
+        <button class="btn sm" onclick="resetDashLayout()">Restaurar</button>
+      </div>
       <div style="margin-top:16px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd)">Categorias</div>
       <div style="margin-bottom:16px"><div style="font-size:11px;color:var(--tm);margin-bottom:6px">Receita</div><div class="tags" id="cat-income"></div></div>
       <div style="margin-bottom:16px"><div style="font-size:11px;color:var(--tm);margin-bottom:6px">Despesa</div><div class="tags" id="cat-expense"></div></div>
@@ -2523,11 +2537,69 @@ function toast(msg,dur=2600){const el=document.getElementById('toast');el.textCo
 // ════════════════════════════════════════════════════════════════
 document.getElementById('mLabel').textContent=`${MONTHS[curM]} ${curY}`;
 renderDash();
+initDashLayout();
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape') document.querySelectorAll('.ov.open').forEach(o=>o.classList.remove('open'));
   if(e.key==='n'&&!document.querySelector('.ov.open')) openMod('tx');
   if(e.key==='r'&&!document.querySelector('.ov.open')) openMod('recurring');
 });
+
+// ── LAYOUT ENGINE (Dashboard) ────────────────────────────────────
+const _DL=['d-kpi-row','dash-forecast-row','dash-charts-row','dash-widgets-row','dash-table-row'];
+const _DLK='fc_layout_dash';
+let _dlDragEl=null;
+function initDashLayout(){
+  const sc=document.getElementById('sc-dashboard');
+  const s=JSON.parse(localStorage.getItem(_DLK)||'{}');
+  const order=(s.order||[..._DL]).filter(id=>_DL.includes(id));
+  _DL.forEach(id=>{if(!order.includes(id))order.push(id);});
+  const hidden=new Set(s.hidden||[]);
+  order.forEach(id=>{const el=document.getElementById(id);if(el)sc.appendChild(el);});
+  _DL.forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.dataset.lid=id;
+    el.style.display=hidden.has(id)?'none':'';
+    if(el.querySelector('.lc'))return;
+    const lc=document.createElement('div');
+    lc.className='lc';
+    lc.innerHTML=`<button class="lc-btn lc-drag" title="Arrastar para reordenar">✎</button><button class="lc-btn" onclick="hideDashBlock('${id}')" title="Ocultar card">✕</button>`;
+    el.prepend(lc);
+    const handle=lc.querySelector('.lc-drag');
+    handle.addEventListener('mousedown',()=>{el.draggable=true;});
+    el.addEventListener('dragstart',e=>{_dlDragEl=el;e.dataTransfer.effectAllowed='move';setTimeout(()=>el.classList.add('ld-dragging'),0);});
+    el.addEventListener('dragend',()=>{
+      el.draggable=false;el.classList.remove('ld-dragging');
+      sc.querySelectorAll('[data-lid]').forEach(x=>x.classList.remove('ld-over-top','ld-over-bot'));
+      saveDashLayout();_dlDragEl=null;
+    });
+    el.addEventListener('dragover',e=>{
+      if(!_dlDragEl||_dlDragEl===el)return;e.preventDefault();
+      sc.querySelectorAll('[data-lid]').forEach(x=>x.classList.remove('ld-over-top','ld-over-bot'));
+      const isTop=e.clientY<el.getBoundingClientRect().top+el.offsetHeight/2;
+      el.classList.add(isTop?'ld-over-top':'ld-over-bot');
+      if(isTop)sc.insertBefore(_dlDragEl,el);else el.after(_dlDragEl);
+    });
+    el.addEventListener('dragleave',e=>{if(!el.contains(e.relatedTarget))el.classList.remove('ld-over-top','ld-over-bot');});
+    el.addEventListener('drop',e=>e.preventDefault());
+  });
+}
+function hideDashBlock(id){
+  const el=document.getElementById(id);if(!el)return;
+  el.style.display='none';saveDashLayout();
+  toast('Card oculto — restaure em Configurações > Layout');
+}
+function saveDashLayout(){
+  const sc=document.getElementById('sc-dashboard');
+  const order=[];sc.querySelectorAll('[data-lid]').forEach(el=>order.push(el.dataset.lid));
+  const hidden=_DL.filter(id=>{const el=document.getElementById(id);return el&&el.style.display==='none';});
+  localStorage.setItem(_DLK,JSON.stringify({order,hidden}));
+}
+function resetDashLayout(){
+  localStorage.removeItem(_DLK);
+  const sc=document.getElementById('sc-dashboard');
+  _DL.forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='';sc.appendChild(el);}});
+  toast('Layout padrão restaurado');
+}
 
 // ── SIDEBAR MOBILE TOGGLE ────────────────────────────────────────
 function toggleSidebar(){

@@ -470,6 +470,15 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
 .empty{text-align:center;padding:28px 15px;color:var(--muted);font-size:12px}
 .empty-icon{font-size:28px;margin-bottom:7px;opacity:.5}
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--edge2);border-radius:2px}
+/* Layout drag */
+[data-lid]{position:relative}
+.lc{position:absolute;top:6px;right:6px;display:flex;gap:3px;z-index:6;opacity:.22;transition:opacity .2s}
+[data-lid]:hover .lc{opacity:.75}
+.lc-btn{width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:4px;background:var(--s3);border:1px solid var(--edge2);font-size:11px;color:var(--muted);cursor:pointer;user-select:none;padding:0;line-height:1;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.lc-btn:active{opacity:1;background:var(--s2)}
+.lc-drag{touch-action:none}
+[data-lid].ld-dragging{opacity:.35}
+[data-lid].ld-over-top,[data-lid].ld-over-bot{outline:2px solid var(--copper);outline-offset:3px;border-radius:10px}
 </style>
 </head>
 <body>
@@ -508,41 +517,53 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
   <!-- HOME -->
   <div class="page active" id="pg-home">
     <div id="alerts"></div>
-    <div class="hero">
-      <div class="hero-label">Saldo do mês</div>
-      <div class="hero-amount" id="h-bal">—</div>
-      <div class="hero-meta" id="h-meta">—</div>
-    </div>
-    <div class="mini-row">
-      <div class="mini"><div class="mini-lbl">Entradas</div><div class="mini-val pos" id="h-inc">—</div></div>
-      <div class="mini"><div class="mini-lbl">Saídas</div><div class="mini-val neg" id="h-exp">—</div></div>
-    </div>
-    <div class="card" id="h-forecast" style="margin-bottom:10px;padding:10px 12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <div style="font-size:11px;font-weight:600;color:var(--text)">Projeção do mês</div>
-        <div style="font-size:9px;color:var(--muted)" id="hfc-day"></div>
+    <div id="mb-hero">
+      <div class="hero">
+        <div class="hero-label">Saldo do mês</div>
+        <div class="hero-amount" id="h-bal">—</div>
+        <div class="hero-meta" id="h-meta">—</div>
       </div>
-      <div style="height:3px;background:var(--s3);border-radius:2px;margin-bottom:10px;overflow:hidden">
-        <div id="hfc-bar" style="height:100%;width:0%;border-radius:2px;background:var(--copper);transition:width .4s"></div>
+      <div class="mini-row">
+        <div class="mini"><div class="mini-lbl">Entradas</div><div class="mini-val pos" id="h-inc">—</div></div>
+        <div class="mini"><div class="mini-lbl">Saídas</div><div class="mini-val neg" id="h-exp">—</div></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px" id="hfc-grid"></div>
     </div>
-    <div class="sec">Ações rápidas</div>
-    <div class="qa">
-      <button class="qa-btn" onclick="openSheet('tx','income')"><span class="qa-icon">💰</span><span class="qa-lbl">Receita</span></button>
-      <button class="qa-btn" onclick="openSheet('tx','expense')"><span class="qa-icon">💸</span><span class="qa-lbl">Despesa</span></button>
-      <button class="qa-btn" onclick="openSheet('tx','card')"><span class="qa-icon">▭</span><span class="qa-lbl">Cartão</span></button>
-      <button class="qa-btn" onclick="openSheet('rec-confirm')"><span class="qa-icon">↺</span><span class="qa-lbl">Recorrentes</span></button>
-      <button class="qa-btn" id="voice-btn" onclick="startVoice()" style="grid-column:1/-1;flex-direction:row;gap:10px;justify-content:center;padding:13px"><span class="qa-icon" style="font-size:20px">🎤</span><span class="qa-lbl" style="font-size:11px;color:var(--text)">Registro por voz</span></button>
+    <div id="mb-forecast">
+      <div class="card" id="h-forecast" style="margin-bottom:10px;padding:10px 12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:11px;font-weight:600;color:var(--text)">Projeção do mês</div>
+          <div style="font-size:9px;color:var(--muted)" id="hfc-day"></div>
+        </div>
+        <div style="height:3px;background:var(--s3);border-radius:2px;margin-bottom:10px;overflow:hidden">
+          <div id="hfc-bar" style="height:100%;width:0%;border-radius:2px;background:var(--copper);transition:width .4s"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px" id="hfc-grid"></div>
+      </div>
     </div>
-    <div class="card">
-      <div class="card-title">Fluxo — 6 meses</div>
-      <div class="bar-chart" id="h-chart"></div>
+    <div id="mb-quickact">
+      <div class="sec">Ações rápidas</div>
+      <div class="qa">
+        <button class="qa-btn" onclick="openSheet('tx','income')"><span class="qa-icon">💰</span><span class="qa-lbl">Receita</span></button>
+        <button class="qa-btn" onclick="openSheet('tx','expense')"><span class="qa-icon">💸</span><span class="qa-lbl">Despesa</span></button>
+        <button class="qa-btn" onclick="openSheet('tx','card')"><span class="qa-icon">▭</span><span class="qa-lbl">Cartão</span></button>
+        <button class="qa-btn" onclick="openSheet('rec-confirm')"><span class="qa-icon">↺</span><span class="qa-lbl">Recorrentes</span></button>
+        <button class="qa-btn" id="voice-btn" onclick="startVoice()" style="grid-column:1/-1;flex-direction:row;gap:10px;justify-content:center;padding:13px"><span class="qa-icon" style="font-size:20px">🎤</span><span class="qa-lbl" style="font-size:11px;color:var(--text)">Registro por voz</span></button>
+      </div>
     </div>
-    <div class="sec">Orçamentos</div>
-    <div class="card" id="h-budgets"></div>
-    <div class="sec">Recentes</div>
-    <div id="h-recent"></div>
+    <div id="mb-chart">
+      <div class="card">
+        <div class="card-title">Fluxo — 6 meses</div>
+        <div class="bar-chart" id="h-chart"></div>
+      </div>
+    </div>
+    <div id="mb-budgets">
+      <div class="sec">Orçamentos</div>
+      <div class="card" id="h-budgets"></div>
+    </div>
+    <div id="mb-recent">
+      <div class="sec">Recentes</div>
+      <div id="h-recent"></div>
+    </div>
   </div>
 
   <!-- TRANSACTIONS -->
@@ -636,6 +657,7 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
       <div style="font-size:12px;font-weight:600;margin-bottom:12px">📋 Personalizar Início</div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Escolha quais seções exibir na tela Início</div>
       <div id="home-sections-cfg"></div>
+      <button class="btn" style="width:100%;padding:9px;margin-top:10px;font-size:11px" onclick="resetMobileLayout()">↺ Restaurar layout padrão</button>
     </div>
 
     <div class="card" style="margin-bottom:10px">
@@ -1772,12 +1794,103 @@ function toast(msg,dur=2600){const el=document.getElementById('toast');el.textCo
 
 // ════════════════════════════════════════════
 // INIT
+// ── MOBILE LAYOUT ENGINE ─────────────────────────────────────────
+const _ML=['mb-hero','mb-forecast','mb-quickact','mb-chart','mb-budgets','mb-recent'];
+const _MLK='fc_layout_mobile';
+let _mlDragEl=null;
+function initMobileLayout(){
+  const pg=document.getElementById('pg-home');
+  const s=JSON.parse(localStorage.getItem(_MLK)||'{}');
+  const order=(s.order||[..._ML]).filter(id=>_ML.includes(id));
+  _ML.forEach(id=>{if(!order.includes(id))order.push(id);});
+  const hidden=new Set(s.hidden||[]);
+  order.forEach(id=>{const el=document.getElementById(id);if(el)pg.appendChild(el);});
+  _ML.forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.dataset.lid=id;
+    el.style.display=hidden.has(id)?'none':'';
+    if(el.querySelector('.lc'))return;
+    const lc=document.createElement('div');
+    lc.className='lc';
+    lc.innerHTML=`<button class="lc-btn lc-drag" title="Mover">✎</button><button class="lc-btn" onclick="hideMobileBlock('${id}')" title="Ocultar">✕</button>`;
+    el.prepend(lc);
+    const handle=lc.querySelector('.lc-drag');
+    // Touch drag
+    handle.addEventListener('touchstart',e=>_mlTouch(e,el,pg),{passive:false});
+    // Mouse drag (desktop testing)
+    handle.addEventListener('mousedown',()=>{el.draggable=true;});
+    el.addEventListener('dragstart',e=>{_mlDragEl=el;e.dataTransfer.effectAllowed='move';setTimeout(()=>el.classList.add('ld-dragging'),0);});
+    el.addEventListener('dragend',()=>{
+      el.draggable=false;el.classList.remove('ld-dragging');
+      pg.querySelectorAll('[data-lid]').forEach(x=>x.classList.remove('ld-over-top','ld-over-bot'));
+      saveMobileLayout();_mlDragEl=null;
+    });
+    el.addEventListener('dragover',e=>{
+      if(!_mlDragEl||_mlDragEl===el)return;e.preventDefault();
+      pg.querySelectorAll('[data-lid]').forEach(x=>x.classList.remove('ld-over-top','ld-over-bot'));
+      const isTop=e.clientY<el.getBoundingClientRect().top+el.offsetHeight/2;
+      el.classList.add(isTop?'ld-over-top':'ld-over-bot');
+      if(isTop)pg.insertBefore(_mlDragEl,el);else el.after(_mlDragEl);
+    });
+    el.addEventListener('dragleave',e=>{if(!el.contains(e.relatedTarget))el.classList.remove('ld-over-top','ld-over-bot');});
+    el.addEventListener('drop',e=>e.preventDefault());
+  });
+}
+function _mlTouch(e,el,pg){
+  e.preventDefault();
+  const startY=e.touches[0].clientY;
+  let moved=false;
+  el.style.opacity='.4';
+  function onMove(ev){
+    const dy=Math.abs(ev.touches[0].clientY-startY);
+    if(dy<10)return;
+    moved=true;ev.preventDefault();
+    const t=ev.touches[0];
+    el.style.display='none';
+    const under=document.elementFromPoint(t.clientX,t.clientY);
+    el.style.display='';
+    const tb=under?.closest('[data-lid]');
+    if(tb&&tb!==el){
+      pg.querySelectorAll('[data-lid]').forEach(x=>x.classList.remove('ld-over-top','ld-over-bot'));
+      const isTop=t.clientY<tb.getBoundingClientRect().top+tb.offsetHeight/2;
+      tb.classList.add(isTop?'ld-over-top':'ld-over-bot');
+      if(isTop)pg.insertBefore(el,tb);else tb.after(el);
+    }
+  }
+  function onEnd(){
+    el.style.opacity='';
+    pg.querySelectorAll('[data-lid]').forEach(x=>x.classList.remove('ld-over-top','ld-over-bot'));
+    document.removeEventListener('touchmove',onMove);
+    document.removeEventListener('touchend',onEnd);
+    if(moved)saveMobileLayout();
+  }
+  document.addEventListener('touchmove',onMove,{passive:false});
+  document.addEventListener('touchend',onEnd);
+}
+function hideMobileBlock(id){
+  const el=document.getElementById(id);if(!el)return;
+  el.style.display='none';saveMobileLayout();
+  toast('Card oculto — restaure em Config > Layout');
+}
+function saveMobileLayout(){
+  const pg=document.getElementById('pg-home');
+  const order=[];pg.querySelectorAll('[data-lid]').forEach(el=>order.push(el.dataset.lid));
+  const hidden=_ML.filter(id=>{const el=document.getElementById(id);return el&&el.style.display==='none';});
+  localStorage.setItem(_MLK,JSON.stringify({order,hidden}));
+}
+function resetMobileLayout(){
+  localStorage.removeItem(_MLK);
+  const pg=document.getElementById('pg-home');
+  _ML.forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='';pg.appendChild(el);}});
+  toast('Layout restaurado');
+}
+
 // ════════════════════════════════════════════
 (()=>{
   const d=new Date();
   const days=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
   document.getElementById('hdrDate').textContent=`${days[d.getDay()]}, ${d.getDate()} de ${MO[d.getMonth()]}`;
-  updateMnLbl();rHome();
+  updateMnLbl();rHome();initMobileLayout();
   if(D.meta?.lastSync)setSyncStatus('ok',`Última sync: ${new Date(D.meta.lastSync).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`);
 })();
 (()=>{
