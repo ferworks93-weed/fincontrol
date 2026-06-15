@@ -529,6 +529,14 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
   <div class="login-note">Seus dados ficam protegidos<br>na sua própria conta Google Drive</div>
 </div>
 
+<!-- Sync overlay: mostrado após login até o Drive sync concluir -->
+<div id="sync-overlay" style="display:none;position:fixed;inset:0;z-index:9998;background:#0a0a0a;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+  <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="2" y="21" width="7" height="13" rx="2" fill="#b87333" opacity=".45"/><rect x="15" y="12" width="7" height="22" rx="2" fill="#b87333" opacity=".72"/><rect x="28" y="3" width="7" height="31" rx="2" fill="#b87333"/></svg>
+  <div style="font-size:13px;font-weight:600;color:#fff">Carregando seus dados…</div>
+  <div style="font-size:11px;color:rgba(255,255,255,.4)">Sincronizando com o Google Drive</div>
+  <div style="width:40px;height:3px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden;margin-top:4px"><div id="sync-bar" style="height:100%;width:0%;background:#b87333;border-radius:2px;transition:width 2s linear"></div></div>
+</div>
+
 <header class="hdr">
   <div class="hdr-row">
     <div>
@@ -1853,6 +1861,7 @@ let _loginPending=false;
 async function handleGoogleLogin(user){
   localStorage.setItem('fc_session',JSON.stringify({userId:user.id,name:user.name,email:user.email,picture:user.picture||''}));
   localStorage.setItem('fc_drive_connected','1');
+  localStorage.setItem('fc_fresh_login','1'); // flag para aguardar sync antes de renderizar
   const ls=document.getElementById('login-screen');
   ls.classList.add('hiding');
   setTimeout(()=>{ls.style.display='none';location.reload();},300);
@@ -1994,6 +2003,28 @@ async function doSync(){
 
 window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){D=mobileAdapt(JSON.parse(e.newValue));renderPage(curPg);setSyncStatus('ok','Sync automático');toast('🔄 Dados atualizados');}});
 setInterval(()=>{if(_gToken)_driveSync();},30000);
+
+// Se veio de login recente, mostra overlay até sync concluir
+(function(){
+  const ov=document.getElementById('sync-overlay');
+  const bar=document.getElementById('sync-bar');
+  if(localStorage.getItem('fc_fresh_login')==='1'&&ov){
+    localStorage.removeItem('fc_fresh_login');
+    ov.style.display='flex';
+    setTimeout(()=>{if(bar)bar.style.width='80%';},100);
+    // Patch: intercepta o final do _driveSync para fechar overlay
+    const orig=window._driveSync;
+    window._driveSync=async function(){
+      try{await orig.apply(this,arguments);}finally{
+        if(bar)bar.style.width='100%';
+        setTimeout(()=>{ov.style.opacity='0';ov.style.transition='opacity .3s';setTimeout(()=>{ov.style.display='none';},300);},400);
+      }
+    };
+    // Timeout de segurança: fecha após 6s mesmo se sync falhar
+    setTimeout(()=>{if(ov.style.display!=='none'){ov.style.opacity='0';ov.style.transition='opacity .3s';setTimeout(()=>{ov.style.display='none';},300);}},6000);
+  }
+})();
+
 if(window.google?.accounts)_initGIS();
 checkCardNotifs();
 
