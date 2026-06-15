@@ -3669,6 +3669,18 @@ window.goTo=function(sc,el){if(_origGoTo)_origGoTo(sc,el);if(window.innerWidth<7
   window.setTheme=setTheme;
   window.setChartStyle=setChartStyle;
   window.openCustomize=openCustomize;
+  // Expose all HTML-callable functions to global scope (IIFE scope isolation fix)
+  Object.assign(window,{
+    _initGIS,loginWithGoogle,syncAction,logout,closeSidebar,toggleSidebar,
+    chMonth,openSearch,openMod,editSavingsGoal,saveSavingsGoal,setFlowPeriod,
+    setFilt,renderTx,handleImportFile,toggleAllImport,confirmImport,
+    renderAccounts,resetDashLayout,exportJSON,importJSON,exportCSV,
+    confirmClearAll,clearAll,enableDashNotifs,driveConnect,doSync,driveDisconnect,
+    setCryptoPassword,closeOv,selTy,aiCatHint,aiCatApply,saveTx,saveRecurring,
+    saveAccount,saveTransfer,saveBudget,delBudgetEdit,saveGoal,saveCard,
+    saveInvest,saveInvestOp,saveDiv,exportReport,addCat,confirmRecAmt,
+    closeSearch,runSearch,goTo
+  });
   const saved=localStorage.getItem('fc_theme')||'copper';
   document.documentElement.setAttribute('data-theme',saved);
   document.querySelectorAll('.cust-item[data-t]').forEach(el=>el.classList.toggle('active',el.dataset.t===saved));
