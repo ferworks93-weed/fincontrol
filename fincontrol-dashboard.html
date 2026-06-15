@@ -1707,7 +1707,16 @@ function renderTx() {
   document.getElementById('tx-table').innerHTML=list.map(t=>txRow(t)).join('')||`<tr><td colspan="7"><div class="empty"><div class="empty-icon">≡</div>Nenhum lançamento</div></td></tr>`;
 }
 function setFilt(f,btn){txFilt=f;document.querySelectorAll('#sc-transactions .chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTx();}
-function delTx(id){if(!confirm('Excluir este lançamento?'))return;D.transactions=D.transactions.filter(t=>String(t.id)!==String(id));save();render();toast('Lançamento removido');}
+function delTx(id){
+  if(!confirm('Excluir este lançamento?'))return;
+  const t=D.transactions.find(t=>String(t.id)===String(id));
+  if(t && t.type!=='card' && t.accountId){
+    const acc=D.accounts.find(a=>a.id===t.accountId);
+    if(acc) acc.balance+=t.type==='income'?-t.amount:t.amount;
+  }
+  D.transactions=D.transactions.filter(t=>String(t.id)!==String(id));
+  save();render();toast('Lançamento removido');
+}
 
 // ════════════════════════════════════════════════════════════════
 // RECURRING
