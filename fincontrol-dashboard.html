@@ -780,8 +780,16 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
   <div class="g-main mb" id="dash-charts-row">
     <div class="card">
       <div class="card-hd">
-        <div><div class="card-title">Fluxo — últimos 6 meses</div><div class="card-sub">Receitas vs Despesas</div></div>
-        <div class="leg"><div class="leg-item"><div class="leg-dot" style="background:var(--gn)"></div>Receitas</div><div class="leg-item"><div class="leg-dot" style="background:var(--rd)"></div>Despesas</div></div>
+        <div><div class="card-title" id="flow-title">Fluxo — últimos 6 meses</div><div class="card-sub">Receitas vs Despesas</div></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex;gap:3px" id="flow-period-btns">
+            <button onclick="setFlowPeriod(6,this)" class="chip active" style="font-size:9px;padding:2px 7px">6M</button>
+            <button onclick="setFlowPeriod(12,this)" class="chip" style="font-size:9px;padding:2px 7px">12M</button>
+            <button onclick="setFlowPeriod(24,this)" class="chip" style="font-size:9px;padding:2px 7px">24M</button>
+            <button onclick="setFlowPeriod(36,this)" class="chip" style="font-size:9px;padding:2px 7px">36M</button>
+          </div>
+          <div class="leg"><div class="leg-item"><div class="leg-dot" style="background:var(--gn)"></div>Receitas</div><div class="leg-item"><div class="leg-dot" style="background:var(--rd)"></div>Despesas</div></div>
+        </div>
       </div>
       <div style="position:relative;height:180px;width:100%"><canvas id="flowChart"></canvas></div>
     </div>
@@ -1427,7 +1435,7 @@ const save = () => {
 // ════════════════════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════════════════════
-let curM = new Date().getMonth(), curY = new Date().getFullYear(), chartStyle = localStorage.getItem('fc_chart') || 'bars';
+let curM = new Date().getMonth(), curY = new Date().getFullYear(), chartStyle = localStorage.getItem('fc_chart') || 'bars', flowMonths = parseInt(localStorage.getItem('fc_flow_months')) || 6;
 let curSc = 'dashboard', txFilt = 'all', selType = 'expense';
 let ivOpKind = 'aporte';
 let importRows = [];
@@ -1650,13 +1658,19 @@ function renderDash() {
   // Flow chart
   killChart('flow');
   const fl=[],il=[],el=[];
-  for(let i=-5;i<=0;i++){
+  const step=flowMonths>12?3:1; // labels a cada 3 meses para 24/36M
+  for(let i=-(flowMonths-1);i<=0;i++){
     const d=new Date(curY,curM+i,1),m=d.getMonth(),y=d.getFullYear();
     const tx=D.transactions.filter(t=>inM(t,m,y));
-    fl.push(MONTHS[m].slice(0,3));
+    const idx=i+(flowMonths-1);
+    fl.push((idx%step===0||i===0)?MONTHS[m].slice(0,3)+(flowMonths>12?` ${String(y).slice(2)}`:''):'');
     il.push(tx.filter(t=>t.type==='income').reduce((a,t)=>a+t.amount,0));
     el.push(tx.filter(t=>t.type!=='income'&&t.type!=='transfer').reduce((a,t)=>a+t.amount,0));
   }
+  const flowTitleEl=document.getElementById('flow-title');
+  if(flowTitleEl) flowTitleEl.textContent=`Fluxo — últimos ${flowMonths} meses`;
+  // Sincronizar botões ativos
+  document.querySelectorAll('#flow-period-btns .chip').forEach(b=>b.classList.toggle('active',b.textContent===flowMonths+'M'));
   const flowCtx=document.getElementById('flowChart').getContext('2d');
   const tooltipOpts={...CHART_BASE.plugins.tooltip,callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}};
   if(chartStyle==='line'){
@@ -1741,16 +1755,16 @@ function renderSavingsGoal(){
   if(row) row.style.display=show('savings')?'':'none';
   const el=id=>document.getElementById(id);
   if(!el('sg-bar'))return;
-  el('sg-month-label').textContent=`${MONTHS[curM]} ${curY}`;
+  el('sg-month-label').textContent=`${MONTHS[curM]} ${curY}${goal>0?' · Meta: '+fmt(goal):''}`;
   if(goal===0){
-    el('sg-values').textContent='Nenhuma meta definida';
+    el('sg-values').textContent='Nenhuma meta definida para este mês';
     el('sg-label-left').textContent='';
     el('sg-pct').textContent='';
     el('sg-bar').style.width='0%';
     el('sg-bar').style.background='var(--s3)';
   }else{
-    el('sg-values').textContent=`${fmt(saved)} de ${fmt(goal)}`;
-    el('sg-label-left').textContent=saved>=0?'Poupado este mês':'Saldo negativo';
+    el('sg-values').textContent=`${fmt(saved)} poupado — meta ${fmt(goal)}`;
+    el('sg-label-left').textContent=saved>=0?'Poupado este mês':'Saldo negativo este mês';
     el('sg-pct').textContent=pct.toFixed(0)+'%';
     el('sg-pct').style.color=color;
     el('sg-bar').style.width=pct+'%';
@@ -1816,6 +1830,12 @@ function renderTx() {
   list.sort((a,b)=>b.date.localeCompare(a.date));
   const globalBanner=q?`<tr><td colspan="7" style="padding:6px 12px;font-size:11px;color:var(--td);background:var(--s2)">🔍 Buscando em todos os meses — ${list.length} resultado(s)</td></tr>`:'';
   document.getElementById('tx-table').innerHTML=globalBanner+( list.map(t=>txRow(t)).join('')||`<tr><td colspan="7"><div class="empty"><div class="empty-icon">≡</div>Nenhum lançamento</div></td></tr>`);
+}
+function setFlowPeriod(n,btn){
+  flowMonths=n;localStorage.setItem('fc_flow_months',n);
+  document.querySelectorAll('#flow-period-btns .chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDash();
 }
 function setFilt(f,btn){txFilt=f;document.querySelectorAll('#sc-transactions .chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTx();}
 function delTx(id){
