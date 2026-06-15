@@ -1021,15 +1021,22 @@ function txCard(t){
 // TRANSACTIONS
 // ════════════════════════════════════════════
 function rTx(){
-  const q=(document.getElementById('tx-search')?.value||'').toLowerCase();
-  let list=D.transactions.filter(t=>inM(t)&&!t.skipped);
+  const q=(document.getElementById('tx-search')?.value||'').toLowerCase().trim();
+  let list=q?D.transactions.filter(t=>!t.skipped):D.transactions.filter(t=>inM(t)&&!t.skipped);
   if(txFilt!=='all')list=list.filter(t=>t.type===txFilt);
-  if(q)list=list.filter(t=>t.desc.toLowerCase().includes(q)||(t.cat||'').toLowerCase().includes(q));
+  if(q)list=list.filter(t=>
+    t.desc.toLowerCase().includes(q)||
+    (t.cat||'').toLowerCase().includes(q)||
+    String(t.amount).includes(q)||
+    (t.date||'').includes(q)
+  );
   list.sort((a,b)=>b.date.localeCompare(a.date));
-  document.getElementById('tx-list').innerHTML=list.map(t=>{
+  const globalBanner=q?`<div style="padding:6px 12px;font-size:11px;color:var(--td);background:var(--s2);border-radius:8px;margin-bottom:6px">🔍 Todos os meses · ${list.length} resultado(s)</div>`:'';
+  document.getElementById('tx-list').innerHTML=globalBanner+(list.map(t=>{
     const isIn=t.type==='income';const icon=CI[t.cat]||'📌';const card=t.cardId?gc(t.cardId):null;
-    return`<div class="tx" onclick="editTx('${t.id}')"><div class="tx-ico ${t.type}">${icon}</div><div class="tx-body"><div class="tx-name">${t.desc}</div><div class="tx-sub">${t.cat}${card?` · ${card.name}`:''}</div></div><div class="tx-right"><div class="tx-amt ${isIn?'pos':'neg'}">${isIn?'+':'-'} ${f(t.amount)}</div><div class="tx-date">${ds(t.date)}</div></div></div>`;
-  }).join('')||'<div class="empty"><div class="empty-icon">≡</div>Nenhum lançamento</div>';
+    const monthLabel=q?`<span style="font-size:10px;color:var(--td);margin-left:4px">${t.date?.slice(0,7)||''}</span>`:'';
+    return`<div class="tx" onclick="editTx('${t.id}')"><div class="tx-ico ${t.type}">${icon}</div><div class="tx-body"><div class="tx-name">${t.desc}${monthLabel}</div><div class="tx-sub">${t.cat}${card?` · ${card.name}`:''}</div></div><div class="tx-right"><div class="tx-amt ${isIn?'pos':'neg'}">${isIn?'+':'-'} ${f(t.amount)}</div><div class="tx-date">${ds(t.date)}</div></div></div>`;
+  }).join('')||'<div class="empty"><div class="empty-icon">≡</div>Nenhum lançamento</div>');
 }
 function setFilt(flt,btn){txFilt=flt;document.querySelectorAll('#pg-tx .chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');rTx();}
 

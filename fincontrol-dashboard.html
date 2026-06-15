@@ -1699,12 +1699,18 @@ function renderDash() {
 // TRANSACTIONS
 // ════════════════════════════════════════════════════════════════
 function renderTx() {
-  const q=(document.getElementById('txQ')?.value||'').toLowerCase();
-  let list=D.transactions.filter(t=>inM(t));
+  const q=(document.getElementById('txQ')?.value||'').toLowerCase().trim();
+  let list=q?D.transactions.filter(t=>!t.skipped):D.transactions.filter(t=>inM(t));
   if(txFilt!=='all') list=list.filter(t=>t.type===txFilt);
-  if(q) list=list.filter(t=>t.desc.toLowerCase().includes(q)||t.cat.toLowerCase().includes(q));
+  if(q) list=list.filter(t=>
+    t.desc.toLowerCase().includes(q)||
+    (t.cat||'').toLowerCase().includes(q)||
+    String(t.amount).includes(q)||
+    (t.date||'').includes(q)
+  );
   list.sort((a,b)=>b.date.localeCompare(a.date));
-  document.getElementById('tx-table').innerHTML=list.map(t=>txRow(t)).join('')||`<tr><td colspan="7"><div class="empty"><div class="empty-icon">≡</div>Nenhum lançamento</div></td></tr>`;
+  const globalBanner=q?`<tr><td colspan="7" style="padding:6px 12px;font-size:11px;color:var(--td);background:var(--s2)">🔍 Buscando em todos os meses — ${list.length} resultado(s)</td></tr>`:'';
+  document.getElementById('tx-table').innerHTML=globalBanner+( list.map(t=>txRow(t)).join('')||`<tr><td colspan="7"><div class="empty"><div class="empty-icon">≡</div>Nenhum lançamento</div></td></tr>`);
 }
 function setFilt(f,btn){txFilt=f;document.querySelectorAll('#sc-transactions .chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTx();}
 function delTx(id){
