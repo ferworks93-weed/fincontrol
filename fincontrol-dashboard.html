@@ -1107,12 +1107,41 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
         <div><kbd style="background:var(--s3);border:1px solid var(--bd2);padding:1px 5px;border-radius:3px;font-size:10px">Esc</kbd> Fechar modal</div>
         <div><kbd style="background:var(--s3);border:1px solid var(--bd2);padding:1px 5px;border-radius:3px;font-size:10px">1–9</kbd> Navegar telas</div>
       </div>
+      <div style="margin-top:16px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd)">Ajuda</div>
+      <div class="setting-row">
+        <div><div class="setting-lbl">Tour do app</div><div class="setting-sub">Conheça todos os recursos do FinControl</div></div>
+        <button class="btn sm" onclick="startOnboarding()" style="border-color:var(--cu-b);color:var(--cu)">🎓 Iniciar</button>
+      </div>
     </div>
   </div>
 </div>
 
   </div><!-- /content -->
 </main>
+
+<!-- ══════════════════════════════════════════════════════════════
+     ONBOARDING
+══════════════════════════════════════════════════════════════ -->
+<div id="ov-onboarding" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.65);align-items:center;justify-content:center" onclick="if(event.target===this)closeOnboarding()">
+  <div style="background:var(--s1);border:1px solid var(--bd);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;margin:16px">
+    <!-- progress bar -->
+    <div style="height:3px;background:var(--bd2);flex-shrink:0">
+      <div id="ob-progress" style="height:100%;background:var(--cu);border-radius:3px;transition:width .35s ease;width:0%"></div>
+    </div>
+    <!-- header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 0;flex-shrink:0">
+      <span id="ob-step-lbl" style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--tm);text-transform:uppercase"></span>
+      <button onclick="closeOnboarding()" style="background:none;border:none;color:var(--tm);font-size:20px;cursor:pointer;padding:0;line-height:1">×</button>
+    </div>
+    <!-- content -->
+    <div id="ob-content" style="flex:1;overflow-y:auto;padding:16px 20px 0"></div>
+    <!-- footer -->
+    <div style="display:flex;gap:10px;padding:16px 20px;flex-shrink:0;border-top:1px solid var(--bd);margin-top:16px">
+      <button id="ob-back" class="btn sm" style="width:36px;padding:8px 0;flex-shrink:0;font-size:15px" onclick="obStep(-1)">←</button>
+      <button id="ob-next" class="btn pri" style="flex:1;padding:9px;font-size:12px;font-weight:700" onclick="obStep(1)">Próximo</button>
+    </div>
+  </div>
+</div>
 
 <!-- ══════════════════════════════════════════════════════════════
      MODALS
@@ -3351,6 +3380,223 @@ function sendDashReport(){
 
 // Carregar iniciais ao iniciar
 (function(){const p=_loadProf();if(p.name){const ini=_initials(p.name);document.getElementById('dash-ava').textContent=ini;document.getElementById('dash-un').textContent=p.name;}})();
+
+// ── ONBOARDING ────────────────────────────────────────────────────
+const OB_STEPS=[
+  {
+    label:'Bem-vindo',
+    html:`
+      <div style="text-align:center;padding:4px 0 20px">
+        <div style="font-size:36px;margin-bottom:12px">📊</div>
+        <div style="font-size:20px;font-weight:700;color:var(--tx);margin-bottom:8px">Bem-vindo ao FinControl</div>
+        <div style="font-size:12px;color:var(--tm);line-height:1.7">Este tour rápido mostra como usar o app<br>para controlar suas finanças com clareza.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${[['💸','Lançamentos','Receitas, despesas e cartão'],['🏦','Contas','Saldo de cada conta'],['💳','Cartões','Fatura e vencimento'],['🎯','Orçamentos','Limites por categoria'],['💰','Meta','Economia mensal'],['☁️','Drive','Sync automático na nuvem']].map(([i,t,d])=>`
+        <div style="display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:10px;padding:10px;border:1px solid var(--bd)">
+          <span style="font-size:20px">${i}</span>
+          <div><div style="font-size:11px;font-weight:600;color:var(--tx)">${t}</div><div style="font-size:10px;color:var(--tm);margin-top:2px">${d}</div></div>
+        </div>`).join('')}
+      </div>`
+  },
+  {
+    label:'Passo 1 de 6 — Lançamentos',
+    html:`
+      <div style="font-size:18px;font-weight:700;color:var(--tx);margin-bottom:6px">💸 Lançamentos</div>
+      <div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:16px">Tudo que entra ou sai do seu bolso é um lançamento.</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:rgba(46,184,122,.08);border:1px solid rgba(46,184,122,.2);border-radius:10px;padding:14px">
+          <div style="font-size:12px;font-weight:700;color:#2eb87a;margin-bottom:4px">✅ Receita</div>
+          <div style="font-size:11px;color:var(--tm);line-height:1.6">Salário, freelance, transferência recebida. Aumenta o saldo da conta escolhida.</div>
+        </div>
+        <div style="background:rgba(201,79,79,.08);border:1px solid rgba(201,79,79,.2);border-radius:10px;padding:14px">
+          <div style="font-size:12px;font-weight:700;color:var(--rd);margin-bottom:4px">❌ Despesa</div>
+          <div style="font-size:11px;color:var(--tm);line-height:1.6">Aluguel, mercado, conta de luz. Subtrai do saldo da conta escolhida.</div>
+        </div>
+        <div style="background:var(--cu-s);border:1px solid var(--cu-b);border-radius:10px;padding:14px">
+          <div style="font-size:12px;font-weight:700;color:var(--cu);margin-bottom:4px">💳 Cartão de crédito</div>
+          <div style="font-size:11px;color:var(--tm);line-height:1.6">Compras que vão para a fatura. Não sai do saldo agora — só quando você pagar a fatura.</div>
+        </div>
+      </div>
+      <div style="background:var(--s2);border-radius:10px;padding:12px;margin-top:12px;display:flex;align-items:flex-start;gap:10px;border:1px solid var(--bd)">
+        <span style="font-size:16px">💡</span>
+        <div style="font-size:11px;color:var(--tm);line-height:1.6">Pressione <kbd style="background:var(--s3);border:1px solid var(--bd2);padding:1px 5px;border-radius:3px;font-size:10px">N</kbd> ou clique em <strong style="color:var(--cu)">+ Novo lançamento</strong> no topo para adicionar.</div>
+      </div>`
+  },
+  {
+    label:'Passo 2 de 6 — Contas',
+    html:`
+      <div style="font-size:18px;font-weight:700;color:var(--tx);margin-bottom:6px">🏦 Contas</div>
+      <div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:16px">Cada conta representa um lugar onde você guarda dinheiro.</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--s2);border-radius:10px;padding:14px;border:1px solid var(--bd)">
+          <div style="font-size:11px;color:var(--tm);line-height:1.7">Exemplos: <span style="color:var(--tx);font-weight:600">Nubank, Itaú, Carteira, Poupança</span></div>
+        </div>
+        <div style="background:var(--s2);border-radius:10px;padding:14px;border:1px solid var(--bd)">
+          <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:8px">Como o saldo muda</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--tm)">
+            <div style="display:flex;gap:8px"><span style="color:var(--tx);min-width:160px">Ao cadastrar a conta</span><span>→ Informe o saldo atual</span></div>
+            <div style="display:flex;gap:8px"><span style="color:var(--tx);min-width:160px">Receitas</span><span>→ Somam ao saldo</span></div>
+            <div style="display:flex;gap:8px"><span style="color:var(--tx);min-width:160px">Despesas</span><span>→ Subtraem do saldo</span></div>
+            <div style="display:flex;gap:8px"><span style="color:var(--tx);min-width:160px">Pagamento de fatura</span><span>→ Registre como despesa</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--s2);border-radius:10px;padding:12px;margin-top:12px;display:flex;align-items:flex-start;gap:10px;border:1px solid var(--bd)">
+        <span style="font-size:16px">💡</span>
+        <div style="font-size:11px;color:var(--tm);line-height:1.6">Acesse a tela <strong style="color:var(--tx)">Contas</strong> pelo menu lateral para adicionar ou editar contas.</div>
+      </div>`
+  },
+  {
+    label:'Passo 3 de 6 — Cartões',
+    html:`
+      <div style="font-size:18px;font-weight:700;color:var(--tx);margin-bottom:6px">💳 Cartões de crédito</div>
+      <div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:16px">Acompanhe a fatura de cada cartão e receba alertas de vencimento.</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--s2);border-radius:10px;padding:14px;border:1px solid var(--bd)">
+          <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:10px">Dois campos essenciais ao cadastrar</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="background:var(--cu);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;white-space:nowrap">Fechamento</div>
+              <div style="font-size:11px;color:var(--tm);line-height:1.5">Dia em que a fatura fecha. Compras após essa data vão para a próxima fatura.</div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="background:var(--cb);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;white-space:nowrap">Vencimento</div>
+              <div style="font-size:11px;color:var(--tm);line-height:1.5">Dia em que você paga a fatura. O app avisa quando estiver próximo.</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--s2);border-radius:10px;padding:14px;border:1px solid var(--bd)">
+          <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:6px">Fatura aberta vs. anterior</div>
+          <div style="font-size:11px;color:var(--tm);line-height:1.6"><span style="color:var(--tx)">Fatura aberta</span> → compras do ciclo atual, ainda não fechado.<br><span style="color:var(--tx)">Fatura anterior</span> → ciclo fechado, disponível para conferência.</div>
+        </div>
+      </div>`
+  },
+  {
+    label:'Passo 4 de 6 — Orçamentos',
+    html:`
+      <div style="font-size:18px;font-weight:700;color:var(--tx);margin-bottom:6px">🎯 Orçamentos</div>
+      <div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:16px">Defina quanto quer gastar em cada categoria por mês e acompanhe em tempo real.</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--s2);border-radius:10px;padding:14px;border:1px solid var(--bd)">
+          <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:8px">Como funciona</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${[['Defina um limite','Ex: R$ 800 em Alimentação'],['O app soma automaticamente','Todos os lançamentos da categoria no mês'],['Barra de progresso','🟢 Ok  🟡 Atenção  🔴 Estourou']].map(([t,d])=>`
+            <div style="background:var(--s3);border-radius:8px;padding:10px;border:1px solid var(--bd)">
+              <div style="font-size:11px;font-weight:600;color:var(--tx);margin-bottom:2px">${t}</div>
+              <div style="font-size:10px;color:var(--tm)">${d}</div>
+            </div>`).join('')}
+          </div>
+        </div>
+        <div style="background:var(--s2);border-radius:10px;padding:12px;border:1px solid var(--bd);display:flex;gap:10px;align-items:flex-start">
+          <span style="font-size:16px">💡</span>
+          <div style="font-size:11px;color:var(--tm);line-height:1.6">Orçamentos levam em conta despesas diretas <em>e</em> gastos no cartão — tudo na mesma categoria é somado.</div>
+        </div>
+      </div>`
+  },
+  {
+    label:'Passo 5 de 6 — Meta de economia',
+    html:`
+      <div style="font-size:18px;font-weight:700;color:var(--tx);margin-bottom:6px">💰 Meta de economia</div>
+      <div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:16px">Saiba se você está guardando o suficiente a cada mês.</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--s2);border-radius:10px;padding:14px;border:1px solid var(--bd)">
+          <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:10px">Cálculo do mês</div>
+          <div style="font-size:12px;color:var(--tm);line-height:2;background:var(--s3);border-radius:8px;padding:12px;border:1px solid var(--bd)">
+            <div>📥 <span style="color:#2eb87a;font-weight:600">Receitas do mês</span></div>
+            <div style="margin-left:16px;color:var(--tm);font-size:11px">− Despesas &nbsp;− Gastos no cartão</div>
+            <div style="border-top:1px solid var(--bd);margin:6px 0"></div>
+            <div>= <span style="color:var(--tx);font-weight:600">Saldo do mês</span></div>
+          </div>
+        </div>
+        <div style="background:var(--s2);border-radius:10px;padding:14px;border:1px solid var(--bd)">
+          <div style="font-size:11px;color:var(--tm);line-height:1.7">
+            Saldo do mês ≥ meta → <strong style="color:#2eb87a">Meta batida ✓</strong><br>
+            Saldo do mês &lt; meta → app mostra o quanto falta.
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--s2);border-radius:10px;padding:12px;margin-top:4px;border:1px solid var(--bd);display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:16px">💡</span>
+        <div style="font-size:11px;color:var(--tm);line-height:1.6">Configure a meta no <strong style="color:var(--tx)">Dashboard → card Meta de economia</strong>.</div>
+      </div>`
+  },
+  {
+    label:'Passo 6 de 6 — Google Drive',
+    html:`
+      <div style="font-size:18px;font-weight:700;color:var(--tx);margin-bottom:6px">☁️ Google Drive</div>
+      <div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:16px">Seus dados sincronizados entre todos os dispositivos automaticamente.</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--s2);border-radius:10px;padding:14px;border:1px solid var(--bd)">
+          <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:10px">Como ativar</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${['Vá em Configurações → Sincronização','Clique em "☁ Conectar"','Faça login com sua conta Google','Pronto — sync automático a cada 30 segundos'].map((t,i)=>`
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:20px;height:20px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${i+1}</div>
+              <div style="font-size:11px;color:var(--tm)">${t}</div>
+            </div>`).join('')}
+          </div>
+        </div>
+        <div style="background:var(--s2);border-radius:10px;padding:12px;border:1px solid var(--bd)">
+          <div style="font-size:11px;color:var(--tm);line-height:1.6">📱 App mobile e 🖥️ Dashboard compartilham os mesmos dados via Drive.</div>
+        </div>
+        <div style="background:rgba(79,127,201,.08);border:1px solid rgba(79,127,201,.2);border-radius:10px;padding:12px">
+          <div style="font-size:11px;color:var(--tm);line-height:1.6">⚠️ O sync requer HTTPS ou localhost — não funciona abrindo o arquivo direto (file://).</div>
+        </div>
+      </div>`
+  },
+  {
+    label:'Tudo pronto!',
+    html:`
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:48px;margin-bottom:12px">🎉</div>
+        <div style="font-size:20px;font-weight:700;color:var(--tx);margin-bottom:8px">Você está pronto!</div>
+        <div style="font-size:12px;color:var(--tm);line-height:1.7">Agora você conhece todos os recursos principais.<br>Comece adicionando seus primeiros lançamentos.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn pri" style="width:100%;padding:11px;font-size:12px;font-weight:700" onclick="closeOnboarding();openMod('tx','expense')">💸 Adicionar primeiro lançamento</button>
+        <button class="btn" style="width:100%;padding:9px;font-size:12px" onclick="closeOnboarding()">Explorar por conta própria</button>
+      </div>
+      <div style="text-align:center;margin-top:16px">
+        <div style="font-size:10px;color:var(--tm)">Você pode rever este tour em Configurações → Ajuda → Tour do app</div>
+      </div>`
+  }
+];
+
+let _obStep=0;
+function startOnboarding(){
+  _obStep=0;
+  const ov=document.getElementById('ov-onboarding');
+  ov.style.display='flex';
+  requestAnimationFrame(()=>{ov.style.opacity='0';ov.style.transition='opacity .2s';requestAnimationFrame(()=>{ov.style.opacity='1';});});
+  obRender();
+}
+function closeOnboarding(){
+  const ov=document.getElementById('ov-onboarding');
+  ov.style.opacity='0';
+  setTimeout(()=>{ov.style.display='none';ov.style.opacity='1';},220);
+}
+function obStep(dir){
+  const next=_obStep+dir;
+  if(next<0||next>=OB_STEPS.length)return;
+  _obStep=next;
+  obRender();
+}
+function obRender(){
+  const step=OB_STEPS[_obStep];
+  const total=OB_STEPS.length;
+  document.getElementById('ob-step-lbl').textContent=step.label;
+  document.getElementById('ob-progress').style.width=((_obStep+1)/total*100)+'%';
+  document.getElementById('ob-content').innerHTML=step.html;
+  const isLast=_obStep===total-1;
+  const isFirst=_obStep===0;
+  const backBtn=document.getElementById('ob-back');
+  const nextBtn=document.getElementById('ob-next');
+  backBtn.style.visibility=isFirst?'hidden':'visible';
+  nextBtn.textContent=isLast?'Fechar':(_obStep===0?'Começar tour →':'Próximo →');
+  if(isLast){nextBtn.onclick=closeOnboarding;}
+  else{nextBtn.onclick=()=>obStep(1);}
+}
 </script>
 </body>
 </html>

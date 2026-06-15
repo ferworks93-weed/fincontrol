@@ -779,9 +779,32 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
         <div>Fernando de Araújo Meira</div>
         <div style="margin-top:6px">Dados salvos localmente no navegador.<br>Use a versão web para análises avançadas.</div>
       </div>
+      <button class="btn" style="width:100%;padding:10px;margin-top:12px;font-size:12px;border-color:var(--copper-b);color:var(--copper)" onclick="startOnboarding()">🎓 Ver tour do app</button>
     </div>
   </div>
 
+</div>
+
+<!-- ONBOARDING MODAL -->
+<div id="ov-onboarding" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.72);align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeOnboarding()">
+  <div style="background:var(--s1);border-radius:24px 24px 0 0;width:100%;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 16px)">
+    <!-- progress bar -->
+    <div style="height:3px;background:var(--s3);flex-shrink:0">
+      <div id="ob-progress" style="height:100%;background:var(--copper);border-radius:3px;transition:width .35s ease;width:0%"></div>
+    </div>
+    <!-- header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px 0;flex-shrink:0">
+      <span id="ob-step-lbl" style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase"></span>
+      <button onclick="closeOnboarding()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0;line-height:1">×</button>
+    </div>
+    <!-- content -->
+    <div id="ob-content" style="flex:1;overflow-y:auto;padding:16px 18px 0"></div>
+    <!-- footer -->
+    <div style="display:flex;gap:10px;padding:16px 18px 0;flex-shrink:0">
+      <button id="ob-back" class="btn" style="width:44px;flex-shrink:0;padding:11px 0;font-size:16px" onclick="obStep(-1)">←</button>
+      <button id="ob-next" class="btn primary" style="flex:1;padding:11px;font-size:13px;font-weight:700" onclick="obStep(1)">Próximo</button>
+    </div>
+  </div>
 </div>
 
 <nav class="nav">
@@ -2501,6 +2524,229 @@ function resetMobileLayout(){
   document.querySelectorAll('.cust-item[data-t]').forEach(el=>el.classList.toggle('active',el.dataset.t===saved));
   document.querySelectorAll('.cs-item').forEach(el=>el.classList.toggle('active',el.dataset.cs===(localStorage.getItem('fc_chart')||'bars')));
 })();
+
+// ── ONBOARDING ────────────────────────────────────────────────────
+const OB_STEPS=[
+  {
+    label:'Bem-vindo',
+    html:`
+      <div style="text-align:center;padding:8px 0 20px">
+        <img src="icon.svg" width="64" height="64" style="border-radius:16px;margin-bottom:16px">
+        <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px">Bem-vindo ao FinControl</div>
+        <div style="font-size:13px;color:var(--sub);line-height:1.7">Este tour rápido mostra como usar<br>o app para controlar seu dinheiro.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${[['💸','Lançamentos','Registre receitas, despesas e gastos no cartão'],['🏦','Contas','Acompanhe o saldo de cada conta'],['💳','Cartões','Veja a fatura aberta e a data de vencimento'],['🎯','Orçamentos','Defina limites por categoria'],['☁️','Drive','Sincronize tudo na nuvem automaticamente']].map(([i,t,d])=>`
+        <div style="display:flex;align-items:center;gap:12px;background:var(--s2);border-radius:10px;padding:12px">
+          <span style="font-size:22px;width:32px;text-align:center">${i}</span>
+          <div><div style="font-size:12px;font-weight:600;color:var(--text)">${t}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${d}</div></div>
+        </div>`).join('')}
+      </div>`
+  },
+  {
+    label:'Passo 1 de 6 — Lançamentos',
+    html:`
+      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">💸 Lançamentos</div>
+      <div style="font-size:12px;color:var(--sub);line-height:1.7;margin-bottom:16px">Tudo que entra ou sai do seu bolso é um lançamento.</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--jade-s);border:1px solid rgba(46,184,122,.2);border-radius:10px;padding:14px">
+          <div style="font-size:12px;font-weight:700;color:var(--jade);margin-bottom:4px">✅ Receita</div>
+          <div style="font-size:11px;color:var(--sub);line-height:1.6">Salário, freelance, transferência recebida. Aumenta o saldo da conta escolhida.</div>
+        </div>
+        <div style="background:var(--crimson-s);border:1px solid rgba(201,79,79,.2);border-radius:10px;padding:14px">
+          <div style="font-size:12px;font-weight:700;color:var(--crimson);margin-bottom:4px">❌ Despesa</div>
+          <div style="font-size:11px;color:var(--sub);line-height:1.6">Aluguel, mercado, conta de luz. Subtrai do saldo da conta escolhida.</div>
+        </div>
+        <div style="background:var(--copper-s);border:1px solid var(--copper-b);border-radius:10px;padding:14px">
+          <div style="font-size:12px;font-weight:700;color:var(--copper);margin-bottom:4px">💳 Cartão de crédito</div>
+          <div style="font-size:11px;color:var(--sub);line-height:1.6">Compras que vão para a fatura. Não sai do saldo agora — só quando você pagar a fatura.</div>
+        </div>
+      </div>
+      <div style="background:var(--s2);border-radius:10px;padding:12px;margin-top:12px;display:flex;align-items:flex-start;gap:10px">
+        <span style="font-size:18px">💡</span>
+        <div style="font-size:11px;color:var(--sub);line-height:1.6">Toque no botão <strong style="color:var(--copper)">+</strong> no canto inferior direito para adicionar um lançamento a qualquer momento.</div>
+      </div>`
+  },
+  {
+    label:'Passo 2 de 6 — Contas',
+    html:`
+      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">🏦 Contas</div>
+      <div style="font-size:12px;color:var(--sub);line-height:1.7;margin-bottom:16px">Cada conta representa um lugar onde você guarda dinheiro.</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--s2);border-radius:10px;padding:14px">
+          <div style="font-size:11px;color:var(--sub);line-height:1.7">Exemplos: <span style="color:var(--text)">Nubank, Itaú, Carteira, Poupança</span></div>
+        </div>
+        <div style="background:var(--s2);border-radius:10px;padding:14px">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">Como funciona</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${[['Ao cadastrar','Informe o saldo atual da conta'],['Receitas','Somam ao saldo da conta'],['Despesas','Subtraem do saldo da conta'],['Pagamento de fatura','Você registra como despesa na conta']].map(([t,d])=>`
+            <div style="display:flex;gap-8px;align-items:baseline;font-size:11px">
+              <span style="color:var(--muted);min-width:140px">${t}</span>
+              <span style="color:var(--sub)">→ ${d}</span>
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--s2);border-radius:10px;padding:12px;margin-top:12px;display:flex;align-items:flex-start;gap:10px">
+        <span style="font-size:18px">💡</span>
+        <div style="font-size:11px;color:var(--sub);line-height:1.6">Vá em <strong style="color:var(--text)">Contas</strong> na barra inferior para adicionar ou ver o saldo de cada conta.</div>
+      </div>`
+  },
+  {
+    label:'Passo 3 de 6 — Cartões',
+    html:`
+      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">💳 Cartões de crédito</div>
+      <div style="font-size:12px;color:var(--sub);line-height:1.7;margin-bottom:16px">Acompanhe o total de cada fatura e evite surpresas no vencimento.</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--s2);border-radius:10px;padding:14px">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Dois campos importantes</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="background:var(--copper);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">Fechamento</div>
+              <div style="font-size:11px;color:var(--sub);line-height:1.5">Dia em que a fatura fecha. Compras após essa data vão para a próxima fatura.</div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="background:var(--cobalt);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">Vencimento</div>
+              <div style="font-size:11px;color:var(--sub);line-height:1.5">Dia em que você precisa pagar a fatura. O app avisa quando estiver perto.</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--s2);border-radius:10px;padding:14px">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">Fatura aberta vs. anterior</div>
+          <div style="font-size:11px;color:var(--sub);line-height:1.6"><span style="color:var(--text)">Fatura aberta</span> → compras do ciclo atual ainda não fechado.<br><span style="color:var(--text)">Fatura anterior</span> → ciclo fechado, disponível para conferência.</div>
+        </div>
+      </div>
+      <div style="background:var(--s2);border-radius:10px;padding:12px;margin-top:12px;display:flex;align-items:flex-start;gap:10px">
+        <span style="font-size:18px">🔔</span>
+        <div style="font-size:11px;color:var(--sub);line-height:1.6">Ative as notificações em <strong style="color:var(--text)">Configurações → Dados</strong> para receber alertas 3 dias antes do vencimento.</div>
+      </div>`
+  },
+  {
+    label:'Passo 4 de 6 — Orçamentos',
+    html:`
+      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">🎯 Orçamentos</div>
+      <div style="font-size:12px;color:var(--sub);line-height:1.7;margin-bottom:16px">Defina quanto quer gastar em cada categoria por mês.</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--s2);border-radius:10px;padding:14px">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Como funciona</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${[['Defina um limite','Ex: R$ 800 em Alimentação'],['O app acompanha','Soma os lançamentos da categoria no mês'],['Barra de progresso','Verde → ok · Amarelo → atenção · Vermelho → estourou']].map(([t,d])=>`
+            <div style="background:var(--s3);border-radius:8px;padding:10px">
+              <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:2px">${t}</div>
+              <div style="font-size:10px;color:var(--muted)">${d}</div>
+            </div>`).join('')}
+          </div>
+        </div>
+        <div style="background:var(--s2);border-radius:10px;padding:14px">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">Dica</div>
+          <div style="font-size:11px;color:var(--sub);line-height:1.6">Orçamentos levam em conta despesas diretas <em>e</em> gastos no cartão. Tudo na mesma categoria é somado.</div>
+        </div>
+      </div>`
+  },
+  {
+    label:'Passo 5 de 6 — Meta de economia',
+    html:`
+      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">💰 Meta de economia</div>
+      <div style="font-size:12px;color:var(--sub);line-height:1.7;margin-bottom:16px">Defina quanto quer guardar por mês e acompanhe se está no caminho.</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--s2);border-radius:10px;padding:14px">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">O que o app calcula</div>
+          <div style="font-size:11px;color:var(--sub);line-height:1.8">
+            <div>📥 <strong style="color:var(--jade)">Receitas do mês</strong></div>
+            <div style="margin-left:16px;color:var(--muted)">− Despesas − Gastos no cartão</div>
+            <div style="border-top:1px solid var(--edge);margin:8px 0"></div>
+            <div>= <strong style="color:var(--text)">Saldo do mês</strong> (o que sobrou)</div>
+          </div>
+        </div>
+        <div style="background:var(--s2);border-radius:10px;padding:14px">
+          <div style="font-size:11px;color:var(--sub);line-height:1.6">
+            Se o saldo do mês ≥ sua meta → <strong style="color:var(--jade)">meta batida ✓</strong><br>
+            Se o saldo do mês &lt; sua meta → o app mostra o quanto falta.
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--s2);border-radius:10px;padding:12px;margin-top:12px;display:flex;align-items:flex-start;gap:10px">
+        <span style="font-size:18px">💡</span>
+        <div style="font-size:11px;color:var(--sub);line-height:1.6">Configure a meta em <strong style="color:var(--text)">Início → Meta de economia → Editar</strong>.</div>
+      </div>`
+  },
+  {
+    label:'Passo 6 de 6 — Google Drive',
+    html:`
+      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">☁️ Google Drive</div>
+      <div style="font-size:12px;color:var(--sub);line-height:1.7;margin-bottom:16px">Seus dados sincronizados entre todos os dispositivos.</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--s2);border-radius:10px;padding:14px">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Como ativar</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            ${['Vá em Configurações → Google Drive','Toque em "Conectar Google Drive"','Faça login com sua conta Google','Pronto — sync automático a cada 30s'].map((t,i)=>`
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${i+1}</div>
+              <div style="font-size:11px;color:var(--sub)">${t}</div>
+            </div>`).join('')}
+          </div>
+        </div>
+        <div style="background:var(--s2);border-radius:10px;padding:14px">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">Funciona em</div>
+          <div style="font-size:11px;color:var(--sub);line-height:1.6">📱 App mobile · 🖥️ Dashboard web<br>Os dados são os mesmos nos dois.</div>
+        </div>
+        <div style="background:var(--cobalt-s);border:1px solid rgba(79,127,201,.2);border-radius:10px;padding:12px">
+          <div style="font-size:11px;color:var(--sub);line-height:1.6">⚠️ O sync só funciona via HTTPS ou localhost — não funciona abrindo o arquivo direto (file://).</div>
+        </div>
+      </div>`
+  },
+  {
+    label:'Tudo pronto!',
+    html:`
+      <div style="text-align:center;padding:24px 0 20px">
+        <div style="font-size:48px;margin-bottom:12px">🎉</div>
+        <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px">Você está pronto!</div>
+        <div style="font-size:13px;color:var(--sub);line-height:1.7">Agora você conhece os principais recursos.<br>Comece adicionando seus primeiros lançamentos.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn primary" style="width:100%;padding:13px;font-size:13px;font-weight:700" onclick="closeOnboarding();goTo('tx',document.querySelector('.nav-item:nth-child(2)'))">💸 Adicionar primeiro lançamento</button>
+        <button class="btn" style="width:100%;padding:11px;font-size:12px" onclick="closeOnboarding()">Explorar por conta própria</button>
+      </div>
+      <div style="text-align:center;margin-top:16px">
+        <div style="font-size:10px;color:var(--muted)">Você pode rever este tour a qualquer momento<br>em Configurações → Sobre → Ver tour do app</div>
+      </div>`
+  }
+];
+
+let _obStep=0;
+function startOnboarding(){
+  _obStep=0;
+  const ov=document.getElementById('ov-onboarding');
+  ov.style.display='flex';
+  requestAnimationFrame(()=>{ov.style.opacity='0';ov.style.transition='opacity .2s';requestAnimationFrame(()=>{ov.style.opacity='1';});});
+  obRender();
+}
+function closeOnboarding(){
+  const ov=document.getElementById('ov-onboarding');
+  ov.style.opacity='0';
+  setTimeout(()=>{ov.style.display='none';ov.style.opacity='1';},220);
+}
+function obStep(dir){
+  const next=_obStep+dir;
+  if(next<0||next>=OB_STEPS.length)return;
+  _obStep=next;
+  obRender();
+}
+function obRender(){
+  const step=OB_STEPS[_obStep];
+  const total=OB_STEPS.length;
+  document.getElementById('ob-step-lbl').textContent=step.label;
+  document.getElementById('ob-progress').style.width=((_obStep+1)/total*100)+'%';
+  document.getElementById('ob-content').innerHTML=step.html;
+  const isLast=_obStep===total-1;
+  const isFirst=_obStep===0;
+  const backBtn=document.getElementById('ob-back');
+  const nextBtn=document.getElementById('ob-next');
+  backBtn.style.visibility=isFirst?'hidden':'visible';
+  nextBtn.textContent=isLast?'Fechar':(_obStep===0?'Começar tour →':'Próximo →');
+  if(isLast){nextBtn.onclick=closeOnboarding;}
+  else{nextBtn.onclick=()=>obStep(1);}
+}
 </script>
 
 <!-- CUSTOMIZATION SHEET -->
