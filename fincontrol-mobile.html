@@ -489,6 +489,7 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
             <div style="font-weight:600;font-size:13px">Fernando</div>
             <div style="font-size:10px;color:var(--muted);margin-top:1px" id="avatar-sync-status">—</div>
           </div>
+          <button onclick="openProfile();toggleAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--text);padding:8px 10px;font-size:12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px"><span>👤</span> Perfil</button>
           <button onclick="goAvatar('settings');toggleAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--text);padding:8px 10px;font-size:12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px"><span>⚙</span> Configurações</button>
           <button onclick="doSync();toggleAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--text);padding:8px 10px;font-size:12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px"><span>↻</span> Sincronizar agora</button>
           <button onclick="openCustomize();toggleAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--text);padding:8px 10px;font-size:12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px"><span>⊞</span> Personalizar</button>
@@ -1889,6 +1890,77 @@ function toast(msg,dur=2600){const el=document.getElementById('toast');el.textCo
     const btn=document.querySelector(`.nav-item[onclick*="'${pg}'"]`);
     goTo(pg,btn);
   };
+
+  // ── PERFIL ──────────────────────────────────────────────────
+  const PROF_KEY='fc_profile';
+  function _loadProfile(){return JSON.parse(localStorage.getItem(PROF_KEY)||'{}');}
+
+  window.openProfile=function(){
+    const p=_loadProfile();
+    document.getElementById('prof-name').value=p.name||'';
+    document.getElementById('prof-age').value=p.age||'';
+    document.getElementById('prof-email').value=p.email||'';
+    // avatar iniciais
+    const initials=(p.name||'FA').trim().split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()||'FA';
+    document.getElementById('profile-avatar-big').textContent=initials;
+    // reset report box
+    document.getElementById('report-box').style.display='none';
+    document.getElementById('report-send-btn').style.display='none';
+    document.getElementById('report-btn').textContent='🐛 Reportar problema';
+    document.getElementById('report-msg').value='';
+    document.getElementById('ov-profile').classList.add('open');
+  };
+
+  window.saveProfile=function(){
+    const name=document.getElementById('prof-name').value.trim();
+    const age=document.getElementById('prof-age').value.trim();
+    const email=document.getElementById('prof-email').value.trim();
+    localStorage.setItem(PROF_KEY,JSON.stringify({name,age,email}));
+    // atualizar avatar no header
+    const initials=(name||'FA').trim().split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()||'FA';
+    document.querySelectorAll('.avatar').forEach(el=>{
+      // preserva o menu filho
+      const menu=el.querySelector('#avatar-menu');
+      el.childNodes[0].textContent=initials;
+    });
+    document.getElementById('profile-avatar-big').textContent=initials;
+    // atualizar nome no menu
+    const nameEl=document.querySelector('#avatar-menu .font-weight-600, #avatar-menu div[style*="font-weight:600"]');
+    if(nameEl)nameEl.textContent=name||'Fernando';
+    toast('✅ Perfil salvo');
+  };
+
+  window.toggleReport=function(){
+    const box=document.getElementById('report-box');
+    const sendBtn=document.getElementById('report-send-btn');
+    const btn=document.getElementById('report-btn');
+    const open=box.style.display==='none';
+    box.style.display=open?'block':'none';
+    sendBtn.style.display=open?'block':'none';
+    btn.textContent=open?'Cancelar':'🐛 Reportar problema';
+  };
+
+  window.sendReport=function(){
+    const msg=document.getElementById('report-msg').value.trim();
+    if(!msg){toast('⚠️ Escreva uma mensagem antes de enviar');return;}
+    const p=_loadProfile();
+    const subject=encodeURIComponent('FinControl — Reporte de problema');
+    const body=encodeURIComponent(
+      `Usuário: ${p.name||'—'}\nIdade: ${p.age||'—'}\nE-mail: ${p.email||'—'}\n\nProblema:\n${msg}\n\n---\nFinControl v3`
+    );
+    window.open(`mailto:suporte@fincontrol.app?subject=${subject}&body=${body}`);
+    toast('📧 Abrindo seu e-mail...');
+    toggleReport();
+  };
+
+  // carregar iniciais do avatar ao iniciar
+  (function(){
+    const p=_loadProfile();
+    if(p.name){
+      const initials=p.name.trim().split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+      document.querySelectorAll('.avatar').forEach(el=>{el.childNodes[0].textContent=initials;});
+    }
+  })();
   const saved=localStorage.getItem('fc_theme')||'copper';
   document.documentElement.setAttribute('data-theme',saved);
   if(bgMap[saved]){const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=bgMap[saved];}
@@ -1992,6 +2064,51 @@ function toast(msg,dur=2600){const el=document.getElementById('toast');el.textCo
         </div>
         <div class="cs-lbl">Minimalista</div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE SHEET -->
+<div class="ov" id="ov-profile" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="sheet" onclick="event.stopPropagation()" style="padding-bottom:env(safe-area-inset-bottom,16px)">
+    <div class="sheet-hdl"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-size:15px;font-weight:700">Perfil do Usuário</div>
+      <button onclick="document.getElementById('ov-profile').classList.remove('open')" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1">×</button>
+    </div>
+
+    <!-- Avatar -->
+    <div style="display:flex;justify-content:center;margin-bottom:20px">
+      <div id="profile-avatar-big" style="width:64px;height:64px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;letter-spacing:.05em">FA</div>
+    </div>
+
+    <!-- Campos -->
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+      <div>
+        <label class="fl">Nome</label>
+        <input class="fi" id="prof-name" type="text" placeholder="Seu nome completo">
+      </div>
+      <div>
+        <label class="fl">Idade</label>
+        <input class="fi" id="prof-age" type="number" inputmode="numeric" placeholder="Ex: 30" style="width:120px">
+      </div>
+      <div>
+        <label class="fl">E-mail</label>
+        <input class="fi" id="prof-email" type="email" inputmode="email" placeholder="seu@email.com">
+      </div>
+    </div>
+
+    <button class="fbtn" onclick="saveProfile()" style="margin-bottom:12px">Salvar perfil</button>
+
+    <!-- Reportar problema -->
+    <div style="border-top:1px solid var(--edge);padding-top:16px;margin-top:4px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--muted)">SUPORTE</div>
+      <div id="report-box" style="display:none;margin-bottom:10px">
+        <label class="fl">Descreva o problema</label>
+        <textarea id="report-msg" class="fi" rows="4" placeholder="Descreva o que aconteceu..." style="resize:none;width:100%;box-sizing:border-box;font-family:var(--font);line-height:1.5"></textarea>
+      </div>
+      <button id="report-btn" onclick="toggleReport()" style="width:100%;background:var(--s2);border:1px solid var(--edge);border-radius:var(--r-sm);padding:11px;font-size:13px;color:var(--text);cursor:pointer;font-family:var(--font)">🐛 Reportar problema</button>
+      <button id="report-send-btn" onclick="sendReport()" style="display:none;width:100%;margin-top:8px;background:var(--crimson);border:none;border-radius:var(--r-sm);padding:11px;font-size:13px;color:#fff;cursor:pointer;font-family:var(--font);font-weight:600">Enviar</button>
     </div>
   </div>
 </div>
