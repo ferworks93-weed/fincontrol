@@ -2071,8 +2071,8 @@ function renderAccounts(){
       <div class="acc-bal" style="color:${ac.balance>=0?'var(--gn)':'var(--rd)'}">${fmt(ac.balance)}</div>
       <div class="acc-actions">
         <button class="btn sm" onclick="openMod('tx')" style="flex:1">+ Lançar</button>
-        <button class="btn sm" onclick="editAccount(${ac.id})" title="Editar">✎</button>
-        <button class="btn sm danger" onclick="delAccount(${ac.id})">✕</button>
+        <button class="btn sm" onclick="editAccount('${ac.id}')" title="Editar">✎</button>
+        <button class="btn sm danger" onclick="delAccount('${ac.id}')">✕</button>
       </div>
     </div>`).join('')+`<div style="display:flex;align-items:center;justify-content:center;background:var(--s1);border:1px dashed var(--bd2);border-radius:var(--r);cursor:pointer;transition:all .14s;min-height:80px" onclick="openMod('account')" onmouseover="this.style.borderColor='var(--cu)'" onmouseout="this.style.borderColor='var(--bd2)'"><div style="text-align:center;color:var(--tm)"><div style="font-size:20px;margin-bottom:4px">+</div><div style="font-size:10px">Nova conta</div></div></div>`;
 
