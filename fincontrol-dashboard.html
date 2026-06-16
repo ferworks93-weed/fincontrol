@@ -3148,6 +3148,7 @@ function openTxEdit(id){
   document.getElementById('tx-note').value=t.note||'';
   if(t.accountId){const el=document.getElementById('tx-acc');if(el)el.value=t.accountId;}
   if(t.cardId){const el=document.getElementById('tx-card-sel');if(el)el.value=t.cardId;}
+  if(t.type==='transfer'){const frEl=document.getElementById('tx-from');if(frEl)frEl.value=t.accountId||'';const toEl=document.getElementById('tx-to');if(toEl)toEl.value=t.toAccountId||'';}
   document.getElementById('ai-cat-hint').style.display='none';
   openOv('ov-tx');
 }

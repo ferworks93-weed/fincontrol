@@ -393,6 +393,7 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
 
 /* ── TX ITEM ── */
 .tx{background:var(--s1);border:1px solid var(--edge);border-radius:var(--r-sm);padding:11px 12px;display:flex;align-items:center;gap:10px;margin-bottom:7px;transition:background .12s,transform .1s;position:relative;overflow:hidden;user-select:none}
+.tx-hdr{font-size:10px;font-weight:700;color:var(--muted);padding:14px 0 4px;letter-spacing:.6px;text-transform:uppercase;border-bottom:1px solid var(--edge);margin-bottom:4px;}
 .tx:active{background:var(--s2)}
 .swipe-del-hint{position:absolute;right:0;top:0;bottom:0;width:72px;background:var(--crimson);display:flex;align-items:center;justify-content:center;font-size:20px;opacity:0;transition:opacity .15s;border-radius:0 var(--r-sm) var(--r-sm) 0;pointer-events:none}
 .tx-ico{width:35px;height:35px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
@@ -1196,7 +1197,7 @@ const save=()=>{
 // ════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════
-let curM=new Date().getMonth(),curY=new Date().getFullYear(),txFilt='all',selTypeV='expense',curPg='home',chartStyle=localStorage.getItem('fc_chart')||'bars';
+let curM=new Date().getMonth(),curY=new Date().getFullYear(),txFilt='all',txAllMonths=false,selTypeV='expense',curPg='home',chartStyle=localStorage.getItem('fc_chart')||'bars';
 const f=n=>'R$ '+Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const inM=(t,m,y)=>{if(t.skipped)return false;const d=new Date(t.date+'T12:00:00');return d.getMonth()===(m??curM)&&d.getFullYear()===(y??curY);};
 const ds=s=>{const d=new Date(s+'T12:00:00');return`${d.getDate()} ${MO[d.getMonth()].slice(0,3)}`;};
@@ -1244,7 +1245,8 @@ function txCard(t){
 // ════════════════════════════════════════════
 function rTx(){
   const q=(document.getElementById('tx-search')?.value||'').toLowerCase().trim();
-  let list=q?D.transactions.filter(t=>!t.skipped):D.transactions.filter(t=>inM(t)&&!t.skipped);
+  const showAll=q||txAllMonths;
+  let list=showAll?D.transactions.filter(t=>!t.skipped):D.transactions.filter(t=>inM(t)&&!t.skipped);
   if(txFilt!=='all')list=list.filter(t=>t.type===txFilt);
   if(q)list=list.filter(t=>
     t.desc.toLowerCase().includes(q)||
@@ -1253,13 +1255,23 @@ function rTx(){
     (t.date||'').includes(q)
   );
   list.sort((a,b)=>b.date.localeCompare(a.date));
-  const globalBanner=q?`<div style="padding:6px 12px;font-size:11px;color:var(--td);background:var(--s2);border-radius:8px;margin-bottom:6px">🔍 Todos os meses · ${list.length} resultado(s)</div>`:'';
+  const banner=showAll?`<div style="padding:6px 12px;font-size:11px;color:var(--muted);background:var(--s2);border-radius:8px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">${q?'🔍 Busca':'📅 Histórico'} · ${list.length} resultado(s)${txAllMonths&&!q?`<button onclick="txAllMonths=false;rTx()" style="background:none;border:none;color:var(--copper);font-size:11px;cursor:pointer;padding:0">× Voltar ao mês</button>`:''}</div>`:'';
   const container=document.getElementById('tx-list');
-  container.innerHTML=globalBanner+(list.map(t=>{
+  const WDAY=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  let lastDate='';
+  const rows=list.map(t=>{
     const isIn=t.type==='income';const icon=CI[t.cat]||'📌';const card=t.cardId?gc(t.cardId):null;
-    const monthLabel=q?`<span style="font-size:10px;color:var(--td);margin-left:4px">${t.date?.slice(0,7)||''}</span>`:'';
-    return`<div class="tx swipeable" data-id="${t.id}" onclick="editTx('${t.id}')"><div class="tx-ico ${t.type}">${icon}</div><div class="tx-body"><div class="tx-name">${t.desc}${monthLabel}</div><div class="tx-sub">${t.cat}${card?` · ${card.name}`:''}${t.note?`<div style="font-size:9px;color:var(--muted);font-style:italic;margin-top:1px">📝 ${t.note}</div>`:''}</div></div><div class="tx-right"><div class="tx-amt ${isIn?'pos':'neg'}">${isIn?'+':'-'} ${f(t.amount)}</div><div class="tx-date">${ds(t.date)}</div></div><div class="swipe-del-hint">🗑</div></div>`;
-  }).join('')||'<div class="empty"><div class="empty-icon">≡</div>Nenhum lançamento</div>');
+    let hdr='';
+    if(t.date!==lastDate){
+      lastDate=t.date;
+      const d=new Date(t.date+'T12:00:00');
+      const dayLbl=showAll?`${WDAY[d.getDay()]}, ${d.getDate()} ${MO[d.getMonth()].slice(0,3)} ${d.getFullYear()}`:`${WDAY[d.getDay()]}, ${d.getDate()} ${MO[d.getMonth()].slice(0,3)}`;
+      hdr=`<div class="tx-hdr">${dayLbl}</div>`;
+    }
+    return hdr+`<div class="tx swipeable" data-id="${t.id}" onclick="editTx('${t.id}')"><div class="tx-ico ${t.type}">${icon}</div><div class="tx-body"><div class="tx-name">${t.desc}</div><div class="tx-sub">${t.cat}${card?` · ${card.name}`:''}${t.note?`<div style="font-size:9px;color:var(--muted);font-style:italic;margin-top:1px">📝 ${t.note}</div>`:''}</div></div><div class="tx-right"><div class="tx-amt ${isIn?'pos':'neg'}">${isIn?'+':'-'} ${f(t.amount)}</div><div class="tx-date">${ds(t.date)}</div></div><div class="swipe-del-hint">🗑</div></div>`;
+  }).join('');
+  const empty=`<div class="empty"><div class="empty-icon">≡</div>Nenhum lançamento este mês</div><div style="text-align:center;margin-top:8px"><button class="chip" onclick="txAllMonths=true;rTx()">Ver histórico completo</button></div>`;
+  container.innerHTML=banner+(rows||empty);
   applySwipeToDelete(container);
 }
 function setFilt(flt,btn){txFilt=flt;document.querySelectorAll('#pg-tx .chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');rTx();}
@@ -1728,6 +1740,7 @@ function editTx(id){
   document.getElementById('tx-note').value=t.note||'';
   if(t.type!=='card'){const el=document.getElementById('tx-acc');if(el)el.value=t.accountId||'';}
   if(t.type==='card'){const el=document.getElementById('tx-card-sel');if(el)el.value=t.cardId||'';}
+  if(t.type==='transfer'){const frEl=document.getElementById('tx-tr-from');if(frEl)frEl.value=t.accountId||'';const toEl=document.getElementById('tx-tr-to');if(toEl)toEl.value=t.toAccountId||'';}
   ov.classList.add('open');
 }
 function delTxEdit(){
