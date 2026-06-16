@@ -1682,6 +1682,7 @@ function prepTx(type){
   document.getElementById('tx-desc').value='';document.getElementById('tx-amount').value='';
   document.getElementById('tx-note').value='';
   const hint=document.getElementById('ai-cat-hint');if(hint)hint.style.display='none';
+  const inst=document.getElementById('tx-install');if(inst)inst.value='1';
   updateTxUI();
 }
 function selType(t){selTypeV=t;updateTxUI();}
@@ -1754,8 +1755,12 @@ function saveTx(){
       if(accFrom)accFrom.balance-=amount;
       if(accTo)accTo.balance+=amount;
     } else {
+      const old=D.transactions.find(x=>String(x.id)===String(editId));
+      if(old){const oF=D.accounts.find(a=>a.id===old.accountId);const oT=D.accounts.find(a=>a.id===old.toAccountId);if(oF)oF.balance+=old.amount;if(oT)oT.balance-=old.amount;}
       const idx=D.transactions.findIndex(x=>String(x.id)===String(editId));
       if(idx>=0)D.transactions[idx]={...D.transactions[idx],desc,amount,date,accountId:fromId,toAccountId:toId};
+      const aF=D.accounts.find(a=>a.id===fromId);const aT=D.accounts.find(a=>a.id===toId);
+      if(aF)aF.balance-=amount;if(aT)aT.balance+=amount;
       document.getElementById('ov-tx').dataset.editId='';
     }
     save();closeSheet('ov-tx');renderPage(curPg);toast(editId?'✅ Editado':'✅ Transferência salva');

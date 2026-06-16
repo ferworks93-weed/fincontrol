@@ -2375,7 +2375,7 @@ function launchRecurring(id) {
     const d=new Date(curY,curM,r.day);
     D.transactions.push({id:uid(),type:r.type,desc:r.desc,amount:r.amount,skipped:false,
       date:d.toISOString().slice(0,10),cat:r.cat,accountId:r.accountId||1,cardId:r.cardId||null,installments:1,recurrentId:id});
-    save(); render(); toast(`✓ ${r.desc} lançado`);
+    save(); render(); toast(`✓ ${r.desc} lançado em ${MONTHS[curM]}`);
   }
 }
 function confirmRecAmt() {
@@ -3172,8 +3172,19 @@ function saveTx(){
   const asRec=document.getElementById('tx-recurring').checked;
   if(!desc||!amount||!date){toast('⚠ Preencha todos os campos');return;}
   if(editId){
+    const old=D.transactions.find(x=>String(x.id)===String(editId));
     const idx=D.transactions.findIndex(x=>String(x.id)===String(editId));
-    if(idx>=0) D.transactions[idx]={...D.transactions[idx],desc,amount,date,cat,note,accountId,cardId};
+    if(selType==='transfer'){
+      const from=parseInt(document.getElementById('tx-from').value);
+      const to=parseInt(document.getElementById('tx-to').value);
+      if(from===to){toast('⚠ Selecione contas diferentes');return;}
+      if(old){const oF=D.accounts.find(a=>a.id===old.accountId);const oT=D.accounts.find(a=>a.id===old.toAccountId);if(oF)oF.balance+=old.amount;if(oT)oT.balance-=old.amount;}
+      if(idx>=0)D.transactions[idx]={...old,desc,amount,date,accountId:from,toAccountId:to,note};
+      const aF=D.accounts.find(a=>a.id===from);const aT=D.accounts.find(a=>a.id===to);
+      if(aF)aF.balance-=amount;if(aT)aT.balance+=amount;
+    } else {
+      if(idx>=0) D.transactions[idx]={...D.transactions[idx],desc,amount,date,cat,note,accountId,cardId};
+    }
     document.getElementById('ov-tx').dataset.editId='';
     save();closeOv('ov-tx');render();toast('✓ Lançamento atualizado');return;
   }
@@ -3181,7 +3192,7 @@ function saveTx(){
     const from=parseInt(document.getElementById('tx-from').value);
     const to=parseInt(document.getElementById('tx-to').value);
     if(from===to){toast('⚠ Selecione contas diferentes');return;}
-    D.transactions.push({id:uid(),type:'transfer',desc,amount,date,cat:'Transferência',accountId:from,cardId:null,installments:1,note});
+    D.transactions.push({id:uid(),type:'transfer',desc,amount,date,cat:'Transferência',accountId:from,toAccountId:to,cardId:null,installments:1,note});
     const accFrom=D.accounts.find(a=>a.id===from);const accTo=D.accounts.find(a=>a.id===to);
     if(accFrom) accFrom.balance-=amount;
     if(accTo) accTo.balance+=amount;
@@ -3216,7 +3227,7 @@ function saveTransfer(){
   const date=document.getElementById('tr-date').value;
   const desc=document.getElementById('tr-desc').value||'Transferência';
   if(!amount||!date||from===to){toast('⚠ Verifique os campos');return;}
-  D.transactions.push({id:uid(),type:'transfer',desc,amount,date,cat:'Transferência',accountId:from,cardId:null,installments:1});
+  D.transactions.push({id:uid(),type:'transfer',desc,amount,date,cat:'Transferência',accountId:from,toAccountId:to,cardId:null,installments:1});
   const accF=D.accounts.find(a=>a.id===from);const accT=D.accounts.find(a=>a.id===to);
   if(accF) accF.balance-=amount;if(accT) accT.balance+=amount;
   save();closeOv('ov-transfer');render();toast('✓ Transferência registrada');
