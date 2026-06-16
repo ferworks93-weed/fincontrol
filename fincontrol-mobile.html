@@ -818,9 +818,30 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
       <button class="btn" id="theme-toggle-btn" style="width:100%;padding:10px;margin-top:12px;font-size:12px" onclick="toggleDarkLight()"></button>
       <button class="btn" style="width:100%;padding:10px;margin-top:8px;font-size:12px" onclick="openCustomize()">🎨 Personalizar tema e gráfico</button>
       <button class="btn" style="width:100%;padding:10px;margin-top:8px;font-size:12px;border-color:var(--copper-b);color:var(--copper)" onclick="startOnboarding()">🎓 Ver tour do app</button>
+      <button class="btn" style="width:100%;padding:10px;margin-top:8px;font-size:12px;border-color:var(--copper-b);color:var(--copper)" onclick="openManual()">📖 Manual Avançado</button>
     </div>
   </div>
 
+</div>
+
+<!-- MANUAL AVANÇADO -->
+<div id="ov-manual" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.72);align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeManual()">
+  <div style="background:var(--s1);border-radius:24px 24px 0 0;width:100%;height:92vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--edge);flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px">📖</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text)">Manual Avançado</div>
+          <div style="font-size:10px;color:var(--muted)">Arquitetura, funções e guias</div>
+        </div>
+      </div>
+      <button onclick="closeManual()" style="background:none;border:none;color:var(--muted);font-size:20px;line-height:1;padding:4px 8px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:8px 12px;border-bottom:1px solid var(--edge);flex-shrink:0">
+      <input id="m-manual-search" class="fi" placeholder="🔍 Buscar no manual..." oninput="filterManual()" style="width:100%;font-size:12px">
+    </div>
+    <div id="m-manual-body" style="overflow-y:auto;padding:16px;flex:1;font-size:13px;line-height:1.7"></div>
+  </div>
 </div>
 
 <!-- ONBOARDING MODAL -->
@@ -3639,6 +3660,89 @@ const OB_STEPS=[
       </div>`
   }
 ];
+
+// ── MANUAL AVANÇADO ──────────────────────────────────────────
+let _manualRaw='';
+function _mdToHtml(md){
+  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const lines=md.split('\n');
+  let html='',inCode=false,codeBuf='',inTable=false,inList=false;
+  const flushList=()=>{if(inList){html+='</ul>';inList=false;}};
+  const flushTable=()=>{if(inTable){html+='</tbody></table>';inTable=false;}};
+  for(let i=0;i<lines.length;i++){
+    let l=lines[i];
+    if(l.startsWith('```')){
+      if(!inCode){inCode=true;codeBuf='';continue;}
+      else{html+=`<pre style="background:var(--s2);border:1px solid var(--edge);border-radius:8px;padding:12px;overflow-x:auto;font-size:10px;font-family:monospace;margin:8px 0"><code>${esc(codeBuf.trimEnd())}</code></pre>`;inCode=false;codeBuf='';continue;}
+    }
+    if(inCode){codeBuf+=l+'\n';continue;}
+    if(l.startsWith('|')){
+      flushList();
+      const cells=l.split('|').filter((_,i,a)=>i>0&&i<a.length-1).map(c=>c.trim());
+      if(cells.every(c=>/^[-:]+$/.test(c))){html+='<thead-done>';continue;}
+      if(!inTable){html+=`<div style="overflow-x:auto;margin:8px 0"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr>${cells.map(c=>`<th style="padding:6px 8px;border-bottom:2px solid var(--edge);text-align:left;font-size:9px;text-transform:uppercase;color:var(--muted)">${esc(c)}</th>`).join('')}</tr></thead><tbody>`;inTable=true;}
+      else html+=`<tr>${cells.map(c=>`<td style="padding:5px 8px;border-bottom:1px solid var(--edge)">${_mdi(esc(c))}</td>`).join('')}</tr>`;
+      continue;
+    }
+    if(l==='<thead-done>')continue;
+    flushTable();
+    if(/^#{1,3} /.test(l)){
+      flushList();
+      const lvl=l.match(/^(#+)/)[1].length;
+      const txt=esc(l.replace(/^#+\s*/,''));
+      const sz=lvl===1?'17px':lvl===2?'13px':'12px';
+      const mt=lvl===1?'28px':lvl===2?'20px':'14px';
+      const br=lvl<=2?`border-bottom:${lvl===1?'2px solid var(--copper-b)':'1px solid var(--edge)'};padding-bottom:6px;`:'';
+      html+=`<h${lvl} style="font-size:${sz};font-weight:700;margin:${mt} 0 8px;${br}color:var(--text)">${txt}</h${lvl}>`;
+      continue;
+    }
+    if(/^[-*] /.test(l)){
+      if(!inList){html+='<ul style="margin:4px 0 4px 16px;padding:0">';inList=true;}
+      html+=`<li style="margin:2px 0;color:var(--text)">${_mdi(esc(l.replace(/^[-*] /,'')))}</li>`;continue;
+    }
+    flushList();
+    if(/^\d+\. /.test(l)){html+=`<div style="margin:2px 0 2px 16px">${_mdi(esc(l.replace(/^\d+\. /,'')))}</div>`;continue;}
+    if(/^---+$/.test(l.trim())){html+='<hr style="border:none;border-top:1px solid var(--edge);margin:16px 0">';continue;}
+    if(l.trim()===''){flushList();html+='<div style="height:5px"></div>';continue;}
+    html+=`<p style="margin:3px 0;color:var(--text)">${_mdi(esc(l))}</p>`;
+  }
+  flushList();flushTable();
+  return html;
+}
+function _mdi(s){
+  return s
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/`([^`]+)`/g,'<code style="background:var(--s2);border:1px solid var(--edge);border-radius:3px;padding:1px 4px;font-size:10px;font-family:monospace">$1</code>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" style="color:var(--copper);text-decoration:none">$1</a>')
+    .replace(/\*([^*]+)\*/g,'<em>$1</em>');
+}
+async function openManual(){
+  const ov=document.getElementById('ov-manual');
+  ov.style.display='flex';
+  const body=document.getElementById('m-manual-body');
+  if(!_manualRaw){
+    body.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">Carregando manual…</div>';
+    try{
+      const r=await fetch('./manual-avancado.md');
+      _manualRaw=await r.text();
+    }catch(e){
+      body.innerHTML='<div style="color:var(--crimson);padding:20px">Erro ao carregar o manual.</div>';return;
+    }
+  }
+  body.innerHTML=_mdToHtml(_manualRaw);
+  document.getElementById('m-manual-search').value='';
+}
+function closeManual(){document.getElementById('ov-manual').style.display='none';}
+function filterManual(){
+  const q=document.getElementById('m-manual-search').value.toLowerCase().trim();
+  const body=document.getElementById('m-manual-body');
+  if(!q){body.innerHTML=_mdToHtml(_manualRaw);return;}
+  const lines=_manualRaw.split('\n').filter(l=>l.toLowerCase().includes(q));
+  if(!lines.length){body.innerHTML=`<div style="color:var(--muted);padding:20px;text-align:center">Nenhum resultado para "<strong>${q}</strong>"</div>`;return;}
+  const re=new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+  body.innerHTML=`<div style="font-size:10px;color:var(--muted);margin-bottom:10px">${lines.length} resultado(s)</div>`+
+    lines.map(l=>`<p style="margin:2px 0;padding:5px 8px;background:var(--s2);border-radius:4px;font-size:11px">${l.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(re,'<mark style="background:rgba(184,115,51,.25);color:var(--copper);border-radius:2px;padding:0 2px">$1</mark>')}</p>`).join('');
+}
 
 let _obStep=0;
 function startOnboarding(){

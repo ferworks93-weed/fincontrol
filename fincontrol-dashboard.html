@@ -1150,6 +1150,10 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
         <div><div class="setting-lbl">Tour do app</div><div class="setting-sub">Conheça todos os recursos do FinControl</div></div>
         <button class="btn sm" onclick="startOnboarding()" style="border-color:var(--cu-b);color:var(--cu)">🎓 Iniciar</button>
       </div>
+      <div class="setting-row" style="margin-top:10px">
+        <div><div class="setting-lbl">Manual Avançado</div><div class="setting-sub">Arquitetura, funções, schema e guias passo a passo</div></div>
+        <button class="btn sm" onclick="openManual()" style="border-color:var(--cu-b);color:var(--cu)">📖 Abrir</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3804,6 +3808,97 @@ window.goTo=function(sc,el){if(_origGoTo)_origGoTo(sc,el);if(window.innerWidth<7
     document.querySelectorAll('.cs-item').forEach(el=>el.classList.toggle('active',el.dataset.cs===cs));
     document.getElementById('ov-customize').classList.add('open');
   }
+  // ── MANUAL AVANÇADO ─────────────────────────────────────────────
+  let _manualRaw='';
+  function _mdToHtml(md){
+    const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const lines=md.split('\n');
+    let html='',inCode=false,codeBuf='',codeLang='',inTable=false,inList=false;
+    const flushList=()=>{if(inList){html+='</ul>';inList=false;}};
+    const flushTable=()=>{if(inTable){html+='</tbody></table>';inTable=false;}};
+    for(let i=0;i<lines.length;i++){
+      let l=lines[i];
+      if(l.startsWith('```')){
+        if(!inCode){inCode=true;codeLang=l.slice(3).trim();codeBuf='';continue;}
+        else{
+          html+=`<pre style="background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:14px 16px;overflow-x:auto;font-size:11px;font-family:var(--mono);margin:10px 0"><code>${esc(codeBuf.trimEnd())}</code></pre>`;
+          inCode=false;codeBuf='';codeLang='';continue;
+        }
+      }
+      if(inCode){codeBuf+=l+'\n';continue;}
+      if(l.startsWith('|')){
+        flushList();
+        const cells=l.split('|').filter((_,i,a)=>i>0&&i<a.length-1).map(c=>c.trim());
+        if(cells.every(c=>/^[-:]+$/.test(c))){html+='<thead-done>';continue;}
+        if(!inTable){html+='<table style="width:100%;border-collapse:collapse;font-size:12px;margin:10px 0"><thead><tr>'+cells.map(c=>`<th style="padding:7px 10px;border-bottom:2px solid var(--bd);text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--tm);background:var(--s2)">${esc(c)}</th>`).join('')+'</tr></thead><tbody>';inTable=true;}
+        else html+='<tr>'+cells.map(c=>`<td style="padding:6px 10px;border-bottom:1px solid var(--bd)">${inline(esc(c))}</td>`).join('')+'</tr>';
+        continue;
+      }
+      if(l==='<thead-done>')continue;
+      flushTable();
+      if(/^#{1,3} /.test(l)){
+        flushList();
+        const lvl=l.match(/^(#+)/)[1].length;
+        const txt=esc(l.replace(/^#+\s*/,''));
+        const sz=lvl===1?'20px':lvl===2?'14px':'12px';
+        const mt=lvl===1?'32px':lvl===2?'24px':'18px';
+        const br=lvl===1?'2px solid var(--cu)':lvl===2?'1px solid var(--bd)':'none';
+        html+=`<h${lvl} style="font-size:${sz};font-weight:700;margin:${mt} 0 10px;padding-bottom:${lvl<=2?'8px':'0'};border-bottom:${br};color:var(--tx)">${txt}</h${lvl}>`;
+        continue;
+      }
+      if(/^[-*] /.test(l)){
+        if(!inList){html+='<ul style="margin:6px 0 6px 20px;padding:0">';inList=true;}
+        html+=`<li style="margin:3px 0;color:var(--tx)">${inline(esc(l.replace(/^[-*] /,'')))}</li>`;
+        continue;
+      }
+      flushList();
+      if(/^\d+\. /.test(l)){
+        html+=`<div style="margin:3px 0 3px 20px">${inline(esc(l.replace(/^\d+\. /,'')))}</div>`;continue;
+      }
+      if(/^---+$/.test(l.trim())){html+='<hr style="border:none;border-top:1px solid var(--bd);margin:20px 0">';continue;}
+      if(l.trim()===''){flushList();html+='<div style="height:6px"></div>';continue;}
+      html+=`<p style="margin:4px 0;color:var(--tx)">${inline(esc(l))}</p>`;
+    }
+    flushList();flushTable();
+    return html;
+  }
+  function inline(s){
+    return s
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+      .replace(/`([^`]+)`/g,'<code style="background:var(--s2);border:1px solid var(--bd);border-radius:3px;padding:1px 5px;font-size:10px;font-family:var(--mono)">$1</code>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" style="color:var(--cu);text-decoration:none">$1</a>')
+      .replace(/\*([^*]+)\*/g,'<em>$1</em>');
+  }
+  async function openManual(){
+    const ov=document.getElementById('ov-manual');
+    ov.style.display='flex';
+    const body=document.getElementById('manual-body');
+    if(!_manualRaw){
+      body.innerHTML='<div style="text-align:center;padding:40px;color:var(--tm)">Carregando manual…</div>';
+      try{
+        const r=await fetch('./manual-avancado.md');
+        _manualRaw=await r.text();
+      }catch(e){
+        body.innerHTML='<div style="color:var(--rd);padding:20px">Erro ao carregar o manual. Certifique-se de que <code>manual-avancado.md</code> está na mesma pasta.</div>';
+        return;
+      }
+    }
+    body.innerHTML=_mdToHtml(_manualRaw);
+    document.getElementById('manual-search-input').value='';
+  }
+  function closeManual(){
+    document.getElementById('ov-manual').style.display='none';
+  }
+  function filterManual(){
+    const q=document.getElementById('manual-search-input').value.toLowerCase().trim();
+    const body=document.getElementById('manual-body');
+    if(!q){body.innerHTML=_mdToHtml(_manualRaw);return;}
+    const lines=_manualRaw.split('\n').filter(l=>l.toLowerCase().includes(q));
+    if(!lines.length){body.innerHTML='<div style="color:var(--tm);padding:20px;text-align:center">Nenhum resultado para "<strong>'+q+'</strong>"</div>';return;}
+    const highlighted=lines.map(l=>`<p style="margin:3px 0;padding:5px 10px;background:var(--s2);border-radius:4px;font-size:12px">${l.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--cu-s);color:var(--cu);border-radius:2px;padding:0 2px">$1</mark>')}</p>`).join('');
+    body.innerHTML=`<div style="font-size:10px;color:var(--tm);margin-bottom:12px">${lines.length} resultado(s) para "<strong>${q}</strong>"</div>`+highlighted;
+  }
+
   window.setTheme=setTheme;
   window.setChartStyle=setChartStyle;
   window.openCustomize=openCustomize;
@@ -3817,7 +3912,7 @@ window.goTo=function(sc,el){if(_origGoTo)_origGoTo(sc,el);if(window.innerWidth<7
     setCryptoPassword,closeOv,selTy,aiCatHint,aiCatApply,saveTx,saveRecurring,
     saveAccount,saveTransfer,saveBudget,delBudgetEdit,saveGoal,saveCard,
     saveInvest,saveInvestOp,saveDiv,exportReport,exportAnnualReport,addCat,confirmRecAmt,
-    closeSearch,runSearch,goTo,openTxEdit,delTxFromEdit
+    closeSearch,runSearch,goTo,openTxEdit,delTxFromEdit,openManual,closeManual,filterManual
   });
   const saved=localStorage.getItem('fc_theme')||'copper';
   document.documentElement.setAttribute('data-theme',saved);
@@ -3825,6 +3920,29 @@ window.goTo=function(sc,el){if(_origGoTo)_origGoTo(sc,el);if(window.innerWidth<7
   document.querySelectorAll('.cs-item').forEach(el=>el.classList.toggle('active',el.dataset.cs===(localStorage.getItem('fc_chart')||'bars')));
 })();
 </script>
+
+<!-- MANUAL AVANÇADO -->
+<div id="ov-manual" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.7);align-items:center;justify-content:center" onclick="if(event.target===this)closeManual()">
+  <div style="background:var(--s1);border:1px solid var(--bd);border-radius:var(--r-lg);width:100%;max-width:780px;max-height:92vh;margin:16px;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bd);flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px">📖</span>
+        <div>
+          <div style="font-size:13px;font-weight:700">Manual Avançado</div>
+          <div style="font-size:10px;color:var(--tm);margin-top:1px">FinControl v3 — Arquitetura, funções e guias</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <a href="./manual-avancado.md" target="_blank" style="font-size:10px;color:var(--tm);text-decoration:none;padding:4px 10px;border:1px solid var(--bd);border-radius:var(--r-sm)">↗ Abrir arquivo</a>
+        <button onclick="closeManual()" style="background:none;border:none;color:var(--tm);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px">✕</button>
+      </div>
+    </div>
+    <div id="manual-search-bar" style="padding:10px 20px;border-bottom:1px solid var(--bd);flex-shrink:0">
+      <input id="manual-search-input" class="fi" placeholder="🔍 Buscar no manual..." oninput="filterManual()" style="width:100%;font-size:12px">
+    </div>
+    <div id="manual-body" style="overflow-y:auto;padding:24px 28px;flex:1;line-height:1.7;font-size:13px"></div>
+  </div>
+</div>
 
 <!-- CUSTOMIZATION MODAL -->
 <div class="ov" id="ov-customize" onclick="if(event.target===this)this.classList.remove('open')">
