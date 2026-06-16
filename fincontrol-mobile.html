@@ -140,6 +140,67 @@
   color:#000;
 }
 [data-theme="midnight"] .ov{background:rgba(0,10,4,.75)}
+
+/* ── TOKENS: AURORA (mobile) ── deep indigo + teal ── */
+[data-theme="aurora"]{
+  --void:#050518;--s1:#0a0a2e;--s2:#0d0d38;--s3:#111142;--s4:#15154e;
+  --edge:#1a1a5e;--edge2:#23236a;
+  --text:#e8eaf6;--sub:#7986cb;--muted:#7986cb;--dim:#1a1a5e;
+  --copper:#00f5d4;--copper-s:rgba(0,245,212,.1);--copper-b:rgba(0,245,212,.22);
+  --jade:#00e5b0;--jade-s:rgba(0,229,176,.08);
+  --crimson:#ff4b8d;--crimson-s:rgba(255,75,141,.08);
+  --cobalt:#4fc3f7;--cobalt-s:rgba(79,195,247,.08);
+  --iris:#b845ff;
+  --r:12px; --r-sm:8px;
+}
+[data-theme="aurora"] .nav{background:rgba(5,5,24,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(0,245,212,.07)}
+[data-theme="aurora"] .sheet{background:rgba(10,10,46,.98);border-top:1px solid rgba(0,245,212,.14);box-shadow:0 -4px 40px rgba(0,245,212,.08)}
+[data-theme="aurora"] .hero{border:1px solid rgba(0,245,212,.1);background:linear-gradient(135deg,rgba(13,13,56,.9),rgba(7,7,32,.95));backdrop-filter:blur(6px)}
+[data-theme="aurora"] .card,[data-theme="aurora"] .mini{border:1px solid rgba(0,245,212,.08);background:linear-gradient(135deg,rgba(13,13,56,.85),rgba(7,7,32,.9))}
+[data-theme="aurora"] .tx{border-color:rgba(0,245,212,.06)}
+[data-theme="aurora"] .fab{background:linear-gradient(135deg,#00f5d4,#00c4aa);box-shadow:0 4px 20px rgba(0,245,212,.35);color:#000}
+[data-theme="aurora"] .ov{background:rgba(0,0,16,.8)}
+
+/* ── TOKENS: EMBER (mobile) ── charcoal + amber ── */
+[data-theme="ember"]{
+  --void:#0d0802;--s1:#150e04;--s2:#1c1306;--s3:#231809;--s4:#2a1d0b;
+  --edge:#2e1f0a;--edge2:#3d2a0e;
+  --text:#f5efe6;--sub:#a0845c;--muted:#a0845c;--dim:#2e1f0a;
+  --copper:#f59e0b;--copper-s:rgba(245,158,11,.1);--copper-b:rgba(245,158,11,.22);
+  --jade:#4ade80;--jade-s:rgba(74,222,128,.08);
+  --crimson:#ff4040;--crimson-s:rgba(255,64,64,.08);
+  --cobalt:#38bdf8;--cobalt-s:rgba(56,189,248,.08);
+  --iris:#c084fc;
+  --r:8px; --r-sm:5px;
+}
+[data-theme="ember"] .nav{background:rgba(13,8,2,.95);border-top:1px solid rgba(245,158,11,.1)}
+[data-theme="ember"] .sheet{background:rgba(20,14,4,.98);border-top:1px solid rgba(245,158,11,.18)}
+[data-theme="ember"] .hero{border:1px solid rgba(245,158,11,.12);background:linear-gradient(135deg,var(--s1),var(--s2))}
+[data-theme="ember"] .card,[data-theme="ember"] .mini{border:1px solid rgba(245,158,11,.1);background:var(--s1)}
+[data-theme="ember"] .tx{border-color:rgba(245,158,11,.07)}
+[data-theme="ember"] .fab{background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 4px 20px rgba(245,158,11,.35);color:#000}
+[data-theme="ember"] .ov{background:rgba(10,5,0,.8)}
+
+/* ── TOKENS: DUSK (mobile) ── deep purple + rose ── */
+[data-theme="dusk"]{
+  --void:#0e0a14;--s1:#140f1e;--s2:#1a1428;--s3:#201930;--s4:#261e3a;
+  --edge:#2a1f3e;--edge2:#352850;
+  --text:#f0ebf8;--sub:#9d8cc0;--muted:#9d8cc0;--dim:#2a1f3e;
+  --copper:#fb7185;--copper-s:rgba(251,113,133,.1);--copper-b:rgba(251,113,133,.22);
+  --jade:#34d399;--jade-s:rgba(52,211,153,.08);
+  --crimson:#f87171;--crimson-s:rgba(248,113,113,.08);
+  --cobalt:#60a5fa;--cobalt-s:rgba(96,165,250,.08);
+  --iris:#a78bfa;
+  --r:10px; --r-sm:6px;
+}
+[data-theme="dusk"] .nav{background:rgba(14,10,20,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(251,113,133,.07)}
+[data-theme="dusk"] .sheet{background:rgba(20,15,30,.98);border-top:1px solid rgba(251,113,133,.14);box-shadow:0 -4px 40px rgba(251,113,133,.06)}
+[data-theme="dusk"] .hero{border:1px solid rgba(251,113,133,.1);background:linear-gradient(135deg,rgba(20,15,30,.9),rgba(14,10,20,.95))}
+[data-theme="dusk"] .card,[data-theme="dusk"] .mini{border:1px solid rgba(251,113,133,.09);background:linear-gradient(135deg,rgba(20,15,30,.85),rgba(14,10,20,.9))}
+[data-theme="dusk"] .tx{border-color:rgba(251,113,133,.06)}
+[data-theme="dusk"] .fab{background:linear-gradient(135deg,#fb7185,#e11d48);box-shadow:0 4px 20px rgba(251,113,133,.35);color:#fff}
+[data-theme="dusk"] .ov{background:rgba(8,4,12,.8)}
+
 /* ── AESTHETIC: CLARO ─────────────────────────────────────────── */
 [data-theme="claro"] .hero{box-shadow:0 4px 24px rgba(0,0,0,.07);border-color:rgba(0,0,0,.07)}
 [data-theme="claro"] .card,.claro .mini{box-shadow:0 2px 12px rgba(0,0,0,.05);border-color:rgba(0,0,0,.07)}
@@ -321,11 +382,15 @@
 
 .thm-dot[data-t="plasma"]{background:radial-gradient(circle at 38% 38%,#00d4ff,#0a0a3a)}
 .thm-dot[data-t="midnight"]{background:radial-gradient(circle at 38% 38%,#00e676,#020d06)}
+.thm-dot[data-t="aurora"]{background:radial-gradient(circle at 38% 38%,#00f5d4,#1a0533)}
+.thm-dot[data-t="ember"]{background:radial-gradient(circle at 38% 38%,#f59e0b,#0d0802)}
+.thm-dot[data-t="dusk"]{background:radial-gradient(circle at 38% 38%,#fb7185,#0e0a14)}
+.thm-dot[data-t="custom"]{background:conic-gradient(#f59e0b,#00f5d4,#fb7185,#8b5cf6,#f59e0b)}
 
 /* ── CUSTOMIZATION PANEL ───────────────────────────────────────── */
 .cust-sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:18px 0 10px}
 .cust-sec:first-child{margin-top:4px}
-.cust-themes{display:flex;gap:6px;flex-wrap:wrap}
+.cust-themes{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .cust-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:8px 6px;border-radius:var(--r-sm);border:1.5px solid transparent;transition:border-color .15s,background .15s;flex:1;min-width:52px}
 .cust-item:active{transform:scale(.92)}
 .cust-item.active{border-color:var(--copper);background:rgba(184,114,46,.1)}
@@ -335,6 +400,12 @@
 .cust-dot[data-t="violeta"]{background:linear-gradient(135deg,#1a0a3a,#8b5cf6)}
 .cust-dot[data-t="esmeralda"]{background:linear-gradient(135deg,#051a0e,#00c98c)}
 .cust-dot[data-t="magenta"]{background:linear-gradient(135deg,#0a0012,#d946ef)}
+.cust-dot[data-t="plasma"]{background:linear-gradient(135deg,#020209,#00d4ff)}
+.cust-dot[data-t="midnight"]{background:linear-gradient(135deg,#020d06,#00e676)}
+.cust-dot[data-t="aurora"]{background:linear-gradient(135deg,#1a0533,#00f5d4)}
+.cust-dot[data-t="ember"]{background:linear-gradient(135deg,#0d0802,#f59e0b)}
+.cust-dot[data-t="dusk"]{background:linear-gradient(135deg,#0e0a14,#fb7185)}
+.cust-dot[data-t="custom"]{background:conic-gradient(#f59e0b 0%,#00f5d4 33%,#fb7185 66%,#8b5cf6 100%)}
 .cust-lbl{font-size:10px;color:var(--text);font-weight:500}
 .cs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:2px}
 .cs-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:10px 8px 8px;border-radius:var(--r-sm);border:1.5px solid var(--edge2);transition:border-color .15s,background .15s;background:var(--s1)}
@@ -1200,7 +1271,7 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
 /* ── CUSTOMIZATION PANEL ───────────────────────────────────────── */
 .cust-sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:18px 0 10px}
 .cust-sec:first-child{margin-top:4px}
-.cust-themes{display:flex;gap:6px;flex-wrap:wrap}
+.cust-themes{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .cust-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:8px 6px;border-radius:var(--r-sm);border:1.5px solid transparent;transition:border-color .15s,background .15s;flex:1;min-width:52px}
 .cust-item:active{transform:scale(.92)}
 .cust-item.active{border-color:var(--copper);background:rgba(184,114,46,.1)}
@@ -1210,6 +1281,12 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
 .cust-dot[data-t="violeta"]{background:linear-gradient(135deg,#1a0a3a,#8b5cf6)}
 .cust-dot[data-t="esmeralda"]{background:linear-gradient(135deg,#051a0e,#00c98c)}
 .cust-dot[data-t="magenta"]{background:linear-gradient(135deg,#0a0012,#d946ef)}
+.cust-dot[data-t="plasma"]{background:linear-gradient(135deg,#020209,#00d4ff)}
+.cust-dot[data-t="midnight"]{background:linear-gradient(135deg,#020d06,#00e676)}
+.cust-dot[data-t="aurora"]{background:linear-gradient(135deg,#1a0533,#00f5d4)}
+.cust-dot[data-t="ember"]{background:linear-gradient(135deg,#0d0802,#f59e0b)}
+.cust-dot[data-t="dusk"]{background:linear-gradient(135deg,#0e0a14,#fb7185)}
+.cust-dot[data-t="custom"]{background:conic-gradient(#f59e0b 0%,#00f5d4 33%,#fb7185 66%,#8b5cf6 100%)}
 .cust-lbl{font-size:10px;color:var(--text);font-weight:500}
 .cs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:2px}
 .cs-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:10px 8px 8px;border-radius:var(--r-sm);border:1.5px solid var(--edge2);transition:border-color .15s,background .15s;background:var(--s1)}
@@ -4005,7 +4082,7 @@ function resetMobileLayout(){
 })();
 
 (()=>{
-  const bgMap={copper:'#0a0a0a',claro:'#f0ede8',violeta:'#09091a',esmeralda:'#050c08',magenta:'#000000'};
+  const bgMap={copper:'#0a0a0a',claro:'#f0ede8',violeta:'#09091a',esmeralda:'#050c08',magenta:'#000000',plasma:'#020209',midnight:'#020d06',aurora:'#050518',ember:'#0d0802',dusk:'#0e0a14'};
   function setTheme(t){
     document.documentElement.setAttribute('data-theme',t);
     const m=document.querySelector('meta[name="theme-color"]');
@@ -4027,6 +4104,53 @@ function resetMobileLayout(){
     document.querySelectorAll('.cs-item').forEach(el=>el.classList.toggle('active',el.dataset.cs===cs));
     document.getElementById('ov-customize').classList.add('open');
   }
+  function openCustomTheme(){
+    const p=document.getElementById('custom-theme-panel');
+    if(p) p.style.display=p.style.display==='none'?'block':'none';
+    document.querySelectorAll('.cust-item[data-t]').forEach(el=>el.classList.toggle('active',el.dataset.t==='custom'));
+  }
+  function applyCustomTheme(){
+    const bg=document.getElementById('ct-bg').value;
+    const acc=document.getElementById('ct-acc').value;
+    const gn=document.getElementById('ct-gn').value;
+    const rd=document.getElementById('ct-rd').value;
+    const tx=document.getElementById('ct-tx').value;
+    const font=document.getElementById('ct-font').value;
+    const radius=document.getElementById('ct-radius').value;
+    const r=document.documentElement;
+    const toRgb=hex=>{const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return[r,g,b]};
+    const lighten=(hex,amt)=>{const[rv,g,b]=toRgb(hex);return '#'+[rv+amt,g+amt,b+amt].map(v=>Math.min(255,v).toString(16).padStart(2,'0')).join('')};
+    r.setAttribute('data-theme','custom');
+    r.style.setProperty('--void',bg);r.style.setProperty('--bg',bg);
+    r.style.setProperty('--s1',lighten(bg,6));r.style.setProperty('--s2',lighten(bg,12));
+    r.style.setProperty('--s3',lighten(bg,18));r.style.setProperty('--s4',lighten(bg,24));
+    r.style.setProperty('--text',tx);r.style.setProperty('--tx',tx);
+    r.style.setProperty('--copper',acc);r.style.setProperty('--cu',acc);
+    r.style.setProperty('--jade',gn);r.style.setProperty('--gn',gn);
+    r.style.setProperty('--crimson',rd);r.style.setProperty('--rd',rd);
+    r.style.setProperty('--edge',lighten(bg,16));r.style.setProperty('--bd',lighten(bg,16));
+    r.style.setProperty('--edge2',lighten(bg,24));r.style.setProperty('--bd2',lighten(bg,24));
+    r.style.setProperty('--r',radius+'px');r.style.setProperty('--r-sm',Math.max(2,parseInt(radius)-4)+'px');
+    let ff='inherit';
+    if(font==='mono') ff='"JetBrains Mono","Fira Mono",monospace';
+    else if(font==='serif') ff='"Georgia","Times New Roman",serif';
+    else if(font==='rounded') ff='"Nunito","Poppins",sans-serif';
+    r.style.setProperty('--font',ff);
+    document.body.style.fontFamily=ff;
+    const meta=document.querySelector('meta[name="theme-color"]');
+    if(meta)meta.content=bg;
+    localStorage.setItem('fc_theme','custom');
+    localStorage.setItem('fc_custom_vars',JSON.stringify({bg,acc,gn,rd,tx,font,radius}));
+    document.querySelectorAll('.cust-item[data-t]').forEach(el=>el.classList.toggle('active',el.dataset.t==='custom'));
+  }
+  function loadCustomTheme(){
+    const v=localStorage.getItem('fc_custom_vars');if(!v)return;
+    const o=JSON.parse(v);
+    ['bg','acc','gn','rd','tx'].forEach(k=>{const el=document.getElementById('ct-bg'.replace('bg',k));if(el)el.value=o[k]||el.value});
+    const f=document.getElementById('ct-font');if(f)f.value=o.font||'sans';
+    const rr=document.getElementById('ct-radius');if(rr)rr.value=o.radius||'10';
+    const rv=document.getElementById('ct-radius-val');if(rv)rv.textContent=(o.radius||'10')+'px';
+  }
   function toggleDarkLight(){
     const cur=localStorage.getItem('fc_theme')||'copper';
     const next=cur==='claro'?'copper':'claro';
@@ -4042,6 +4166,8 @@ function resetMobileLayout(){
   window.setTheme=setTheme;
   window.setChartStyle=setChartStyle;
   window.openCustomize=openCustomize;
+  window.openCustomTheme=openCustomTheme;
+  window.applyCustomTheme=applyCustomTheme;
   window.toggleDarkLight=toggleDarkLight;
   window.updateThemeToggleBtn=updateThemeToggleBtn;
   window.toggleAvatarMenu=function(){
@@ -4143,6 +4269,7 @@ function resetMobileLayout(){
   const saved=localStorage.getItem('fc_theme')||'copper';
   document.documentElement.setAttribute('data-theme',saved);
   if(bgMap[saved]){const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=bgMap[saved];}
+  if(saved==='custom') setTimeout(()=>{loadCustomTheme();applyCustomTheme();},50);
   document.querySelectorAll('.cust-item[data-t]').forEach(el=>el.classList.toggle('active',el.dataset.t===saved));
   document.querySelectorAll('.cs-item').forEach(el=>el.classList.toggle('active',el.dataset.cs===(localStorage.getItem('fc_chart')||'bars')));
 })();
@@ -4817,12 +4944,52 @@ function jumpOb(i){_obStep=i;obRender();}
         <div class="cust-dot" data-t="esmeralda"></div>
         <div class="cust-lbl">Esmeralda</div>
       </div>
-      <div class="cust-item" data-t="magenta" onclick="setTheme('magenta')">
-      <button class="thm-btn" data-t="plasma" onclick="setTheme('plasma')" style="background:linear-gradient(135deg,#020209,#00d4ff)">Plasma</button>
-      <button class="thm-btn" data-t="midnight" onclick="setTheme('midnight')" style="background:linear-gradient(135deg,#020d06,#00e676);color:#000">Midnight</button>
+      <div class="cust-      <div class="cust-item" data-t="magenta" onclick="setTheme('magenta')">
         <div class="cust-dot" data-t="magenta"></div>
         <div class="cust-lbl">Magenta</div>
       </div>
+      <div class="cust-item" data-t="plasma" onclick="setTheme('plasma')">
+        <div class="cust-dot" data-t="plasma"></div>
+        <div class="cust-lbl">Plasma</div>
+      </div>
+      <div class="cust-item" data-t="midnight" onclick="setTheme('midnight')">
+        <div class="cust-dot" data-t="midnight"></div>
+        <div class="cust-lbl">Midnight</div>
+      </div>
+      <div class="cust-item" data-t="aurora" onclick="setTheme('aurora')">
+        <div class="cust-dot" data-t="aurora"></div>
+        <div class="cust-lbl">Aurora</div>
+      </div>
+      <div class="cust-item" data-t="ember" onclick="setTheme('ember')">
+        <div class="cust-dot" data-t="ember"></div>
+        <div class="cust-lbl">Ember</div>
+      </div>
+      <div class="cust-item" data-t="dusk" onclick="setTheme('dusk')">
+        <div class="cust-dot" data-t="dusk"></div>
+        <div class="cust-lbl">Dusk</div>
+      </div>
+      <div class="cust-item" data-t="custom" onclick="openCustomTheme()" id="cust-item-custom">
+        <div class="cust-dot" data-t="custom"></div>
+        <div class="cust-lbl">Custom</div>
+      </div>
+    </div>
+
+    <div id="custom-theme-panel" style="display:none;margin-top:4px;padding:14px;background:var(--s2);border-radius:var(--r-sm);border:1px solid var(--edge2)">
+      <div style="font-size:11px;font-weight:700;color:var(--copper);letter-spacing:.08em;margin-bottom:12px;text-transform:uppercase">&#x1F3A8; Tema Personalizado</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Fundo<input type="color" id="ct-bg" value="#0d0d14" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:4px;background:none;cursor:pointer;padding:2px"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Cor principal<input type="color" id="ct-acc" value="#b8722e" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:4px;background:none;cursor:pointer;padding:2px"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Receita<input type="color" id="ct-gn" value="#34c77b" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:4px;background:none;cursor:pointer;padding:2px"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Despesa<input type="color" id="ct-rd" value="#e05c5c" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:4px;background:none;cursor:pointer;padding:2px"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:3px;grid-column:span 2">Texto<input type="color" id="ct-tx" value="#f0ece4" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:4px;background:none;cursor:pointer;padding:2px"></label>
+      </div>
+      <div style="margin-top:10px">
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Fonte<select id="ct-font" style="background:var(--s3);border:1px solid var(--edge2);border-radius:4px;color:var(--text);padding:6px 8px;font-size:12px"><option value="sans">Padr&#xE3;o (Sans-serif)</option><option value="mono">Terminal (Mono)</option><option value="serif">Elegante (Serif)</option><option value="rounded">Arredondada</option></select></label>
+      </div>
+      <div style="margin-top:10px">
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Bordas: <span id="ct-radius-val">10px</span><input type="range" id="ct-radius" min="0" max="20" value="10" oninput="document.getElementById('ct-radius-val').textContent=this.value+'px'" style="accent-color:var(--copper);width:100%"></label>
+      </div>
+      <button onclick="applyCustomTheme()" style="margin-top:12px;width:100%;padding:9px;background:var(--copper);color:#000;border:none;border-radius:var(--r-sm);font-size:12px;font-weight:700;cursor:pointer">Aplicar &#x2714;</button>
     </div>
 
     <div class="cust-sec">Estilo de Gráfico</div>
