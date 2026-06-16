@@ -3132,47 +3132,74 @@ function resetMobileLayout(){
     if(p) p.style.display=p.style.display==='none'?'block':'none';
     document.querySelectorAll('.cust-item[data-t]').forEach(el=>el.classList.toggle('active',el.dataset.t==='custom'));
   }
+  function _hexToRgb(hex){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return[r,g,b]}
+  function _lighten(hex,amt){const[r,g,b]=_hexToRgb(hex);return'#'+[r+amt,g+amt,b+amt].map(v=>Math.min(255,v).toString(16).padStart(2,'0')).join('')}
+  function _rgba(hex,a){const[r,g,b]=_hexToRgb(hex);return'rgba('+r+','+g+','+b+','+a+')'}
+  function ctPreview(){
+    const get=id=>{const el=document.getElementById(id);return el?el.value:null;};
+    const bg=get('ct-bg')||'#0d0d14';
+    const card=get('ct-card')||'#141420';
+    const sb=get('ct-sb')||'#0a0a10';
+    const tx=get('ct-tx')||'#f0ece4';
+    const tm=get('ct-tm')||'#888888';
+    const bd=get('ct-bd')||'#2a2a3a';
+    const acc=get('ct-acc')||'#b8722e';
+    const btn=get('ct-btn')||acc;
+    const btntx=get('ct-btntx')||'#ffffff';
+    const gn=get('ct-gn')||'#34c77b';
+    const rd=get('ct-rd')||'#e05c5c';
+    const vt=get('ct-vt')||'#8b5cf6';
+    const opacity=parseFloat(get('ct-opacity')||'90')/100;
+    const blur=parseInt(get('ct-blur')||'0');
+    const glow=parseFloat(get('ct-glow')||'0')/100;
+    const radius=parseInt(get('ct-radius')||'10');
+    const font=get('ct-font')||'sans';
+    const root=document.documentElement;
+    root.setAttribute('data-theme','custom');
+    root.style.setProperty('--bg',bg);
+    root.style.setProperty('--s1',_rgba(card,opacity));
+    root.style.setProperty('--s2',_rgba(_lighten(card,6),opacity));
+    root.style.setProperty('--s3',_rgba(_lighten(card,12),Math.min(1,opacity+.05)));
+    root.style.setProperty('--s4',_rgba(_lighten(card,18),Math.min(1,opacity+.1)));
+    root.style.setProperty('--tx',tx);root.style.setProperty('--tm',tm);
+    root.style.setProperty('--bd',bd);root.style.setProperty('--bd2',_lighten(bd,12));
+    root.style.setProperty('--cu',acc);root.style.setProperty('--cu-s',_rgba(acc,.12));
+    root.style.setProperty('--gn',gn);root.style.setProperty('--rd',rd);root.style.setProperty('--vt',vt);
+    root.style.setProperty('--r',radius+'px');root.style.setProperty('--r-sm',Math.max(2,radius-4)+'px');
+    const ff=font==='mono'?'"JetBrains Mono","Fira Mono",monospace':font==='serif'?'"Georgia","Times New Roman",serif':font==='rounded'?'"Nunito","Poppins",sans-serif':'inherit';
+    root.style.setProperty('--font',ff);document.body.style.fontFamily=ff;
+    document.querySelectorAll('.sb').forEach(el=>{el.style.background=sb;});
+    document.querySelectorAll('.btn.pri').forEach(el=>{el.style.background=btn;el.style.color=btntx;el.style.boxShadow=glow>0?'0 2px '+Math.round(glow*20)+'px '+_rgba(btn,glow*.6):'';});
+    document.querySelectorAll('.kpi,.card').forEach(el=>{el.style.backdropFilter=blur>0?'blur('+blur+'px)':'';});
+  }
   function applyCustomTheme(){
-    const bg=document.getElementById('ct-bg').value;
-    const acc=document.getElementById('ct-acc').value;
-    const gn=document.getElementById('ct-gn').value;
-    const rd=document.getElementById('ct-rd').value;
-    const tx=document.getElementById('ct-tx').value;
-    const font=document.getElementById('ct-font').value;
-    const radius=document.getElementById('ct-radius').value;
-    const r=document.documentElement;
-    const toRgb=hex=>{const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return[r,g,b]};
-    const lighten=(hex,amt)=>{const[rv,g,b]=toRgb(hex);return '#'+[rv+amt,g+amt,b+amt].map(v=>Math.min(255,v).toString(16).padStart(2,'0')).join('')};
-    r.setAttribute('data-theme','custom');
-    r.style.setProperty('--void',bg);r.style.setProperty('--bg',bg);
-    r.style.setProperty('--s1',lighten(bg,6));r.style.setProperty('--s2',lighten(bg,12));
-    r.style.setProperty('--s3',lighten(bg,18));r.style.setProperty('--s4',lighten(bg,24));
-    r.style.setProperty('--text',tx);r.style.setProperty('--tx',tx);
-    r.style.setProperty('--copper',acc);r.style.setProperty('--cu',acc);
-    r.style.setProperty('--jade',gn);r.style.setProperty('--gn',gn);
-    r.style.setProperty('--crimson',rd);r.style.setProperty('--rd',rd);
-    r.style.setProperty('--edge',lighten(bg,16));r.style.setProperty('--bd',lighten(bg,16));
-    r.style.setProperty('--edge2',lighten(bg,24));r.style.setProperty('--bd2',lighten(bg,24));
-    r.style.setProperty('--r',radius+'px');r.style.setProperty('--r-sm',Math.max(2,parseInt(radius)-4)+'px');
-    let ff='inherit';
-    if(font==='mono') ff='"JetBrains Mono","Fira Mono",monospace';
-    else if(font==='serif') ff='"Georgia","Times New Roman",serif';
-    else if(font==='rounded') ff='"Nunito","Poppins",sans-serif';
-    r.style.setProperty('--font',ff);
-    document.body.style.fontFamily=ff;
-    const meta=document.querySelector('meta[name="theme-color"]');
-    if(meta)meta.content=bg;
+    ctPreview();
+    const get=id=>{const el=document.getElementById(id);return el?el.value:null;};
+    const vars={bg:get('ct-bg'),card:get('ct-card'),sb:get('ct-sb'),tx:get('ct-tx'),tm:get('ct-tm'),bd:get('ct-bd'),acc:get('ct-acc'),btn:get('ct-btn'),btntx:get('ct-btntx'),gn:get('ct-gn'),rd:get('ct-rd'),vt:get('ct-vt'),opacity:get('ct-opacity'),blur:get('ct-blur'),glow:get('ct-glow'),radius:get('ct-radius'),font:get('ct-font')};
     localStorage.setItem('fc_theme','custom');
-    localStorage.setItem('fc_custom_vars',JSON.stringify({bg,acc,gn,rd,tx,font,radius}));
+    localStorage.setItem('fc_custom_vars',JSON.stringify(vars));
     document.querySelectorAll('.cust-item[data-t]').forEach(el=>el.classList.toggle('active',el.dataset.t==='custom'));
+    if(typeof toast==='function')toast('✔ Tema aplicado');
+  }
+  function resetCustomTheme(){
+    localStorage.removeItem('fc_custom_vars');
+    ['ct-bg','ct-card','ct-sb','ct-tx','ct-tm','ct-bd','ct-acc','ct-btn','ct-btntx','ct-gn','ct-rd','ct-vt'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=el.defaultValue;});
+    ['ct-opacity','ct-blur','ct-glow','ct-radius'].forEach(id=>{const el=document.getElementById(id);if(el){el.value=el.defaultValue;el.dispatchEvent(new Event('input'));}});
+    ctPreview();
   }
   function loadCustomTheme(){
     const v=localStorage.getItem('fc_custom_vars');if(!v)return;
     const o=JSON.parse(v);
-    ['bg','acc','gn','rd','tx'].forEach(k=>{const el=document.getElementById('ct-bg'.replace('bg',k));if(el)el.value=o[k]||el.value});
+    const set=(id,val)=>{const el=document.getElementById(id);if(el&&val!=null)el.value=val;};
+    set('ct-bg',o.bg);set('ct-card',o.card);set('ct-sb',o.sb);
+    set('ct-tx',o.tx);set('ct-tm',o.tm);set('ct-bd',o.bd);
+    set('ct-acc',o.acc);set('ct-btn',o.btn||o.acc);
+    set('ct-btntx',o.btntx);set('ct-gn',o.gn);set('ct-rd',o.rd);set('ct-vt',o.vt);
+    set('ct-opacity',o.opacity||'90');set('ct-blur',o.blur||'0');set('ct-glow',o.glow||'0');
+    set('ct-radius',o.radius||'10');
     const f=document.getElementById('ct-font');if(f)f.value=o.font||'sans';
-    const rr=document.getElementById('ct-radius');if(rr)rr.value=o.radius||'10';
-    const rv=document.getElementById('ct-radius-val');if(rv)rv.textContent=(o.radius||'10')+'px';
+    const uv=(id,sfx)=>{const el=document.getElementById(id);const vl=document.getElementById(id+'-val');if(el&&vl)vl.textContent=el.value+sfx;};
+    uv('ct-opacity','%');uv('ct-blur','px');uv('ct-glow','%');uv('ct-radius','px');
   }
   function toggleDarkLight(){
     const cur=localStorage.getItem('fc_theme')||'copper';
@@ -3191,6 +3218,8 @@ function resetMobileLayout(){
   window.openCustomize=openCustomize;
   window.openCustomTheme=openCustomTheme;
   window.applyCustomTheme=applyCustomTheme;
+  window.resetCustomTheme=resetCustomTheme;
+  window.ctPreview=ctPreview;
   window.toggleDarkLight=toggleDarkLight;
   window.updateThemeToggleBtn=updateThemeToggleBtn;
   window.toggleAvatarMenu=function(){
@@ -3993,22 +4022,42 @@ function jumpOb(i){_obStep=i;obRender();}
       </div>
     </div>
 
-    <div id="custom-theme-panel" style="display:none;margin-top:4px;padding:14px;background:var(--s2);border-radius:var(--r-sm);border:1px solid var(--edge2)">
-      <div style="font-size:11px;font-weight:700;color:var(--copper);letter-spacing:.08em;margin-bottom:12px;text-transform:uppercase">&#x1F3A8; Tema Personalizado</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Fundo<input type="color" id="ct-bg" value="#0d0d14" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:4px;background:none;cursor:pointer;padding:2px"></label>
-        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Cor principal<input type="color" id="ct-acc" value="#b8722e" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:4px;background:none;cursor:pointer;padding:2px"></label>
-        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Receita<input type="color" id="ct-gn" value="#34c77b" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:4px;background:none;cursor:pointer;padding:2px"></label>
-        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Despesa<input type="color" id="ct-rd" value="#e05c5c" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:4px;background:none;cursor:pointer;padding:2px"></label>
-        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:3px;grid-column:span 2">Texto<input type="color" id="ct-tx" value="#f0ece4" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:4px;background:none;cursor:pointer;padding:2px"></label>
+    <div id="custom-theme-panel" style="display:none;margin-top:4px;padding:16px 18px 18px;background:var(--s2);border-radius:var(--r-sm);border:1px solid var(--edge2)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:15px">&#x1F3A8;</span>
+        <div style="font-size:11px;font-weight:800;color:var(--copper);letter-spacing:.1em;text-transform:uppercase">Tema Personalizado</div>
+        <button onclick="resetCustomTheme()" style="margin-left:auto;background:none;border:1px solid var(--edge2);border-radius:4px;color:var(--muted);font-size:10px;padding:3px 8px;cursor:pointer">Reset</button>
       </div>
-      <div style="margin-top:10px">
-        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Fonte<select id="ct-font" style="background:var(--s3);border:1px solid var(--edge2);border-radius:4px;color:var(--text);padding:6px 8px;font-size:12px"><option value="sans">Padr&#xE3;o (Sans-serif)</option><option value="mono">Terminal (Mono)</option><option value="serif">Elegante (Serif)</option><option value="rounded">Arredondada</option></select></label>
+      <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:14px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--bd)">Cores Base</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Fundo<input type="color" id="ct-bg" value="#0d0d14" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:5px;background:none;cursor:pointer;padding:2px" oninput="ctPreview()"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Cards<input type="color" id="ct-card" value="#141420" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:5px;background:none;cursor:pointer;padding:2px" oninput="ctPreview()"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Sidebar<input type="color" id="ct-sb" value="#0a0a10" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:5px;background:none;cursor:pointer;padding:2px" oninput="ctPreview()"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Texto<input type="color" id="ct-tx" value="#f0ece4" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:5px;background:none;cursor:pointer;padding:2px" oninput="ctPreview()"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Texto 2&#xBA;<input type="color" id="ct-tm" value="#888888" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:5px;background:none;cursor:pointer;padding:2px" oninput="ctPreview()"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Bordas<input type="color" id="ct-bd" value="#2a2a3a" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:5px;background:none;cursor:pointer;padding:2px" oninput="ctPreview()"></label>
       </div>
-      <div style="margin-top:10px">
-        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:3px">Bordas: <span id="ct-radius-val">10px</span><input type="range" id="ct-radius" min="0" max="20" value="10" oninput="document.getElementById('ct-radius-val').textContent=this.value+'px'" style="accent-color:var(--copper);width:100%"></label>
+      <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:14px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--bd)">Cores de Destaque</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Cor principal<input type="color" id="ct-acc" value="#b8722e" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:5px;background:none;cursor:pointer;padding:2px" oninput="ctPreview()"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Bot&#xE3;o prim&#xE1;rio<input type="color" id="ct-btn" value="#b8722e" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:5px;background:none;cursor:pointer;padding:2px" oninput="ctPreview()"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Receita / Verde<input type="color" id="ct-gn" value="#34c77b" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:5px;background:none;cursor:pointer;padding:2px" oninput="ctPreview()"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Despesa / Vermelho<input type="color" id="ct-rd" value="#e05c5c" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:5px;background:none;cursor:pointer;padding:2px" oninput="ctPreview()"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Texto do bot&#xE3;o<input type="color" id="ct-btntx" value="#ffffff" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:5px;background:none;cursor:pointer;padding:2px" oninput="ctPreview()"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Detalhe / Link<input type="color" id="ct-vt" value="#8b5cf6" style="width:100%;height:30px;border:1px solid var(--edge2);border-radius:5px;background:none;cursor:pointer;padding:2px" oninput="ctPreview()"></label>
       </div>
-      <button onclick="applyCustomTheme()" style="margin-top:12px;width:100%;padding:9px;background:var(--copper);color:#000;border:none;border-radius:var(--r-sm);font-size:12px;font-weight:700;cursor:pointer">Aplicar &#x2714;</button>
+      <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:14px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--bd)">Efeitos</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Opacidade dos cards: <span id="ct-opacity-val" style="color:var(--copper)">90%</span><input type="range" id="ct-opacity" min="10" max="100" value="90" oninput="document.getElementById('ct-opacity-val').textContent=this.value+'%';ctPreview()" style="accent-color:var(--copper);width:100%"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Blur de fundo (glass): <span id="ct-blur-val" style="color:var(--copper)">0px</span><input type="range" id="ct-blur" min="0" max="20" value="0" oninput="document.getElementById('ct-blur-val').textContent=this.value+'px';ctPreview()" style="accent-color:var(--copper);width:100%"></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Brilho accent (glow): <span id="ct-glow-val" style="color:var(--copper)">0%</span><input type="range" id="ct-glow" min="0" max="100" value="0" oninput="document.getElementById('ct-glow-val').textContent=this.value+'%';ctPreview()" style="accent-color:var(--copper);width:100%"></label>
+      </div>
+      <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:14px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--bd)">Tipografia &amp; Layout</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Fonte<select id="ct-font" style="background:var(--s2);border:1px solid var(--edge2);border-radius:5px;color:var(--text);padding:6px 8px;font-size:12px"><option value="sans">Padr&#xE3;o (Sans-serif)</option><option value="mono">Terminal (Monospace)</option><option value="serif">Elegante (Serif)</option><option value="rounded">Arredondada (Nunito)</option></select></label>
+        <label style="font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:4px">Bordas arredondadas: <span id="ct-radius-val" style="color:var(--copper)">10px</span><input type="range" id="ct-radius" min="0" max="24" value="10" oninput="document.getElementById('ct-radius-val').textContent=this.value+'px';ctPreview()" style="accent-color:var(--copper);width:100%"></label>
+      </div>
+      <button onclick="applyCustomTheme()" style="margin-top:16px;width:100%;padding:10px;background:var(--copper);color:var(--text);border:none;border-radius:var(--r-sm);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.04em">Aplicar tema &#x2714;</button>
     </div>
 
     <div class="cust-sec">Estilo de Gráfico</div>
