@@ -67,25 +67,6 @@
   --copper:#d946ef;--copper-s:rgba(217,70,239,.13);--copper-b:rgba(217,70,239,.28);
 }
 
-/* ── TOKENS: AURORA (mobile) ── deep indigo + teal ── */
-[data-theme="aurora"]{
-  --void:#050518;--s1:#0a0a2e;--s2:#0d0d38;--s3:#111142;--s4:#15154e;
-  --edge:#1a1a5e;--edge2:#23236a;
-  --text:#e8eaf6;--sub:#7986cb;--muted:#7986cb;--dim:#1a1a5e;
-  --copper:#00f5d4;--copper-s:rgba(0,245,212,.1);--copper-b:rgba(0,245,212,.22);
-  --jade:#00e5b0;--jade-s:rgba(0,229,176,.08);
-  --crimson:#ff4b8d;--crimson-s:rgba(255,75,141,.08);
-  --cobalt:#4fc3f7;--cobalt-s:rgba(79,195,247,.08);
-  --iris:#b845ff;
-  --r:12px; --r-sm:8px;
-}
-[data-theme="aurora"] .nav{background:rgba(5,5,24,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(0,245,212,.07)}
-[data-theme="aurora"] .sheet{background:rgba(10,10,46,.98);border-top:1px solid rgba(0,245,212,.14);box-shadow:0 -4px 40px rgba(0,245,212,.08)}
-[data-theme="aurora"] .hero{border:1px solid rgba(0,245,212,.1);background:linear-gradient(135deg,rgba(13,13,56,.9),rgba(7,7,32,.95));backdrop-filter:blur(6px)}
-[data-theme="aurora"] .card,[data-theme="aurora"] .mini{border:1px solid rgba(0,245,212,.08);background:linear-gradient(135deg,rgba(13,13,56,.85),rgba(7,7,32,.9))}
-[data-theme="aurora"] .tx{border-color:rgba(0,245,212,.06)}
-[data-theme="aurora"] .fab{background:linear-gradient(135deg,#00f5d4,#00c4aa);box-shadow:0 4px 20px rgba(0,245,212,.35);color:#000}
-[data-theme="aurora"] .ov{background:rgba(0,0,16,.8)}
 
 /* ── TOKENS: EMBER (mobile) ── charcoal + amber ── */
 [data-theme="ember"]{
@@ -304,6 +285,11 @@
 .thm-dot[data-t="violeta"]{background:radial-gradient(circle at 38% 38%,#a78bfa,#3b1fa8)}
 .thm-dot[data-t="esmeralda"]{background:radial-gradient(circle at 38% 38%,#34d399,#054a30)}
 .thm-dot[data-t="magenta"]{background:radial-gradient(circle at 38% 38%,#e879f9,#5a0a6a)}
+.thm-dot[data-t="plasma"]{background:radial-gradient(circle at 38% 38%,#00d4ff,#0a0a3a)}
+.thm-dot[data-t="midnight"]{background:radial-gradient(circle at 30% 30%,#00ff41,#010802 70%);border-color:rgba(0,255,65,.2)!important}
+.thm-dot[data-t="ember"]{background:radial-gradient(circle at 38% 38%,#f59e0b,#0d0802)}
+.thm-dot[data-t="dusk"]{background:radial-gradient(circle at 38% 38%,#fb7185,#0e0a14)}
+.thm-dot[data-t="custom"]{background:conic-gradient(#f59e0b,#00f5d4,#fb7185,#8b5cf6,#f59e0b)}
 .thm-name{font-size:8px;color:var(--muted);letter-spacing:.04em;font-weight:500;text-align:center}
 
 /* ── CUSTOMIZATION PANEL ───────────────────────────────────────── */
@@ -320,8 +306,7 @@
 .cust-dot[data-t="esmeralda"]{background:linear-gradient(135deg,#051a0e,#00c98c)}
 .cust-dot[data-t="magenta"]{background:linear-gradient(135deg,#0a0012,#d946ef)}
 .cust-dot[data-t="plasma"]{background:linear-gradient(135deg,#020209,#00d4ff)}
-.cust-dot[data-t="midnight"]{background:linear-gradient(135deg,#020d06,#00e676)}
-.cust-dot[data-t="aurora"]{background:linear-gradient(135deg,#1a0533,#00f5d4)}
+.cust-dot[data-t="midnight"]{background:radial-gradient(circle at 35% 35%,#00ff41,#011005 65%);border:1px solid rgba(0,255,65,.2)}
 .cust-dot[data-t="ember"]{background:linear-gradient(135deg,#0d0802,#f59e0b)}
 .cust-dot[data-t="dusk"]{background:linear-gradient(135deg,#0e0a14,#fb7185)}
 .cust-dot[data-t="custom"]{background:conic-gradient(#f59e0b 0%,#00f5d4 33%,#fb7185 66%,#8b5cf6 100%)}
@@ -3120,7 +3105,7 @@ function resetMobileLayout(){
 })();
 
 (()=>{
-  const bgMap={copper:'#0a0a0a',claro:'#f0ede8',violeta:'#09091a',esmeralda:'#050c08',magenta:'#000000',plasma:'#020209',midnight:'#020d06',aurora:'#050518',ember:'#0d0802',dusk:'#0e0a14'};
+  const bgMap={copper:'#0a0a0a',claro:'#f0ede8',violeta:'#09091a',esmeralda:'#050c08',magenta:'#000000',plasma:'#020209',midnight:'#020d06',ember:'#0d0802',dusk:'#0e0a14'};
   function setTheme(t){
     document.documentElement.setAttribute('data-theme',t);
     const m=document.querySelector('meta[name="theme-color"]');
@@ -3993,10 +3978,6 @@ function jumpOb(i){_obStep=i;obRender();}
       <div class="cust-item" data-t="midnight" onclick="setTheme('midnight')">
         <div class="cust-dot" data-t="midnight"></div>
         <div class="cust-lbl">Midnight</div>
-      </div>
-      <div class="cust-item" data-t="aurora" onclick="setTheme('aurora')">
-        <div class="cust-dot" data-t="aurora"></div>
-        <div class="cust-lbl">Aurora</div>
       </div>
       <div class="cust-item" data-t="ember" onclick="setTheme('ember')">
         <div class="cust-dot" data-t="ember"></div>

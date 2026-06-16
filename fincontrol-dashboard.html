@@ -474,38 +474,6 @@
 [data-theme="midnight"] .alert{border-radius:2px}
 [data-theme="midnight"] .tgl.active{background:var(--cu);color:#000;border-color:var(--cu)}
 
-/* ── AURORA ── deep indigo + teal bioluminescence ── */
-[data-theme="aurora"]{
-  --bg:#050518;--s1:#0a0a2e;--s2:#0d0d38;--s3:#111142;
-  --tx:#e8eaf6;--tm:#7986cb;--bd:#1a1a5e;--bd2:#23236a;
-  --cu:#00f5d4;--gn:#00e5b0;--rd:#ff4b8d;--bl:#4fc3f7;--vt:#b845ff;--am:#ffd166;
-  --r:12px;--r-sm:8px;
-}
-[data-theme="aurora"] .sb{background:linear-gradient(180deg,#07072a 0%,#050518 100%);border-right:1px solid rgba(0,245,212,.07)}
-[data-theme="aurora"] .sb-logo{border-bottom:1px solid rgba(0,245,212,.07)}
-[data-theme="aurora"] .logo-mark em{color:var(--cu);text-shadow:0 0 16px rgba(0,245,212,.6)}
-[data-theme="aurora"] .nb.active{background:rgba(0,245,212,.08);border-left:2px solid var(--cu)}
-[data-theme="aurora"] .nb.active .nb-icon{color:var(--cu)}
-[data-theme="aurora"] .topbar{background:rgba(5,5,24,.85);backdrop-filter:blur(8px);border-bottom:1px solid rgba(0,245,212,.07)}
-[data-theme="aurora"] .kpi{background:linear-gradient(135deg,rgba(10,10,46,.9),rgba(7,7,32,.95));border:1px solid rgba(0,245,212,.12);backdrop-filter:blur(6px);box-shadow:0 4px 24px rgba(0,0,0,.5),0 0 0 1px rgba(0,245,212,.04)}
-[data-theme="aurora"] .kpi::after{display:none}
-[data-theme="aurora"] .kpi.c-gn .kpi-val{color:var(--gn);text-shadow:0 0 12px rgba(0,229,176,.35)}
-[data-theme="aurora"] .kpi.c-rd .kpi-val{color:var(--rd);text-shadow:0 0 12px rgba(255,75,141,.3)}
-[data-theme="aurora"] .kpi.c-cu .kpi-val{color:var(--cu);text-shadow:0 0 14px rgba(0,245,212,.4)}
-[data-theme="aurora"] .card{background:linear-gradient(135deg,rgba(10,10,46,.8),rgba(7,7,32,.9));border:1px solid rgba(0,245,212,.08);backdrop-filter:blur(4px)}
-[data-theme="aurora"] .tbl-wrap{background:transparent;border:1px solid rgba(0,245,212,.08)}
-[data-theme="aurora"] thead th{background:rgba(0,245,212,.04);color:rgba(0,245,212,.6);letter-spacing:.08em}
-[data-theme="aurora"] tbody tr:hover{background:rgba(0,245,212,.04)}
-[data-theme="aurora"] .btn.pri{background:linear-gradient(135deg,#00f5d4,#00c4aa);color:#000;border:none;font-weight:600;box-shadow:0 2px 16px rgba(0,245,212,.3)}
-[data-theme="aurora"] .btn.pri:hover{box-shadow:0 4px 24px rgba(0,245,212,.5)}
-[data-theme="aurora"] .modal{background:rgba(10,10,46,.95);backdrop-filter:blur(12px);border:1px solid rgba(0,245,212,.12)}
-[data-theme="aurora"] .fi,[data-theme="aurora"] .fs{background:rgba(7,7,32,.8);border-color:rgba(0,245,212,.15)}
-[data-theme="aurora"] .fi:focus,[data-theme="aurora"] .fs:focus{border-color:rgba(0,245,212,.5);box-shadow:0 0 0 3px rgba(0,245,212,.08)}
-[data-theme="aurora"] .chip.active{background:rgba(0,245,212,.12);border-color:rgba(0,245,212,.35)}
-[data-theme="aurora"] .acc-card,[data-theme="aurora"] .inv-row{border:1px solid rgba(0,245,212,.1);background:linear-gradient(135deg,rgba(10,10,46,.8),rgba(7,7,32,.9))}
-[data-theme="aurora"] .kpi-lbl{letter-spacing:.06em}
-[data-theme="aurora"] .tgl.active{background:var(--cu);color:#000;border-color:var(--cu)}
-
 /* ── EMBER ── charcoal + warm amber/gold ── */
 [data-theme="ember"]{
   --bg:#0d0802;--s1:#150e04;--s2:#1c1306;--s3:#231809;
@@ -591,8 +559,7 @@
 .thm-dot[data-t="magenta"]{background:radial-gradient(circle at 38% 38%,#e879f9,#5a0a6a)}
 .thm-name{font-size:8px;color:var(--tm);letter-spacing:.03em;text-align:center}
 .thm-dot[data-t="plasma"]{background:radial-gradient(circle at 38% 38%,#00d4ff,#0a0a3a)}
-.thm-dot[data-t="midnight"]{background:radial-gradient(circle at 38% 38%,#00e676,#020d06)}
-.thm-dot[data-t="aurora"]{background:radial-gradient(circle at 38% 38%,#00f5d4,#1a0533)}
+.thm-dot[data-t="midnight"]{background:radial-gradient(circle at 30% 30%,#00ff41,#010802 70%);border-color:rgba(0,255,65,.2)!important}
 .thm-dot[data-t="ember"]{background:radial-gradient(circle at 38% 38%,#f59e0b,#0d0802)}
 .thm-dot[data-t="dusk"]{background:radial-gradient(circle at 38% 38%,#fb7185,#0e0a14)}
 .thm-dot[data-t="custom"]{background:conic-gradient(#f59e0b,#00f5d4,#fb7185,#8b5cf6,#f59e0b)}
@@ -614,8 +581,7 @@
 .cust-dot[data-t="magenta"]{background:linear-gradient(135deg,#0a0012,#d946ef)}
 .cust-lbl{font-size:10px;color:var(--tx);font-weight:500}
 .cust-dot[data-t="plasma"]{background:linear-gradient(135deg,#020209,#00d4ff)}
-.cust-dot[data-t="midnight"]{background:linear-gradient(135deg,#020d06,#00e676)}
-.cust-dot[data-t="aurora"]{background:linear-gradient(135deg,#1a0533,#00f5d4)}
+.cust-dot[data-t="midnight"]{background:radial-gradient(circle at 35% 35%,#00ff41,#011005 65%);border:1px solid rgba(0,255,65,.2)}
 .cust-dot[data-t="ember"]{background:linear-gradient(135deg,#0d0802,#f59e0b)}
 .cust-dot[data-t="dusk"]{background:linear-gradient(135deg,#0e0a14,#fb7185)}
 .cust-dot[data-t="custom"]{background:conic-gradient(#f59e0b 0%,#00f5d4 33%,#fb7185 66%,#8b5cf6 100%)}
@@ -4395,10 +4361,6 @@ window.goTo=function(sc,el){if(_origGoTo)_origGoTo(sc,el);if(window.innerWidth<7
       <div class="cust-item" data-t="midnight" onclick="setTheme('midnight')">
         <div class="cust-dot" data-t="midnight"></div>
         <div class="cust-lbl">Midnight</div>
-      </div>
-      <div class="cust-item" data-t="aurora" onclick="setTheme('aurora')">
-        <div class="cust-dot" data-t="aurora"></div>
-        <div class="cust-lbl">Aurora</div>
       </div>
       <div class="cust-item" data-t="ember" onclick="setTheme('ember')">
         <div class="cust-dot" data-t="ember"></div>
