@@ -67,6 +67,79 @@
   --copper:#d946ef;--copper-s:rgba(217,70,239,.13);--copper-b:rgba(217,70,239,.28);
 }
 
+
+/* ── TOKENS: PLASMA (mobile) ──────────────────────────────────── */
+[data-theme="plasma"]{
+  --void:#020209;--s1:#07070f;--s2:#0d0d1a;--s3:#121224;--s4:#18183a;
+  --edge:#1a1a30;--edge2:#252548;
+  --text:#e8f0ff;--sub:#7888bb;--muted:#8898cc;--dim:#1a1a32;
+  --copper:#00d4ff;--copper-s:rgba(0,212,255,.1);--copper-b:rgba(0,212,255,.22);
+  --jade:#00ffaa;--jade-s:rgba(0,255,170,.08);
+  --crimson:#ff4b7d;--crimson-s:rgba(255,75,125,.08);
+  --cobalt:#4f8ef7;--cobalt-s:rgba(79,142,247,.08);
+  --iris:#b347ff;
+  --r:14px; --r-sm:9px;
+}
+[data-theme="plasma"] .nav{
+  background:rgba(2,2,9,.92);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-top:1px solid rgba(0,212,255,.07);
+}
+[data-theme="plasma"] .sheet{
+  background:rgba(7,7,18,.98);
+  border-top:1px solid rgba(0,212,255,.14);
+  box-shadow:0 -4px 40px rgba(0,212,255,.08);
+}
+[data-theme="plasma"] .hero{
+  border:1px solid rgba(0,212,255,.1);
+  background:linear-gradient(135deg,rgba(13,13,26,.9),rgba(7,7,16,.95));
+}
+[data-theme="plasma"] .card,.plasma .mini{
+  border:1px solid rgba(0,212,255,.08);
+  background:linear-gradient(135deg,rgba(13,13,26,.9),rgba(7,7,16,.95));
+}
+[data-theme="plasma"] .mini{border-color:rgba(0,212,255,.08)}
+[data-theme="plasma"] .tx{border-color:rgba(0,212,255,.06)}
+[data-theme="plasma"] .fab{
+  background:linear-gradient(135deg,#00c4ee,#0066aa);
+  box-shadow:0 4px 20px rgba(0,196,238,.35);
+}
+[data-theme="plasma"] .ov{background:rgba(0,0,10,.75)}
+
+/* ── TOKENS: MIDNIGHT (mobile) ────────────────────────────────── */
+[data-theme="midnight"]{
+  --void:#020d06;--s1:#040f08;--s2:#07160a;--s3:#0c1e0f;--s4:#102614;
+  --edge:#0f2415;--edge2:#163220;
+  --text:#c8f0d0;--sub:#4d9a60;--muted:#3d8050;--dim:#0f2415;
+  --copper:#00e676;--copper-s:rgba(0,230,118,.08);--copper-b:rgba(0,230,118,.2);
+  --jade:#00e676;--jade-s:rgba(0,230,118,.08);
+  --crimson:#ff3d5a;--crimson-s:rgba(255,61,90,.08);
+  --cobalt:#00b8d9;--cobalt-s:rgba(0,184,217,.08);
+  --iris:#69f0ae;
+  --r:4px; --r-sm:3px;
+  --font:'JetBrains Mono','Fira Code','Consolas','Courier New',monospace;
+}
+[data-theme="midnight"] .nav{
+  background:rgba(4,15,8,.98);
+  border-top:1px solid rgba(0,230,118,.18);
+}
+[data-theme="midnight"] .sheet{
+  background:var(--s2);
+  border-top:1px solid rgba(0,230,118,.2);
+}
+[data-theme="midnight"] .hero{
+  border-color:rgba(0,230,118,.12);
+  background:var(--s2);
+}
+[data-theme="midnight"] .card{border-color:rgba(0,230,118,.1);background:var(--s2)}
+[data-theme="midnight"] .mini{border-color:rgba(0,230,118,.1);background:var(--s2)}
+[data-theme="midnight"] .tx{border-color:rgba(0,230,118,.06)}
+[data-theme="midnight"] .fab{
+  background:var(--copper);
+  box-shadow:0 4px 20px rgba(0,230,118,.35);
+  color:#000;
+}
+[data-theme="midnight"] .ov{background:rgba(0,10,4,.75)}
 /* ── AESTHETIC: CLARO ─────────────────────────────────────────── */
 [data-theme="claro"] .hero{box-shadow:0 4px 24px rgba(0,0,0,.07);border-color:rgba(0,0,0,.07)}
 [data-theme="claro"] .card,.claro .mini{box-shadow:0 2px 12px rgba(0,0,0,.05);border-color:rgba(0,0,0,.07)}
@@ -245,6 +318,9 @@
 .thm-dot[data-t="esmeralda"]{background:radial-gradient(circle at 38% 38%,#34d399,#054a30)}
 .thm-dot[data-t="magenta"]{background:radial-gradient(circle at 38% 38%,#e879f9,#5a0a6a)}
 .thm-name{font-size:8px;color:var(--muted);letter-spacing:.04em;font-weight:500;text-align:center}
+
+.thm-dot[data-t="plasma"]{background:radial-gradient(circle at 38% 38%,#00d4ff,#0a0a3a)}
+.thm-dot[data-t="midnight"]{background:radial-gradient(circle at 38% 38%,#00e676,#020d06)}
 
 /* ── CUSTOMIZATION PANEL ───────────────────────────────────────── */
 .cust-sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:18px 0 10px}
@@ -4742,6 +4818,8 @@ function jumpOb(i){_obStep=i;obRender();}
         <div class="cust-lbl">Esmeralda</div>
       </div>
       <div class="cust-item" data-t="magenta" onclick="setTheme('magenta')">
+      <button class="thm-btn" data-t="plasma" onclick="setTheme('plasma')" style="background:linear-gradient(135deg,#020209,#00d4ff)">Plasma</button>
+      <button class="thm-btn" data-t="midnight" onclick="setTheme('midnight')" style="background:linear-gradient(135deg,#020d06,#00e676);color:#000">Midnight</button>
         <div class="cust-dot" data-t="magenta"></div>
         <div class="cust-lbl">Magenta</div>
       </div>
