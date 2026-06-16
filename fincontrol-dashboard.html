@@ -1164,23 +1164,29 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
 <!-- ══════════════════════════════════════════════════════════════
      ONBOARDING
 ══════════════════════════════════════════════════════════════ -->
-<div id="ov-onboarding" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.65);align-items:center;justify-content:center" onclick="if(event.target===this)closeOnboarding()">
-  <div style="background:var(--s1);border:1px solid var(--bd);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;margin:16px">
+<div id="ov-onboarding" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center" onclick="if(event.target===this)closeOnboarding()">
+  <div style="background:var(--s1);border:1px solid var(--bd);border-radius:20px;width:100%;max-width:540px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;margin:16px;box-shadow:0 24px 80px rgba(0,0,0,.5)">
     <!-- progress bar -->
-    <div style="height:3px;background:var(--bd2);flex-shrink:0">
-      <div id="ob-progress" style="height:100%;background:var(--cu);border-radius:3px;transition:width .35s ease;width:0%"></div>
+    <div style="height:2px;background:var(--bd);flex-shrink:0;overflow:hidden">
+      <div id="ob-progress" style="height:100%;background:linear-gradient(90deg,var(--cu),rgba(184,115,51,.55));transition:width .4s cubic-bezier(.4,0,.2,1);width:0%"></div>
     </div>
     <!-- header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 0;flex-shrink:0">
-      <span id="ob-step-lbl" style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--tm);text-transform:uppercase"></span>
-      <button onclick="closeOnboarding()" style="background:none;border:none;color:var(--tm);font-size:20px;cursor:pointer;padding:0;line-height:1">×</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px 0;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:11px;font-weight:800;color:var(--cu);letter-spacing:.04em">FINCONTROL</span>
+        <span style="width:3px;height:3px;border-radius:50%;background:var(--bd2);display:inline-block"></span>
+        <span id="ob-step-lbl" style="font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--tm);text-transform:uppercase"></span>
+      </div>
+      <button onclick="closeOnboarding()" style="background:var(--s2);border:1px solid var(--bd);color:var(--tm);font-size:12px;cursor:pointer;padding:0;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center">&#x2715;</button>
     </div>
+    <!-- step dots -->
+    <div id="ob-dots" style="display:flex;align-items:center;justify-content:center;gap:5px;padding:10px 22px 0;flex-shrink:0"></div>
     <!-- content -->
-    <div id="ob-content" style="flex:1;overflow-y:auto;padding:16px 20px 0"></div>
+    <div id="ob-content" style="flex:1;overflow-y:auto;padding:14px 22px 4px"></div>
     <!-- footer -->
-    <div style="display:flex;gap:10px;padding:16px 20px;flex-shrink:0;border-top:1px solid var(--bd);margin-top:16px">
-      <button id="ob-back" class="btn sm" style="width:36px;padding:8px 0;flex-shrink:0;font-size:15px" onclick="obStep(-1)">←</button>
-      <button id="ob-next" class="btn pri" style="flex:1;padding:9px;font-size:12px;font-weight:700" onclick="obStep(1)">Próximo</button>
+    <div style="display:flex;gap:10px;padding:14px 22px;flex-shrink:0;border-top:1px solid var(--bd);margin-top:12px">
+      <button id="ob-back" class="btn sm" style="width:38px;padding:9px 0;flex-shrink:0;font-size:15px;border-radius:10px" onclick="obStep(-1)">&#x2190;</button>
+      <button id="ob-next" class="btn pri" style="flex:1;padding:10px;font-size:12px;font-weight:700;border-radius:10px" onclick="obStep(1)">Pr&#xF3;ximo &#x2192;</button>
     </div>
   </div>
 </div>
@@ -4161,184 +4167,185 @@ function sendDashReport(){
 
 // ── ONBOARDING ────────────────────────────────────────────────────
 const OB_STEPS=[
-  {
-    label:'Bem-vindo',
-    html:`
-      <div style="text-align:center;padding:4px 0 20px">
-        <div style="font-size:36px;margin-bottom:12px">📊</div>
-        <div style="font-size:20px;font-weight:700;color:var(--tx);margin-bottom:8px">Bem-vindo ao FinControl</div>
-        <div style="font-size:12px;color:var(--tm);line-height:1.7">Este tour rápido mostra como usar o app<br>para controlar suas finanças com clareza.</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        ${[['💸','Lançamentos','Receitas, despesas e cartão'],['🏦','Contas','Saldo de cada conta'],['💳','Cartões','Fatura e vencimento'],['🎯','Orçamentos','Limites por categoria'],['💰','Meta','Economia mensal'],['☁️','Drive','Sync automático na nuvem']].map(([i,t,d])=>`
-        <div style="display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:10px;padding:10px;border:1px solid var(--bd)">
-          <span style="font-size:20px">${i}</span>
-          <div><div style="font-size:11px;font-weight:600;color:var(--tx)">${t}</div><div style="font-size:10px;color:var(--tm);margin-top:2px">${d}</div></div>
-        </div>`).join('')}
-      </div>`
-  },
-  {
-    label:'Passo 1 de 6 — Lançamentos',
-    html:`
-      <div style="font-size:18px;font-weight:700;color:var(--tx);margin-bottom:6px">💸 Lançamentos</div>
-      <div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:16px">Tudo que entra ou sai do seu bolso é um lançamento.</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="background:rgba(46,184,122,.08);border:1px solid rgba(46,184,122,.2);border-radius:10px;padding:14px">
-          <div style="font-size:12px;font-weight:700;color:#2eb87a;margin-bottom:4px">✅ Receita</div>
-          <div style="font-size:11px;color:var(--tm);line-height:1.6">Salário, freelance, transferência recebida. Aumenta o saldo da conta escolhida.</div>
-        </div>
-        <div style="background:rgba(201,79,79,.08);border:1px solid rgba(201,79,79,.2);border-radius:10px;padding:14px">
-          <div style="font-size:12px;font-weight:700;color:var(--rd);margin-bottom:4px">❌ Despesa</div>
-          <div style="font-size:11px;color:var(--tm);line-height:1.6">Aluguel, mercado, conta de luz. Subtrai do saldo da conta escolhida.</div>
-        </div>
-        <div style="background:var(--cu-s);border:1px solid var(--cu-b);border-radius:10px;padding:14px">
-          <div style="font-size:12px;font-weight:700;color:var(--cu);margin-bottom:4px">💳 Cartão de crédito</div>
-          <div style="font-size:11px;color:var(--tm);line-height:1.6">Compras que vão para a fatura. Não sai do saldo agora — só quando você pagar a fatura.</div>
-        </div>
-      </div>
-      <div style="background:var(--s2);border-radius:10px;padding:12px;margin-top:12px;display:flex;align-items:flex-start;gap:10px;border:1px solid var(--bd)">
-        <span style="font-size:16px">💡</span>
-        <div style="font-size:11px;color:var(--tm);line-height:1.6">Pressione <kbd style="background:var(--s3);border:1px solid var(--bd2);padding:1px 5px;border-radius:3px;font-size:10px">N</kbd> ou clique em <strong style="color:var(--cu)">+ Novo lançamento</strong> no topo para adicionar.</div>
-      </div>`
-  },
-  {
-    label:'Passo 2 de 6 — Contas',
-    html:`
-      <div style="font-size:18px;font-weight:700;color:var(--tx);margin-bottom:6px">🏦 Contas</div>
-      <div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:16px">Cada conta representa um lugar onde você guarda dinheiro.</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="background:var(--s2);border-radius:10px;padding:14px;border:1px solid var(--bd)">
-          <div style="font-size:11px;color:var(--tm);line-height:1.7">Exemplos: <span style="color:var(--tx);font-weight:600">Nubank, Itaú, Carteira, Poupança</span></div>
-        </div>
-        <div style="background:var(--s2);border-radius:10px;padding:14px;border:1px solid var(--bd)">
-          <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:8px">Como o saldo muda</div>
-          <div style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--tm)">
-            <div style="display:flex;gap:8px"><span style="color:var(--tx);min-width:160px">Ao cadastrar a conta</span><span>→ Informe o saldo atual</span></div>
-            <div style="display:flex;gap:8px"><span style="color:var(--tx);min-width:160px">Receitas</span><span>→ Somam ao saldo</span></div>
-            <div style="display:flex;gap:8px"><span style="color:var(--tx);min-width:160px">Despesas</span><span>→ Subtraem do saldo</span></div>
-            <div style="display:flex;gap:8px"><span style="color:var(--tx);min-width:160px">Pagamento de fatura</span><span>→ Registre como despesa</span></div>
-          </div>
-        </div>
-      </div>
-      <div style="background:var(--s2);border-radius:10px;padding:12px;margin-top:12px;display:flex;align-items:flex-start;gap:10px;border:1px solid var(--bd)">
-        <span style="font-size:16px">💡</span>
-        <div style="font-size:11px;color:var(--tm);line-height:1.6">Acesse a tela <strong style="color:var(--tx)">Contas</strong> pelo menu lateral para adicionar ou editar contas.</div>
-      </div>`
-  },
-  {
-    label:'Passo 3 de 6 — Cartões',
-    html:`
-      <div style="font-size:18px;font-weight:700;color:var(--tx);margin-bottom:6px">💳 Cartões de crédito</div>
-      <div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:16px">Acompanhe a fatura de cada cartão e receba alertas de vencimento.</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="background:var(--s2);border-radius:10px;padding:14px;border:1px solid var(--bd)">
-          <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:10px">Dois campos essenciais ao cadastrar</div>
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;gap:12px;align-items:flex-start">
-              <div style="background:var(--cu);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;white-space:nowrap">Fechamento</div>
-              <div style="font-size:11px;color:var(--tm);line-height:1.5">Dia em que a fatura fecha. Compras após essa data vão para a próxima fatura.</div>
-            </div>
-            <div style="display:flex;gap:12px;align-items:flex-start">
-              <div style="background:var(--cb);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;white-space:nowrap">Vencimento</div>
-              <div style="font-size:11px;color:var(--tm);line-height:1.5">Dia em que você paga a fatura. O app avisa quando estiver próximo.</div>
-            </div>
-          </div>
-        </div>
-        <div style="background:var(--s2);border-radius:10px;padding:14px;border:1px solid var(--bd)">
-          <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:6px">Fatura aberta vs. anterior</div>
-          <div style="font-size:11px;color:var(--tm);line-height:1.6"><span style="color:var(--tx)">Fatura aberta</span> → compras do ciclo atual, ainda não fechado.<br><span style="color:var(--tx)">Fatura anterior</span> → ciclo fechado, disponível para conferência.</div>
-        </div>
-      </div>`
-  },
-  {
-    label:'Passo 4 de 6 — Orçamentos',
-    html:`
-      <div style="font-size:18px;font-weight:700;color:var(--tx);margin-bottom:6px">🎯 Orçamentos</div>
-      <div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:16px">Defina quanto quer gastar em cada categoria por mês e acompanhe em tempo real.</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="background:var(--s2);border-radius:10px;padding:14px;border:1px solid var(--bd)">
-          <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:8px">Como funciona</div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            ${[['Defina um limite','Ex: R$ 800 em Alimentação'],['O app soma automaticamente','Todos os lançamentos da categoria no mês'],['Barra de progresso','🟢 Ok  🟡 Atenção  🔴 Estourou']].map(([t,d])=>`
-            <div style="background:var(--s3);border-radius:8px;padding:10px;border:1px solid var(--bd)">
-              <div style="font-size:11px;font-weight:600;color:var(--tx);margin-bottom:2px">${t}</div>
-              <div style="font-size:10px;color:var(--tm)">${d}</div>
-            </div>`).join('')}
-          </div>
-        </div>
-        <div style="background:var(--s2);border-radius:10px;padding:12px;border:1px solid var(--bd);display:flex;gap:10px;align-items:flex-start">
-          <span style="font-size:16px">💡</span>
-          <div style="font-size:11px;color:var(--tm);line-height:1.6">Orçamentos levam em conta despesas diretas <em>e</em> gastos no cartão — tudo na mesma categoria é somado.</div>
-        </div>
-      </div>`
-  },
-  {
-    label:'Passo 5 de 6 — Meta de economia',
-    html:`
-      <div style="font-size:18px;font-weight:700;color:var(--tx);margin-bottom:6px">💰 Meta de economia</div>
-      <div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:16px">Saiba se você está guardando o suficiente a cada mês.</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="background:var(--s2);border-radius:10px;padding:14px;border:1px solid var(--bd)">
-          <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:10px">Cálculo do mês</div>
-          <div style="font-size:12px;color:var(--tm);line-height:2;background:var(--s3);border-radius:8px;padding:12px;border:1px solid var(--bd)">
-            <div>📥 <span style="color:#2eb87a;font-weight:600">Receitas do mês</span></div>
-            <div style="margin-left:16px;color:var(--tm);font-size:11px">− Despesas &nbsp;− Gastos no cartão</div>
-            <div style="border-top:1px solid var(--bd);margin:6px 0"></div>
-            <div>= <span style="color:var(--tx);font-weight:600">Saldo do mês</span></div>
-          </div>
-        </div>
-        <div style="background:var(--s2);border-radius:10px;padding:14px;border:1px solid var(--bd)">
-          <div style="font-size:11px;color:var(--tm);line-height:1.7">
-            Saldo do mês ≥ meta → <strong style="color:#2eb87a">Meta batida ✓</strong><br>
-            Saldo do mês &lt; meta → app mostra o quanto falta.
-          </div>
-        </div>
-      </div>
-      <div style="background:var(--s2);border-radius:10px;padding:12px;margin-top:4px;border:1px solid var(--bd);display:flex;gap:10px;align-items:flex-start">
-        <span style="font-size:16px">💡</span>
-        <div style="font-size:11px;color:var(--tm);line-height:1.6">Configure a meta no <strong style="color:var(--tx)">Dashboard → card Meta de economia</strong>.</div>
-      </div>`
-  },
-  {
-    label:'Passo 6 de 6 — Google Drive',
-    html:`
-      <div style="font-size:18px;font-weight:700;color:var(--tx);margin-bottom:6px">☁️ Google Drive</div>
-      <div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:16px">Seus dados sincronizados entre todos os dispositivos automaticamente.</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="background:var(--s2);border-radius:10px;padding:14px;border:1px solid var(--bd)">
-          <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:10px">Como ativar</div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            ${['Vá em Configurações → Sincronização','Clique em "☁ Conectar"','Faça login com sua conta Google','Pronto — sync automático a cada 30 segundos'].map((t,i)=>`
-            <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:20px;height:20px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${i+1}</div>
-              <div style="font-size:11px;color:var(--tm)">${t}</div>
-            </div>`).join('')}
-          </div>
-        </div>
-        <div style="background:var(--s2);border-radius:10px;padding:12px;border:1px solid var(--bd)">
-          <div style="font-size:11px;color:var(--tm);line-height:1.6">📱 App mobile e 🖥️ Dashboard compartilham os mesmos dados via Drive.</div>
-        </div>
-        <div style="background:rgba(79,127,201,.08);border:1px solid rgba(79,127,201,.2);border-radius:10px;padding:12px">
-          <div style="font-size:11px;color:var(--tm);line-height:1.6">⚠️ O sync requer HTTPS ou localhost — não funciona abrindo o arquivo direto (file://).</div>
-        </div>
-      </div>`
-  },
-  {
-    label:'Tudo pronto!',
-    html:`
-      <div style="text-align:center;padding:20px 0">
-        <div style="font-size:48px;margin-bottom:12px">🎉</div>
-        <div style="font-size:20px;font-weight:700;color:var(--tx);margin-bottom:8px">Você está pronto!</div>
-        <div style="font-size:12px;color:var(--tm);line-height:1.7">Agora você conhece todos os recursos principais.<br>Comece adicionando seus primeiros lançamentos.</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <button class="btn pri" style="width:100%;padding:11px;font-size:12px;font-weight:700" onclick="closeOnboarding();openMod('tx','expense')">💸 Adicionar primeiro lançamento</button>
-        <button class="btn" style="width:100%;padding:9px;font-size:12px" onclick="closeOnboarding()">Explorar por conta própria</button>
-      </div>
-      <div style="text-align:center;margin-top:16px">
-        <div style="font-size:10px;color:var(--tm)">Você pode rever este tour em Configurações → Ajuda → Tour do app</div>
-      </div>`
-  }
+  {label:'Introdução',html:`
+<div style="text-align:center;padding:8px 0 22px">
+  <div style="font-size:44px;margin-bottom:14px;filter:drop-shadow(0 4px 12px rgba(184,115,51,.4))">&#x1F48E;</div>
+  <div style="font-size:22px;font-weight:800;color:var(--tx);letter-spacing:-.3px;margin-bottom:10px">Guia completo<br>do FinControl</div>
+  <div style="font-size:12px;color:var(--tm);line-height:1.8;max-width:340px;margin:0 auto">Aprenda a usar cada fun&ccedil;&atilde;o do app em minutos.<br>Navegue pelos passos abaixo.</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:11px;display:flex;align-items:flex-start;gap:9px"><span style="font-size:18px;line-height:1">&#x1F4B8;</span><div><div style="font-size:11px;font-weight:700;color:var(--tx)">Lan&ccedil;amentos</div><div style="font-size:10px;color:var(--tm);margin-top:2px;line-height:1.4">Receitas, despesas, cart&atilde;o e transfer.</div></div></div>
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:11px;display:flex;align-items:flex-start;gap:9px"><span style="font-size:18px;line-height:1">&#x1F3E6;</span><div><div style="font-size:11px;font-weight:700;color:var(--tx)">Contas</div><div style="font-size:10px;color:var(--tm);margin-top:2px;line-height:1.4">Saldo e hist&oacute;rico por conta</div></div></div>
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:11px;display:flex;align-items:flex-start;gap:9px"><span style="font-size:18px;line-height:1">&#x1F4B3;</span><div><div style="font-size:11px;font-weight:700;color:var(--tx)">Cart&otilde;es</div><div style="font-size:10px;color:var(--tm);margin-top:2px;line-height:1.4">Fatura e controle de cr&eacute;dito</div></div></div>
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:11px;display:flex;align-items:flex-start;gap:9px"><span style="font-size:18px;line-height:1">&#x1F3AF;</span><div><div style="font-size:11px;font-weight:700;color:var(--tx)">Or&ccedil;amentos</div><div style="font-size:10px;color:var(--tm);margin-top:2px;line-height:1.4">Limites mensais por categoria</div></div></div>
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:11px;display:flex;align-items:flex-start;gap:9px"><span style="font-size:18px;line-height:1">&#x1F4B0;</span><div><div style="font-size:11px;font-weight:700;color:var(--tx)">Meta</div><div style="font-size:10px;color:var(--tm);margin-top:2px;line-height:1.4">Economia e proje&ccedil;&atilde;o de saldo</div></div></div>
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:11px;display:flex;align-items:flex-start;gap:9px"><span style="font-size:18px;line-height:1">&#x1F4CA;</span><div><div style="font-size:11px;font-weight:700;color:var(--tx)">Relat&oacute;rios</div><div style="font-size:10px;color:var(--tm);margin-top:2px;line-height:1.4">Gr&aacute;ficos, anual e export PDF</div></div></div>
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:11px;display:flex;align-items:flex-start;gap:9px"><span style="font-size:18px;line-height:1">&#x1F501;</span><div><div style="font-size:11px;font-weight:700;color:var(--tx)">Recorrentes</div><div style="font-size:10px;color:var(--tm);margin-top:2px;line-height:1.4">Gastos fixos autom&aacute;ticos</div></div></div>
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:11px;display:flex;align-items:flex-start;gap:9px"><span style="font-size:18px;line-height:1">&#x2601;&#xFE0F;</span><div><div style="font-size:11px;font-weight:700;color:var(--tx)">Drive</div><div style="font-size:10px;color:var(--tm);margin-top:2px;line-height:1.4">Sync em todos dispositivos</div></div></div>
+</div>`},
+  {label:'Passo 1 — Dashboard',html:`
+<div style="font-size:19px;font-weight:800;color:var(--tx);margin-bottom:4px">&#x1F4CA; Tela principal</div>
+<div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:16px">O Dashboard re&uacute;ne o resumo financeiro do m&ecirc;s em tempo real.</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4C8;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">KPIs do m&ecirc;s</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Quatro cards no topo: <strong style="color:var(--gn)">Receitas</strong>, <strong style="color:var(--rd)">Despesas</strong>, <strong style="color:var(--cu)">Fatura aberta</strong> e <strong style="color:var(--bl)">Saldo l&iacute;quido</strong>. Clique em qualquer um para ver os lan&ccedil;amentos relacionados.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F967;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Gr&aacute;fico de categorias</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Pizza interativa das despesas do m&ecirc;s. Clique numa fatia para filtrar os lan&ccedil;amentos por categoria.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4B0;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Meta de economia</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Card com o valor poupado no m&ecirc;s versus a meta definida. Clique em <em>Definir meta</em> para configurar.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4C5;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Proje&ccedil;&atilde;o de saldo</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Estima o saldo ao final do m&ecirc;s com base nas receitas e despesas lan&ccedil;adas at&eacute; agora.</div></div></div>
+</div>
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:11px 14px;display:flex;align-items:flex-start;gap:9px;margin-top:8px"><span style="font-size:14px;flex-shrink:0">&#x1F4A1;</span><div style="font-size:11px;color:var(--tm);line-height:1.6">O per&iacute;odo do Dashboard &eacute; sempre o <strong style="color:var(--tx)">m&ecirc;s atual</strong>. Para navegar entre meses, use a tela <strong style="color:var(--tx)">Lan&ccedil;amentos</strong>.</div></div>`},
+  {label:'Passo 2 — Lançamentos',html:`
+<div style="font-size:19px;font-weight:800;color:var(--tx);margin-bottom:4px">&#x1F4B8; Tipos de lan&ccedil;amento</div>
+<div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:14px">Todo dinheiro que entra ou sai &eacute; registrado como um lan&ccedil;amento.</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="background:rgba(52,199,123,.07);border:1px solid rgba(52,199,123,.22);border-radius:11px;padding:13px">
+  <div style="font-size:12px;font-weight:700;color:var(--gn);margin-bottom:5px">&#x2191; Receita</div>
+  <div style="font-size:11px;color:var(--tm);line-height:1.6">Sal&aacute;rio, freelance, transfer&ecirc;ncia recebida, reembolso. <em>Aumenta o saldo da conta selecionada.</em></div>
+</div>
+<div style="background:rgba(217,95,95,.07);border:1px solid rgba(217,95,95,.22);border-radius:11px;padding:13px">
+  <div style="font-size:12px;font-weight:700;color:var(--rd);margin-bottom:5px">&#x2193; Despesa</div>
+  <div style="font-size:11px;color:var(--tm);line-height:1.6">Aluguel, mercado, combust&iacute;vel, conta de luz. <em>Subtrai do saldo da conta selecionada.</em></div>
+</div>
+<div style="background:var(--cu-s);border:1px solid var(--cu-b);border-radius:11px;padding:13px">
+  <div style="font-size:12px;font-weight:700;color:var(--cu);margin-bottom:5px">&#x25AC; Cart&atilde;o de cr&eacute;dito</div>
+  <div style="font-size:11px;color:var(--tm);line-height:1.6">Compra parcelada ou &agrave; vista no cr&eacute;dito. <em>N&atilde;o sai do saldo agora &mdash; entra na fatura do cart&atilde;o.</em></div>
+</div>
+<div style="background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.22);border-radius:11px;padding:13px">
+  <div style="font-size:12px;font-weight:700;color:var(--bl);margin-bottom:5px">&#x21C4; Transfer&ecirc;ncia</div>
+  <div style="font-size:11px;color:var(--tm);line-height:1.6">Movimenta&ccedil;&atilde;o entre suas pr&oacute;prias contas (ex: Nubank para Itau). <em>Saldo total n&atilde;o muda.</em></div>
+</div>
+</div>`},
+  {label:'Passo 3 — Como lançar',html:`
+<div style="font-size:19px;font-weight:800;color:var(--tx);margin-bottom:4px">&#x270D;&#xFE0F; Como lan&ccedil;ar</div>
+<div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:14px">Siga estes passos para registrar qualquer movimenta&ccedil;&atilde;o.</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">1</div><div style="font-size:11px;color:var(--tm);line-height:1.6;padding-top:3px">Pressione <kbd style="background:var(--s3);border:1px solid var(--bd2);padding:1px 6px;border-radius:4px;font-size:10px">N</kbd> ou clique em <strong style="color:var(--cu)">+ Novo lan&ccedil;amento</strong> no topo da tela.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">2</div><div style="font-size:11px;color:var(--tm);line-height:1.6;padding-top:3px">Escolha o tipo: <strong>Receita</strong>, <strong>Despesa</strong>, <strong>Cart&atilde;o</strong> ou <strong>Transfer&ecirc;ncia</strong>.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">3</div><div style="font-size:11px;color:var(--tm);line-height:1.6;padding-top:3px">Digite a <strong>descri&ccedil;&atilde;o</strong>. O app sugere a categoria com IA &mdash; clique na sugest&atilde;o para aceitar ou ignore.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">4</div><div style="font-size:11px;color:var(--tm);line-height:1.6;padding-top:3px">Preencha o <strong>valor</strong>, a <strong>data</strong>, a <strong>categoria</strong> e a <strong>conta</strong> (ou cart&atilde;o).</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">5</div><div style="font-size:11px;color:var(--tm);line-height:1.6;padding-top:3px">Se for cart&atilde;o: escolha o n&uacute;mero de <strong>parcelas</strong> (2&times; a 24&times;). O app cria uma entrada por parcela automaticamente com "Parcela X/Y" na descri&ccedil;&atilde;o.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">6</div><div style="font-size:11px;color:var(--tm);line-height:1.6;padding-top:3px">Adicione uma <strong>observa&ccedil;&atilde;o</strong> opcional &mdash; dividido com algu&eacute;m, reembolso pendente, n&uacute;mero de nota fiscal.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">7</div><div style="font-size:11px;color:var(--tm);line-height:1.6;padding-top:3px">Clique em <strong style="color:var(--cu)">Salvar lan&ccedil;amento</strong>. &#x2713;</div></div>
+</div>
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:11px 14px;display:flex;align-items:flex-start;gap:9px;margin-top:8px"><span style="font-size:14px;flex-shrink:0">&#x1F4A1;</span><div style="font-size:11px;color:var(--tm);line-height:1.6">Para <strong>editar</strong> um lan&ccedil;amento existente, clique na descri&ccedil;&atilde;o na tabela. Para <strong>excluir</strong>, abra o lan&ccedil;amento e clique em <em>Excluir lan&ccedil;amento</em>.</div></div>`},
+  {label:'Passo 4 — Recorrentes e Notas',html:`
+<div style="font-size:19px;font-weight:800;color:var(--tx);margin-bottom:4px">&#x1F501; Recorrentes &amp; &#x1F4DD; Notas</div>
+<div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:14px">Dois recursos que tornam os lan&ccedil;amentos ainda mais poderosos.</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:11px;padding:14px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:18px">&#x1F501;</span><div style="font-size:13px;font-weight:700;color:var(--tx)">Salvar como recorrente</div></div>
+  <div style="font-size:11px;color:var(--tm);line-height:1.7">Ative o checkbox <em>"Salvar como recorrente"</em> ao criar o lan&ccedil;amento. Ele reaparece todo m&ecirc;s na tela <strong style="color:var(--tx)">Recorrentes</strong>, pronto para ser confirmado ou ignorado. Ideal para: aluguel, Netflix, academia, sal&aacute;rio fixo.</div>
+  <div style="margin-top:10px;background:var(--s3);border-radius:8px;padding:10px;border:1px solid var(--bd)">
+    <div style="font-size:10px;font-weight:700;color:var(--cu);margin-bottom:4px">TELA RECORRENTES</div>
+    <div style="font-size:11px;color:var(--tm);line-height:1.5">Lista todos os recorrentes do m&ecirc;s. Clique <strong>&#x25B6; Confirmar</strong> para lan&ccedil;ar ou <strong>Pular</strong> para ignorar.</div>
+  </div>
+</div>
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:11px;padding:14px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:18px">&#x1F4DD;</span><div style="font-size:13px;font-weight:700;color:var(--tx)">Observa&ccedil;&atilde;o</div></div>
+  <div style="font-size:11px;color:var(--tm);line-height:1.7">Campo de texto livre por lan&ccedil;amento. Exemplos: "Dividiu com Jo&atilde;o", "Nota fiscal #4892", "Reembolso pendente at&eacute; dia 10". Aparece em it&aacute;lico sob a descri&ccedil;&atilde;o na tabela.</div>
+</div>
+</div>`},
+  {label:'Passo 5 — Contas',html:`
+<div style="font-size:19px;font-weight:800;color:var(--tx);margin-bottom:4px">&#x1F3E6; Contas</div>
+<div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:14px">Cada conta representa onde voc&ecirc; guarda dinheiro: banco, carteira, poupan&ccedil;a.</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x2795;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Criar conta</div><div style="font-size:11px;color:var(--tm);line-height:1.6">V&aacute; em <strong style="color:var(--tx)">Contas</strong> no menu &rarr; <em>+ Nova conta</em>. Informe: nome, tipo, &iacute;cone e <strong>saldo inicial</strong> (saldo real hoje).</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x2696;&#xFE0F;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Saldo autom&aacute;tico</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Receitas somam. Despesas subtraem. Transfer&ecirc;ncias redistribuem entre contas. O saldo &eacute; calculado em tempo real.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F5C2;&#xFE0F;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Tipos de conta</div><div style="font-size:11px;color:var(--tm);line-height:1.6"><span style="color:var(--tx)">Corrente</span> &mdash; conta banc&aacute;ria cotidiana.<br><span style="color:var(--tx)">Poupan&ccedil;a</span> &mdash; reserva de emerg&ecirc;ncia.<br><span style="color:var(--tx)">Carteira</span> &mdash; dinheiro f&iacute;sico.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x270F;&#xFE0F;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Editar / Excluir</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Clique no &iacute;cone de l&aacute;pis na linha da conta. Para excluir, a conta n&atilde;o pode ter lan&ccedil;amentos vinculados.</div></div></div>
+</div>
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:11px 14px;display:flex;align-items:flex-start;gap:9px;margin-top:8px"><span style="font-size:14px;flex-shrink:0">&#x1F4A1;</span><div style="font-size:11px;color:var(--tm);line-height:1.6">O <strong style="color:var(--tx)">saldo inicial</strong> deve ser o valor que voc&ecirc; tem na conta <em>hoje</em>, antes de qualquer lan&ccedil;amento. N&atilde;o insira como receita.</div></div>`},
+  {label:'Passo 6 — Cartões',html:`
+<div style="font-size:19px;font-weight:800;color:var(--tx);margin-bottom:4px">&#x1F4B3; Cart&otilde;es de cr&eacute;dito</div>
+<div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:14px">Controle a fatura de cada cart&atilde;o sem misturar com o saldo banc&aacute;rio.</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:11px;padding:14px">
+  <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:10px">Campos ao cadastrar</div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;gap:10px;align-items:flex-start"><div style="background:var(--cu);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">Limite</div><div style="font-size:11px;color:var(--tm);line-height:1.5">Limite total do cart&atilde;o. Mostra quanto ainda est&aacute; dispon&iacute;vel.</div></div>
+    <div style="display:flex;gap:10px;align-items:flex-start"><div style="background:var(--bl);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">Fechamento</div><div style="font-size:11px;color:var(--tm);line-height:1.5">Dia em que a fatura fecha. Compras ap&oacute;s essa data entram no ciclo seguinte.</div></div>
+    <div style="display:flex;gap:10px;align-items:flex-start"><div style="background:var(--rd);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">Vencimento</div><div style="font-size:11px;color:var(--tm);line-height:1.5">Dia em que voc&ecirc; paga. O app alerta quando o vencimento est&aacute; pr&oacute;ximo.</div></div>
+  </div>
+</div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4CB;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Fatura aberta vs. anterior</div><div style="font-size:11px;color:var(--tm);line-height:1.6"><strong style="color:var(--tx)">Aberta</strong>: ciclo atual, n&atilde;o fechado. <strong style="color:var(--tx)">Anterior</strong>: ciclo fechado, dispon&iacute;vel para confer&ecirc;ncia e pagamento.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4B5;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Pagar a fatura</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Registre o pagamento como uma <strong>Despesa</strong> na conta banc&aacute;ria, categoria <em>Fatura cart&atilde;o</em>. Isso deduz do saldo da conta.</div></div></div>
+</div>`},
+  {label:'Passo 7 — Orçamentos',html:`
+<div style="font-size:19px;font-weight:800;color:var(--tx);margin-bottom:4px">&#x1F3AF; Or&ccedil;amentos</div>
+<div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:14px">Defina limites de gasto por categoria e acompanhe em tempo real.</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:11px;padding:14px">
+  <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:10px">Como configurar</div>
+  <div style="display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">1</div><div style="font-size:11px;color:var(--tm);line-height:1.6;padding-top:3px">V&aacute; em <strong style="color:var(--tx)">Or&ccedil;amentos</strong> no menu lateral.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">2</div><div style="font-size:11px;color:var(--tm);line-height:1.6;padding-top:3px">Clique em <strong style="color:var(--cu)">+ Novo or&ccedil;amento</strong>.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">3</div><div style="font-size:11px;color:var(--tm);line-height:1.6;padding-top:3px">Escolha a <strong>categoria</strong> e defina o <strong>limite mensal</strong> em R$.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">4</div><div style="font-size:11px;color:var(--tm);line-height:1.6;padding-top:3px">O app soma despesas + cart&atilde;o da categoria e exibe barra de progresso.</div></div>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+  <div style="background:rgba(52,199,123,.1);border:1px solid rgba(52,199,123,.25);border-radius:9px;padding:10px;text-align:center"><div style="font-size:16px">&#x1F7E2;</div><div style="font-size:10px;color:var(--gn);font-weight:700;margin-top:4px">Dentro</div><div style="font-size:10px;color:var(--tm);margin-top:2px">&lt; 75%</div></div>
+  <div style="background:rgba(232,168,56,.1);border:1px solid rgba(232,168,56,.25);border-radius:9px;padding:10px;text-align:center"><div style="font-size:16px">&#x1F7E1;</div><div style="font-size:10px;color:var(--am);font-weight:700;margin-top:4px">Aten&ccedil;&atilde;o</div><div style="font-size:10px;color:var(--tm);margin-top:2px">75-100%</div></div>
+  <div style="background:rgba(217,95,95,.1);border:1px solid rgba(217,95,95,.25);border-radius:9px;padding:10px;text-align:center"><div style="font-size:16px">&#x1F534;</div><div style="font-size:10px;color:var(--rd);font-weight:700;margin-top:4px">Estourou</div><div style="font-size:10px;color:var(--tm);margin-top:2px">&gt; 100%</div></div>
+</div>
+</div>
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:11px 14px;display:flex;align-items:flex-start;gap:9px;margin-top:8px"><span style="font-size:14px;flex-shrink:0">&#x1F4A1;</span><div style="font-size:11px;color:var(--tm);line-height:1.6">Or&ccedil;amentos valem para o m&ecirc;s corrente. Um novo m&ecirc;s zera os contadores automaticamente.</div></div>`},
+  {label:'Passo 8 — Meta & Projeção',html:`
+<div style="font-size:19px;font-weight:800;color:var(--tx);margin-bottom:4px">&#x1F4B0; Meta &amp; Proje&ccedil;&atilde;o</div>
+<div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:14px">Saiba se est&aacute; guardando o suficiente e para onde o saldo est&aacute; caminhando.</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:11px;padding:14px">
+  <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:8px">&#x1F4B0; Meta de economia</div>
+  <div style="font-size:11px;color:var(--tm);line-height:1.7;margin-bottom:10px">C&aacute;lculo: <strong style="color:var(--gn)">Receitas</strong> &minus; <strong style="color:var(--rd)">Despesas</strong> &minus; <strong style="color:var(--cu)">Gastos no cart&atilde;o</strong> = <strong style="color:var(--tx)">Saldo do m&ecirc;s</strong>. Se saldo &ge; meta &rarr; &#x2705; Meta batida.</div>
+  <div style="background:var(--s3);border-radius:8px;padding:10px;border:1px solid var(--bd);font-size:11px;color:var(--tm)">Configure clicando em <em style="color:var(--cu)">Definir meta</em> no card do Dashboard.</div>
+</div>
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:11px;padding:14px">
+  <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:8px">&#x1F4C5; Proje&ccedil;&atilde;o de saldo</div>
+  <div style="font-size:11px;color:var(--tm);line-height:1.7">Estima o saldo no final do m&ecirc;s com base no ritmo atual de gastos. Vis&iacute;vel na tela <strong style="color:var(--tx)">Dashboard &rarr; Proje&ccedil;&atilde;o</strong>. &Uacute;til para identificar m&ecirc;ses deficit&aacute;rios com anteced&ecirc;ncia.</div>
+</div>
+</div>`},
+  {label:'Passo 9 — Relatórios',html:`
+<div style="font-size:19px;font-weight:800;color:var(--tx);margin-bottom:4px">&#x1F4CA; Relat&oacute;rios</div>
+<div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:14px">An&aacute;lise profunda das suas finan&ccedil;as &mdash; mensal, anual e export&aacute;vel.</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4C5;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Mensal</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Gr&aacute;fico de barras com receitas e despesas de cada m&ecirc;s do ano. Navegue com as setas <strong style="color:var(--tx)">&lsaquo; &rsaquo;</strong> para ver outros anos.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4C6;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Anual</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Vis&atilde;o do ano inteiro: KPIs consolidados, total de receitas, despesas, economia e maiores categorias de gasto. Navegue entre anos com <strong style="color:var(--tx)">&lsaquo; &rsaquo;</strong>.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x2B07;&#xFE0F;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Exportar PDF</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Clique em <strong style="color:var(--cu)">&darr; Exportar PDF</strong> na tela Anual. Uma janela de impress&atilde;o abre com o relat&oacute;rio formatado. Salve como PDF ou imprima.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F967;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Categorias</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Pizza interativa no Dashboard. Clique numa fatia para filtrar os lan&ccedil;amentos da categoria no m&ecirc;s.</div></div></div>
+</div>
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:11px 14px;display:flex;align-items:flex-start;gap:9px;margin-top:8px"><span style="font-size:14px;flex-shrink:0">&#x1F4A1;</span><div style="font-size:11px;color:var(--tm);line-height:1.6">O relat&oacute;rio anual exportado inclui: KPIs do ano, tabela m&ecirc;s a m&ecirc;s com receitas/despesas/saldo e top categorias de gasto.</div></div>`},
+  {label:'Passo 10 — Drive',html:`
+<div style="font-size:19px;font-weight:800;color:var(--tx);margin-bottom:4px">&#x2601;&#xFE0F; Sincroniza&ccedil;&atilde;o</div>
+<div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:14px">Seus dados seguros na nuvem e sincronizados entre Desktop e Mobile.</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="background:var(--s2);border:1px solid var(--bd);border-radius:11px;padding:14px">
+  <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:10px">Como ativar</div>
+  <div style="display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">1</div><div style="font-size:11px;color:var(--tm);line-height:1.6;padding-top:3px">V&aacute; em <strong style="color:var(--tx)">Configura&ccedil;&otilde;es &rarr; Sincroniza&ccedil;&atilde;o</strong>.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">2</div><div style="font-size:11px;color:var(--tm);line-height:1.6;padding-top:3px">Clique em <strong style="color:var(--cu)">&#x2601; Conectar com Google Drive</strong>.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">3</div><div style="font-size:11px;color:var(--tm);line-height:1.6;padding-top:3px">Fa&ccedil;a login com sua conta Google e autorize o acesso.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--cu);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">4</div><div style="font-size:11px;color:var(--tm);line-height:1.6;padding-top:3px">Pronto &mdash; sync autom&aacute;tico a cada 90 segundos. Indicador verde no topo quando sincronizado.</div></div>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F510;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Privacidade</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Seus dados ficam em um arquivo privado no <em>seu</em> Google Drive. Nenhum servidor externo armazena seus dados.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F504;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Merge inteligente</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Se voc&ecirc; editar no celular e no desktop simultaneamente, o sistema mescla as altera&ccedil;&otilde;es sem conflito.</div></div></div>
+</div>
+</div>`},
+  {label:'Passo 11 — Configurações',html:`
+<div style="font-size:19px;font-weight:800;color:var(--tx);margin-bottom:4px">&#x2699;&#xFE0F; Configura&ccedil;&otilde;es</div>
+<div style="font-size:12px;color:var(--tm);line-height:1.7;margin-bottom:14px">Personalize o app do jeito que preferir.</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F3A8;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Tema visual</div><div style="font-size:11px;color:var(--tm);line-height:1.6">5 temas: Escuro (padr&atilde;o), Claro, Violeta, Esmeralda e Magenta. Em <strong style="color:var(--tx)">Configura&ccedil;&otilde;es &rarr; Apar&ecirc;ncia</strong>.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F524;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Tamanho de fonte</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Ajuste o zoom geral de 80% a 130% para melhor legibilidade.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F5C2;&#xFE0F;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Categorias</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Edite nomes e &iacute;cones das categorias em <strong style="color:var(--tx)">Configura&ccedil;&otilde;es &rarr; Categorias</strong>.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4E4;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Exportar dados</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Backup completo dos seus dados em JSON em <strong style="color:var(--tx)">Configura&ccedil;&otilde;es &rarr; Dados</strong>.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4D6;</span><div><div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px">Manual avan&ccedil;ado</div><div style="font-size:11px;color:var(--tm);line-height:1.6">Documenta&ccedil;&atilde;o t&eacute;cnica completa em <strong style="color:var(--tx)">Configura&ccedil;&otilde;es &rarr; Ajuda &rarr; Manual Avan&ccedil;ado</strong>.</div></div></div>
+</div>
+<div style="background:rgba(52,199,123,.08);border:1px solid rgba(52,199,123,.2);border-radius:11px;padding:14px;margin-top:4px;text-align:center">
+  <div style="font-size:22px;margin-bottom:8px">&#x1F389;</div>
+  <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:6px">Voc&ecirc; est&aacute; pronto!</div>
+  <div style="font-size:11px;color:var(--tm);line-height:1.7">Comece adicionando suas contas e o primeiro lan&ccedil;amento.<br>Em caso de d&uacute;vida, abra o <strong style="color:var(--tx)">Manual Avan&ccedil;ado</strong> a qualquer momento.</div>
+</div>`},
 ];
 
 let _obStep=0;
@@ -4365,16 +4372,26 @@ function obRender(){
   const total=OB_STEPS.length;
   document.getElementById('ob-step-lbl').textContent=step.label;
   document.getElementById('ob-progress').style.width=((_obStep+1)/total*100)+'%';
-  document.getElementById('ob-content').innerHTML=step.html;
+  const content=document.getElementById('ob-content');
+  content.innerHTML=step.html;
+  content.scrollTop=0;
+  // dots
+  const dotsEl=document.getElementById('ob-dots');
+  if(dotsEl){
+    dotsEl.innerHTML=OB_STEPS.map((_,idx)=>
+      `<div onclick="jumpOb(${idx})" style="width:${idx===_obStep?18:6}px;height:6px;border-radius:3px;background:${idx===_obStep?'var(--cu)':'var(--bd2)'};cursor:pointer;transition:all .3s ease;flex-shrink:0"></div>`
+    ).join('');
+  }
   const isLast=_obStep===total-1;
   const isFirst=_obStep===0;
   const backBtn=document.getElementById('ob-back');
   const nextBtn=document.getElementById('ob-next');
   backBtn.style.visibility=isFirst?'hidden':'visible';
-  nextBtn.textContent=isLast?'Fechar':(_obStep===0?'Começar tour →':'Próximo →');
+  nextBtn.innerHTML=isLast?'&#x2714; Conclu&#xED;r':(_obStep===0?'Come&#xE7;ar &#x2192;':'Pr&#xF3;ximo &#x2192;');
   if(isLast){nextBtn.onclick=closeOnboarding;}
   else{nextBtn.onclick=()=>obStep(1);}
 }
+function jumpOb(idx){_obStep=idx;obRender();}
 </script>
 </body>
 </html>

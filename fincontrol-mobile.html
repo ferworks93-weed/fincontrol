@@ -845,6 +845,881 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
 </div>
 
 <!-- ONBOARDING MODAL -->
+<div id="ov-onboarding" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeOnboarding()">
+  <div style="background:var(--s1);border-radius:24px 24px 0 0;width:100%;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 16px);box-shadow:0 -8px 40px rgba(0,0,0,.4)">
+    <!-- progress bar -->
+    <div style="height:2px;background:var(--edge);flex-shrink:0;overflow:hidden">
+      <div id="ob-progress" style="height:100%;background:linear-gradient(90deg,var(--copper),rgba(184,114,46,.55));transition:width .4s cubic-bezier(.4,0,.2,1);width:0%"></div>
+    </div>
+    <!-- handle + header -->
+    <div style="padding:10px 18px 0;flex-shrink:0">
+      <div style="width:36px;height:3px;background:var(--edge2);border-radius:2px;margin:0 auto 12px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;font-weight:800;color:var(--copper);letter-spacing:.04em">FINCONTROL</span>
+          <span style="width:3px;height:3px;border-radius:50%;background:var(--edge2);display:inline-block"></span>
+          <span id="ob-step-lbl" style="font-size:10px;font-weight:600;letter-spacing:.05em;color:var(--muted);text-transform:uppercase"></span>
+        </div>
+        <button onclick="closeOnboarding()" style="background:var(--s2);border:1px solid var(--edge);color:var(--muted);font-size:12px;cursor:pointer;padding:0;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center">&#x2715;</button>
+      </div>
+    </div>
+    <!-- step dots -->
+    <div id="ob-dots" style="display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 18px 0;flex-shrink:0"></div>
+    <!-- content -->
+    <div id="ob-content" style="flex:1;overflow-y:auto;padding:12px 18px 4px"></div>
+    <!-- footer -->
+    <div style="display:flex;gap:10px;padding:12px 18px 0;flex-shrink:0">
+      <button id="ob-back" class="btn" style="width:44px;flex-shrink:0;padding:11px 0;font-size:16px;border-radius:12px" onclick="obStep(-1)">&#x2190;</button>
+      <button id="ob-next" class="btn pri" style="flex:1;padding:12px;font-size:13px;font-weight:700;border-radius:12px" onclick="obStep(1)">Pr&#xF3;ximo &#x2192;</button>
+    </div>
+  </div>
+</div>TYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FinControl">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="./icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<script src="https://accounts.google.com/gsi/client" async onload="if(typeof _initGIS==='function')_initGIS()"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<title>FinControl</title>
+<script>(()=>{const s=localStorage.getItem('fc_font_size');if(s)document.documentElement.style.zoom=s;})()</script>
+<style>
+:root{
+  --void:#0a0a0a; --s1:#131313; --s2:#1a1a1a; --s3:#222; --s4:#2a2a2a;
+  --edge:#262626; --edge2:#303030;
+  --text:#e8e8e8; --sub:#9a9a9a; --muted:#6b6b6b; --dim:#3a3a3a;
+  --copper:#b8722e; --copper-s:rgba(184,114,46,.12); --copper-b:rgba(184,114,46,.25);
+  --jade:#2eb87a; --jade-s:rgba(46,184,122,.1);
+  --crimson:#c94f4f; --crimson-s:rgba(201,79,79,.1);
+  --cobalt:#4f7fc9; --cobalt-s:rgba(79,127,201,.1);
+  --iris:#7c6bc9;
+  --r:12px; --r-sm:9px;
+  --font:-apple-system,'SF Pro Text','Segoe UI',system-ui,sans-serif;
+  --nav:68px; --safe:env(safe-area-inset-bottom,0px);
+}
+
+/* ── THEMES ─────────────────────────────────────────────────────── */
+[data-theme="claro"]{
+  --void:#f0ede8;--s1:#ffffff;--s2:#f5f3ef;--s3:#ece9e4;--s4:#e0dcd6;
+  --edge:#d4cfc8;--edge2:#c4bdb5;
+  --text:#1a1712;--sub:#6b6460;--muted:#8a8480;--dim:#c4bdb5;
+  --copper:#9a5e22;--copper-s:rgba(154,94,34,.1);--copper-b:rgba(154,94,34,.22);
+  --jade:#15803d;--jade-s:rgba(21,128,61,.1);
+  --crimson:#b91c1c;--crimson-s:rgba(185,28,28,.1);
+  --cobalt:#1d4ed8;--cobalt-s:rgba(29,78,216,.1);
+  --iris:#6d28d9;
+}
+[data-theme="claro"] .nav{background:rgba(240,237,232,.97)}
+[data-theme="claro"] .ov{background:rgba(0,0,0,.55)}
+[data-theme="claro"] .sheet{background:var(--s1);border-top:1px solid var(--edge)}
+[data-theme="claro"] .cc-bank,[data-theme="claro"] .cc-stat-lbl{color:rgba(0,0,0,.45)}
+[data-theme="claro"] .cc-amount{color:rgba(0,0,0,.85)}
+[data-theme="claro"] .cc-sub,[data-theme="claro"] .cc-stat-val{color:rgba(0,0,0,.6)}
+[data-theme="claro"] .cc-track{background:rgba(0,0,0,.1)}
+[data-theme="violeta"]{
+  --void:#09091a;--s1:#10101e;--s2:#16162a;--s3:#1c1c32;--s4:#24243c;
+  --edge:#28284a;--edge2:#32325e;
+  --text:#e8e8fa;--sub:#9898c0;--muted:#68688a;--dim:#32324a;
+  --copper:#8b5cf6;--copper-s:rgba(139,92,246,.13);--copper-b:rgba(139,92,246,.28);
+}
+[data-theme="esmeralda"]{
+  --void:#050c08;--s1:#0c1410;--s2:#111a14;--s3:#172018;--s4:#1d2820;
+  --edge:#1c2a1e;--edge2:#263428;
+  --text:#d8eedc;--sub:#6a9872;--muted:#48705c;--dim:#1c2e22;
+  --copper:#00c98c;--copper-s:rgba(0,201,140,.12);--copper-b:rgba(0,201,140,.28);
+}
+[data-theme="magenta"]{
+  --void:#000000;--s1:#070707;--s2:#0e0e0e;--s3:#141414;--s4:#1a1a1a;
+  --edge:#161616;--edge2:#1e1e1e;
+  --text:#f2f2f2;--sub:#a0a0a0;--muted:#585858;--dim:#242424;
+  --copper:#d946ef;--copper-s:rgba(217,70,239,.13);--copper-b:rgba(217,70,239,.28);
+}
+
+/* ── AESTHETIC: CLARO ─────────────────────────────────────────── */
+[data-theme="claro"] .hero{box-shadow:0 4px 24px rgba(0,0,0,.07);border-color:rgba(0,0,0,.07)}
+[data-theme="claro"] .card,.claro .mini{box-shadow:0 2px 12px rgba(0,0,0,.05);border-color:rgba(0,0,0,.07)}
+[data-theme="claro"] .mini{box-shadow:0 2px 8px rgba(0,0,0,.05);border-color:rgba(0,0,0,.07)}
+[data-theme="claro"] .tx{border-color:rgba(0,0,0,.06);box-shadow:0 1px 4px rgba(0,0,0,.04)}
+[data-theme="claro"] .fab{box-shadow:0 4px 18px rgba(154,94,34,.35)}
+[data-theme="claro"] .sheet{background:#fff;border-top:none;box-shadow:0 -4px 40px rgba(0,0,0,.1)}
+[data-theme="claro"] .ov{background:rgba(0,0,0,.45)}
+[data-theme="claro"] .hdr{background:#f0ede8;border-bottom:1px solid rgba(0,0,0,.08)}
+[data-theme="claro"] .bud-track{background:rgba(0,0,0,.08)}
+[data-theme="claro"] .goal-track{background:rgba(0,0,0,.08)}
+[data-theme="claro"] .mnav{box-shadow:0 1px 6px rgba(0,0,0,.06);border-color:rgba(0,0,0,.08)}
+
+/* ── AESTHETIC: VIOLETA (CryptoDesk) ─────────────────────────── */
+[data-theme="violeta"]{ --r:18px; --r-sm:13px; }
+[data-theme="violeta"] .hdr{background:var(--void);border-bottom:1px solid rgba(139,92,246,.12)}
+[data-theme="violeta"] .hero{
+  background:linear-gradient(135deg,rgba(139,92,246,.09) 0%,var(--s1) 65%);
+  border:1px solid rgba(139,92,246,.22);
+  box-shadow:0 8px 36px rgba(139,92,246,.14);
+  border-radius:18px;
+}
+[data-theme="violeta"] .hero::before{width:210px;height:210px;background:rgba(139,92,246,.25);filter:blur(65px);opacity:.7}
+[data-theme="violeta"] .hero-amount{
+  background:linear-gradient(135deg,#c4b5fd 0%,#7c3aed 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+[data-theme="violeta"] .hero-amount.neg{
+  background:linear-gradient(135deg,#fca5a5,#dc2626);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+[data-theme="violeta"] .card{
+  background:linear-gradient(135deg,var(--s2) 0%,var(--s1) 100%);
+  border:1px solid rgba(139,92,246,.13);
+  box-shadow:0 4px 20px rgba(139,92,246,.07);
+}
+[data-theme="violeta"] .mini{
+  background:linear-gradient(135deg,var(--s2),var(--s1));
+  border:1px solid rgba(139,92,246,.12);
+  box-shadow:0 2px 10px rgba(139,92,246,.06);
+}
+[data-theme="violeta"] .tx{border-color:rgba(139,92,246,.11);border-radius:14px}
+[data-theme="violeta"] .fab{
+  background:linear-gradient(135deg,#a78bfa,#6d28d9);
+  box-shadow:0 6px 26px rgba(139,92,246,.55);
+}
+[data-theme="violeta"] .fbtn{background:linear-gradient(135deg,#8b5cf6,#6d28d9);border-radius:13px}
+[data-theme="violeta"] .chip.active{background:rgba(139,92,246,.17);border-color:rgba(139,92,246,.38)}
+[data-theme="violeta"] .nav{background:rgba(9,9,26,.97);border-top:1px solid rgba(139,92,246,.18)}
+[data-theme="violeta"] .nav-item.active{background:rgba(139,92,246,.14)}
+[data-theme="violeta"] .sheet{border-top:1px solid rgba(139,92,246,.22);border-radius:20px 20px 0 0}
+[data-theme="violeta"] .avatar{background:rgba(139,92,246,.18);border-color:rgba(139,92,246,.55);color:#c4b5fd}
+[data-theme="violeta"] .acc{border-color:rgba(139,92,246,.12)}
+[data-theme="violeta"] .inv{border-color:rgba(139,92,246,.12);background:linear-gradient(135deg,var(--s2),var(--s1))}
+[data-theme="violeta"] .goal{border-color:rgba(139,92,246,.12);background:linear-gradient(135deg,var(--s2),var(--s1))}
+[data-theme="violeta"] .rec{border-color:rgba(139,92,246,.12)}
+[data-theme="violeta"] .qa-btn{border-color:rgba(139,92,246,.12);background:linear-gradient(135deg,var(--s2),var(--s1))}
+[data-theme="violeta"] .mnav{border-color:rgba(139,92,246,.15);background:var(--s2)}
+[data-theme="violeta"] .fi,[data-theme="violeta"] .fs{background:var(--s3);border-color:rgba(139,92,246,.18)}
+[data-theme="violeta"] .fi:focus,[data-theme="violeta"] .fs:focus{border-color:rgba(139,92,246,.55);box-shadow:0 0 0 3px rgba(139,92,246,.12)}
+
+/* ── AESTHETIC: ESMERALDA (MethanGuard — terminal) ────────────── */
+[data-theme="esmeralda"]{ --r:4px; --r-sm:3px; --font:'JetBrains Mono','Fira Code','Consolas','Courier New',monospace; }
+[data-theme="esmeralda"] .hdr{border-bottom:1px solid rgba(0,201,140,.15)}
+[data-theme="esmeralda"] .hdr-name{letter-spacing:0;font-weight:600}
+[data-theme="esmeralda"] .hero{
+  background:linear-gradient(90deg,rgba(0,201,140,.05) 0%,var(--s1) 100%);
+  border:1px solid rgba(0,201,140,.18);
+  border-left:3px solid var(--copper);
+  border-radius:3px;
+}
+[data-theme="esmeralda"] .hero::before{display:none}
+[data-theme="esmeralda"] .hero-amount{font-size:30px;letter-spacing:-.01em}
+[data-theme="esmeralda"] .hero-label{letter-spacing:.15em;font-size:8px}
+[data-theme="esmeralda"] .card{border-radius:3px;border-color:rgba(0,201,140,.12)}
+[data-theme="esmeralda"] .mini{border-radius:3px;border-color:rgba(0,201,140,.12)}
+[data-theme="esmeralda"] .tx{border-radius:2px;border-color:rgba(0,201,140,.1);border-left:2px solid rgba(0,201,140,.25)}
+[data-theme="esmeralda"] .tx-name{font-size:11px;letter-spacing:0}
+[data-theme="esmeralda"] .chip{border-radius:2px}
+[data-theme="esmeralda"] .nav-item{border-radius:3px}
+[data-theme="esmeralda"] .nav-item.active{background:rgba(0,201,140,.1);border-radius:3px}
+[data-theme="esmeralda"] .nav{border-top:1px solid rgba(0,201,140,.12)}
+[data-theme="esmeralda"] .fab{border-radius:4px;box-shadow:0 2px 16px rgba(0,201,140,.3)}
+[data-theme="esmeralda"] .fbtn{border-radius:3px}
+[data-theme="esmeralda"] .sheet{border-radius:4px 4px 0 0;border-top:2px solid var(--copper)}
+[data-theme="esmeralda"] .fi,[data-theme="esmeralda"] .fs{border-radius:2px;border-color:rgba(0,201,140,.2);background:var(--s3)}
+[data-theme="esmeralda"] .fi:focus,[data-theme="esmeralda"] .fs:focus{border-color:var(--copper)}
+[data-theme="esmeralda"] .avatar{border-radius:3px;border-color:var(--copper);font-size:9px;letter-spacing:.05em}
+[data-theme="esmeralda"] .mnav{border-radius:3px;border-color:rgba(0,201,140,.15)}
+[data-theme="esmeralda"] .qa-btn{border-radius:3px;border-color:rgba(0,201,140,.12)}
+[data-theme="esmeralda"] .acc{border-radius:3px;border-color:rgba(0,201,140,.12)}
+[data-theme="esmeralda"] .inv,[data-theme="esmeralda"] .rec,[data-theme="esmeralda"] .goal{border-radius:3px;border-color:rgba(0,201,140,.12)}
+[data-theme="esmeralda"] .bud-track{background:rgba(0,201,140,.08)}
+[data-theme="esmeralda"] .sec{border-left-color:var(--copper)}
+
+/* ── AESTHETIC: MAGENTA (CryptoLens — glassmorphism) ─────────── */
+[data-theme="magenta"]{ --r:22px; --r-sm:16px; }
+[data-theme="magenta"] .hdr{
+  background:rgba(0,0,0,.82);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid rgba(255,255,255,.04);
+}
+[data-theme="magenta"] .hero{
+  background:rgba(217,70,239,.04);
+  border:1px solid rgba(217,70,239,.14);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-radius:22px;
+}
+[data-theme="magenta"] .hero::before{width:250px;height:250px;background:rgba(217,70,239,.22);filter:blur(75px);opacity:.5}
+[data-theme="magenta"] .card{
+  background:rgba(255,255,255,.025);
+  border:1px solid rgba(255,255,255,.05);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-radius:22px;
+}
+[data-theme="magenta"] .mini{
+  background:rgba(255,255,255,.02);
+  border:1px solid rgba(255,255,255,.05);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-radius:18px;
+}
+[data-theme="magenta"] .tx{
+  background:rgba(255,255,255,.02);
+  border:1px solid rgba(255,255,255,.04);
+  border-radius:18px;
+}
+[data-theme="magenta"] .fab{
+  background:linear-gradient(135deg,#e879f9,#a21caf);
+  box-shadow:0 6px 30px rgba(217,70,239,.55);
+}
+[data-theme="magenta"] .fbtn{
+  border-radius:50px;
+  background:linear-gradient(135deg,#d946ef,#a21caf);
+}
+[data-theme="magenta"] .chip{border-radius:50px;border-color:rgba(255,255,255,.06)}
+[data-theme="magenta"] .chip.active{background:rgba(217,70,239,.16);border-color:rgba(217,70,239,.32)}
+[data-theme="magenta"] .nav{
+  background:rgba(0,0,0,.72);
+  backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);
+  border-top:1px solid rgba(255,255,255,.04);
+}
+[data-theme="magenta"] .nav-item.active{background:rgba(217,70,239,.13)}
+[data-theme="magenta"] .sheet{
+  border-radius:26px 26px 0 0;
+  background:rgba(5,5,5,.94);
+  backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);
+  border-top:1px solid rgba(217,70,239,.18);
+}
+[data-theme="magenta"] .avatar{background:rgba(217,70,239,.16);border-color:rgba(217,70,239,.45);color:#e879f9;border-radius:50%}
+[data-theme="magenta"] .acc{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:18px}
+[data-theme="magenta"] .inv,[data-theme="magenta"] .rec,[data-theme="magenta"] .goal{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05)}
+[data-theme="magenta"] .mnav{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:50px}
+[data-theme="magenta"] .qa-btn{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:18px}
+[data-theme="magenta"] .fi,[data-theme="magenta"] .fs{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.07);border-radius:50px}
+[data-theme="magenta"] .fi:focus,[data-theme="magenta"] .fs:focus{border-color:rgba(217,70,239,.45);box-shadow:0 0 0 3px rgba(217,70,239,.1)}
+[data-theme="magenta"] .bud-track{background:rgba(255,255,255,.06)}
+[data-theme="magenta"] .goal-track{background:rgba(255,255,255,.06)}
+[data-theme="magenta"] .type-btn{border-radius:50px}
+[data-theme="magenta"] .btn{border-radius:50px}
+
+/* ── THEME PICKER ─────────────────────────────────────────────── */
+.thm-wrap{position:relative;display:flex;align-items:center}
+.thm-btn{width:28px;height:28px;border-radius:8px;border:1.5px solid var(--edge2);cursor:pointer;padding:0;transition:transform .14s,background .14s;background:var(--s2);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.thm-btn::before{content:'⊞';font-size:16px;line-height:1}
+.thm-btn:active{transform:scale(.88)}
+.thm-panel{display:none;position:absolute;top:calc(100% + 10px);right:0;background:var(--s2);border:1px solid var(--edge2);border-radius:14px;padding:12px 14px;z-index:500;box-shadow:0 12px 32px rgba(0,0,0,.5);animation:sup .16s ease;white-space:nowrap}
+.thm-panel.open{display:block}
+.thm-grid{display:flex;gap:10px}
+.thm-item{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+.thm-dot{width:30px;height:30px;border-radius:50%;border:2.5px solid transparent;transition:transform .12s,border-color .12s}
+.thm-dot:hover{transform:scale(1.1)}
+.thm-item.active .thm-dot{border-color:var(--text)}
+.thm-dot[data-t="copper"]{background:radial-gradient(circle at 38% 38%,#d4893a,#6a3a10)}
+.thm-dot[data-t="claro"]{background:radial-gradient(circle at 38% 38%,#f5f3ef,#c4bdb5);border-color:#c4bdb5!important}
+.thm-dot[data-t="violeta"]{background:radial-gradient(circle at 38% 38%,#a78bfa,#3b1fa8)}
+.thm-dot[data-t="esmeralda"]{background:radial-gradient(circle at 38% 38%,#34d399,#054a30)}
+.thm-dot[data-t="magenta"]{background:radial-gradient(circle at 38% 38%,#e879f9,#5a0a6a)}
+.thm-name{font-size:8px;color:var(--muted);letter-spacing:.04em;font-weight:500;text-align:center}
+
+/* ── CUSTOMIZATION PANEL ───────────────────────────────────────── */
+.cust-sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:18px 0 10px}
+.cust-sec:first-child{margin-top:4px}
+.cust-themes{display:flex;gap:6px;flex-wrap:wrap}
+.cust-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:8px 6px;border-radius:var(--r-sm);border:1.5px solid transparent;transition:border-color .15s,background .15s;flex:1;min-width:52px}
+.cust-item:active{transform:scale(.92)}
+.cust-item.active{border-color:var(--copper);background:rgba(184,114,46,.1)}
+.cust-dot{width:28px;height:28px;border-radius:50%}
+.cust-dot[data-t="copper"]{background:conic-gradient(#b8722e,#da9a52,#b8722e)}
+.cust-dot[data-t="claro"]{background:linear-gradient(135deg,#f5f0e8 50%,#b8722e)}
+.cust-dot[data-t="violeta"]{background:linear-gradient(135deg,#1a0a3a,#8b5cf6)}
+.cust-dot[data-t="esmeralda"]{background:linear-gradient(135deg,#051a0e,#00c98c)}
+.cust-dot[data-t="magenta"]{background:linear-gradient(135deg,#0a0012,#d946ef)}
+.cust-lbl{font-size:10px;color:var(--text);font-weight:500}
+.cs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:2px}
+.cs-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:10px 8px 8px;border-radius:var(--r-sm);border:1.5px solid var(--edge2);transition:border-color .15s,background .15s;background:var(--s1)}
+.cs-item:active{transform:scale(.94)}
+.cs-item.active{border-color:var(--copper);background:rgba(184,114,46,.08)}
+.cs-preview{width:100%;height:52px;border-radius:6px;background:var(--s2);overflow:hidden;padding:4px 4px 0}
+.cs-lbl{font-size:11px;color:var(--text);font-weight:500;letter-spacing:.01em}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-variant-numeric:tabular-nums}
+body{font-family:var(--font);background:var(--void);color:var(--text);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+/* ── HEADER ── */
+.hdr{background:var(--void);border-bottom:1px solid var(--edge);padding:48px 18px 12px;position:relative;z-index:10}
+.hdr-row{display:flex;justify-content:space-between;align-items:center}
+.hdr-greet{font-size:11px;color:var(--muted)}
+.hdr-name{font-size:18px;font-weight:700;letter-spacing:-.03em;margin-top:1px}
+.hdr-date{font-size:10px;color:var(--muted);margin-top:2px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--copper-s);border:1.5px solid var(--copper);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--copper);flex-shrink:0}
+.sync-row{display:flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer}
+.sync-dot{width:5px;height:5px;border-radius:50%;background:var(--dim);flex-shrink:0;transition:background .3s}
+.sync-dot.ok{background:var(--jade)}.sync-dot.busy{background:var(--copper);animation:blink 1s infinite}.sync-dot.err{background:var(--crimson)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.sync-lbl{font-size:10px;color:var(--muted)}
+
+/* ── PAGES ── */
+.pages{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;padding:14px 15px calc(var(--nav) + var(--safe) + 14px);display:none;-webkit-overflow-scrolling:touch}
+.page.active{display:block}
+
+/* ── BOTTOM NAV ── */
+.nav{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav) + var(--safe));background:rgba(10,10,10,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--edge);display:flex;align-items:flex-start;z-index:200;padding-top:6px}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:none;color:var(--dim);cursor:pointer;padding:6px 4px;transition:color .14s;font-family:var(--font);border-radius:10px}
+.nav-item.active{color:var(--copper);background:var(--copper-s)}
+.nav-icon{font-size:20px;line-height:1}
+.nav-lbl{font-size:8px;letter-spacing:.04em;font-weight:500}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}
+.m-tag{display:flex;align-items:center;gap:4px;padding:3px 8px;background:var(--s2);border:1px solid var(--edge);border-radius:4px;font-size:10px}
+.m-tag-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;line-height:1;padding:0 1px}
+.m-tag-del:hover{color:var(--crimson)}
+.m-tag-add{padding:3px 9px;background:none;border:1px dashed var(--edge);border-radius:4px;font-size:10px;color:var(--muted);cursor:pointer}
+.m-tag-add:hover{border-color:var(--copper);color:var(--copper)}
+.section-toggle{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--edge)}
+.section-toggle:last-child{border-bottom:none}
+.section-toggle-name{font-size:11px;font-weight:500}
+.toggle-sw{width:36px;height:20px;background:var(--edge);border-radius:10px;position:relative;cursor:pointer;transition:background .2s;border:none;flex-shrink:0}
+.toggle-sw.on{background:var(--copper)}
+.toggle-sw::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s}
+.toggle-sw.on::after{transform:translateX(16px)}
+
+/* ── FAB ── */
+.fab{position:fixed;bottom:calc(var(--nav) + var(--safe) + 12px);right:15px;width:50px;height:50px;background:var(--copper);border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;box-shadow:0 4px 18px rgba(184,114,46,.45);z-index:100;cursor:pointer;transition:transform .14s}
+.fab:active{transform:scale(.92)}
+
+/* ── CARD ── */
+.card{background:var(--s1);border:1px solid var(--edge);border-radius:var(--r);padding:15px;margin-bottom:10px;overflow:hidden}
+.card-title{font-size:12px;font-weight:600;letter-spacing:-.01em;margin-bottom:11px}
+
+/* ── BALANCE HERO ── */
+.hero{background:var(--s1);border:1px solid var(--edge);border-radius:var(--r);padding:16px;margin-bottom:10px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:var(--copper-s);border-radius:50%;filter:blur(50px);pointer-events:none;opacity:.7}
+.hero-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;position:relative;z-index:1}
+.hero-amount{font-size:38px;font-weight:700;letter-spacing:-.045em;margin:6px 0 4px;position:relative;z-index:1;line-height:1}
+.hero-amount.pos{color:var(--jade)}.hero-amount.neg{color:var(--crimson)}
+.hero-meta{font-size:10px;color:var(--muted);position:relative;z-index:1}
+.mini-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.mini{background:var(--s1);border:1px solid var(--edge);border-radius:var(--r-sm);padding:11px 12px}
+.mini-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.mini-val{font-size:16px;font-weight:700}
+.mini-val.pos{color:var(--jade)}.mini-val.neg{color:var(--crimson)}.mini-val.cobalt{color:var(--cobalt)}.mini-val.iris{color:var(--iris)}
+
+/* ── QUICK ACTIONS ── */
+.qa{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.qa-btn{background:var(--s1);border:1px solid var(--edge);border-radius:var(--r-sm);padding:11px 5px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;transition:background .14s;color:var(--text);font-family:var(--font)}
+.qa-btn:active{background:var(--s2)}
+.qa-icon{font-size:18px}
+.qa-lbl{font-size:9px;color:var(--muted);text-align:center;line-height:1.2;font-weight:500}
+
+/* ── SEC LABEL ── */
+.sec{font-size:9px;color:var(--copper);text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:8px;padding-left:7px;border-left:2px solid var(--copper);opacity:.85}
+
+/* ── TX ITEM ── */
+.tx{background:var(--s1);border:1px solid var(--edge);border-radius:var(--r-sm);padding:11px 12px;display:flex;align-items:center;gap:10px;margin-bottom:7px;transition:background .12s,transform .1s;position:relative;overflow:hidden;user-select:none}
+.tx:active{background:var(--s2)}
+.swipe-del-hint{position:absolute;right:0;top:0;bottom:0;width:72px;background:var(--crimson);display:flex;align-items:center;justify-content:center;font-size:20px;opacity:0;transition:opacity .15s;border-radius:0 var(--r-sm) var(--r-sm) 0;pointer-events:none}
+.tx-ico{width:35px;height:35px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.tx-ico.income{background:var(--jade-s)}.tx-ico.expense{background:var(--crimson-s)}.tx-ico.card{background:var(--cobalt-s)}
+.tx-body{flex:1;min-width:0}
+.tx-name{font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tx-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.tx-right{text-align:right;flex-shrink:0}
+.tx-amt{font-size:13px;font-weight:700}
+.tx-amt.pos{color:var(--jade)}.tx-amt.neg{color:var(--crimson)}
+.tx-date{font-size:9px;color:var(--muted);margin-top:2px}
+
+/* ── FILTERS ── */
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{padding:5px 14px;border-radius:20px;border:1px solid var(--edge);background:none;color:var(--muted);font:10px var(--font);cursor:pointer;white-space:nowrap;transition:all .14s;font-weight:500}
+.chip.active{background:var(--copper-s);border-color:var(--copper);color:var(--copper);font-weight:600}
+
+/* ── MONTH NAV ── */
+.mnav{display:flex;align-items:center;justify-content:space-between;background:var(--s1);border:1px solid var(--edge);border-radius:var(--r-sm);padding:8px 12px;margin-bottom:10px}
+.mnav button{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 6px}
+.mnav span{font-size:12px;font-weight:500}
+
+/* ── BUDGET ── */
+.bud{margin-bottom:11px}
+.bud-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.bud-name{font-size:11px;font-weight:500}
+.bud-vals{font-size:10px;color:var(--muted)}
+.bud-track{background:var(--s3);border-radius:3px;height:4px;overflow:hidden}
+.bud-fill{height:100%;border-radius:3px;transition:width .5s}
+.fill-ok{background:var(--jade)}.fill-warn{background:var(--copper)}.fill-over{background:var(--crimson)}
+.bud-pct{font-size:9px;color:var(--muted);margin-top:2px}
+.bud-pct.over{color:var(--crimson)}
+
+/* ── GOAL ── */
+.goal{background:var(--s1);border:1px solid var(--edge);border-radius:var(--r-sm);padding:13px;margin-bottom:8px}
+.goal-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.goal-name{font-size:12px;font-weight:500}
+.goal-icon{font-size:20px}
+.goal-track{background:var(--s3);border-radius:3px;height:4px;overflow:hidden;margin-bottom:5px}
+.goal-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--cobalt),var(--iris))}
+.goal-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}
+.goal-pct{color:var(--cobalt);font-weight:600}
+
+/* ── ACCOUNT ── */
+.acc{background:var(--s1);border:1px solid var(--edge);border-radius:var(--r-sm);padding:12px 13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.acc-left{display:flex;align-items:center;gap:9px}
+.acc-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.acc-name{font-size:11px;font-weight:500}
+.acc-bank{font-size:9px;color:var(--muted);margin-top:1px}
+.acc-bal{font-size:15px;font-weight:700}
+
+/* ── CC ── */
+.cc{border-radius:12px;padding:18px;position:relative;overflow:hidden;margin-bottom:10px}
+.cc-bank{font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.12em;position:relative;z-index:1}
+.cc-amount{font-size:22px;font-weight:700;letter-spacing:-.03em;margin:8px 0 2px;position:relative;z-index:1}
+.cc-sub{font-size:10px;color:rgba(255,255,255,.4);position:relative;z-index:1}
+.cc-stats{display:grid;grid-template-columns:repeat(3,1fr);margin-top:10px;position:relative;z-index:1}
+.cc-stat-lbl{font-size:8px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.07em}
+.cc-stat-val{font-size:10px;font-weight:500;color:rgba(255,255,255,.7);margin-top:2px}
+.cc-track{background:rgba(255,255,255,.08);border-radius:2px;height:3px;margin-top:12px;overflow:hidden;position:relative;z-index:1}
+.cc-fill{height:100%;border-radius:2px;transition:width .5s}
+
+/* ── INVEST ── */
+.inv{background:var(--s1);border:1px solid var(--edge);border-radius:var(--r-sm);padding:13px;margin-bottom:8px}
+.inv-hd{display:flex;justify-content:space-between;align-items:flex-start}
+.inv-name{font-size:12px;font-weight:500}
+.inv-type{font-size:9px;color:var(--muted);margin-top:2px}
+.inv-amount{font-size:14px;font-weight:700;text-align:right}
+.inv-return{font-size:10px;color:var(--jade);text-align:right;margin-top:1px}
+.inv-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:9px;font-size:10px}
+.inv-stat-lbl{color:var(--muted);margin-bottom:2px}
+.inv-stat-val{font-weight:600}
+.inv-track{background:var(--s3);border-radius:2px;height:2px;overflow:hidden;margin-top:9px}
+.inv-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--jade),var(--cobalt))}
+
+/* ── REC ── */
+.rec{background:var(--s1);border:1px solid var(--edge);border-radius:var(--r-sm);padding:12px 13px;margin-bottom:7px}
+.rec-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.rec-name{font-size:11px;font-weight:500}
+.rec-badge{font-size:9px;color:var(--copper);background:var(--copper-s);padding:2px 7px;border-radius:3px;font-weight:600}
+.rec-fi{width:100%;background:var(--s2);border:1px solid var(--edge);border-radius:var(--r-sm);padding:7px 10px;color:var(--text);font:13px var(--font);outline:none;margin-bottom:8px}
+.rec-fi:focus{border-color:var(--copper)}
+
+/* ── ALERT ── */
+.alert{padding:9px 12px;border-radius:var(--r-sm);margin-bottom:8px;font-size:11px;line-height:1.4}
+.alert.warn{background:var(--copper-s);border:1px solid var(--copper-b);color:var(--copper)}
+.alert.danger{background:var(--crimson-s);border:1px solid rgba(201,79,79,.22);color:var(--crimson)}
+
+/* ── BAR CHART ── */
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:68px;transition:height .2s ease}
+.bar-grp{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end}
+.bar{width:100%;border-radius:3px 3px 0 0;min-height:3px}
+.bar.inc{background:var(--jade)}.bar.exp{background:var(--crimson)}
+.bar-mo{font-size:8px;color:var(--muted)}
+
+/* ── SHEET (modal) ── */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:400;align-items:flex-end}
+.ov.open{display:flex}
+.sheet{background:var(--s1);border-radius:16px 16px 0 0;border-top:1px solid var(--edge2);width:100%;max-height:92dvh;overflow-y:auto;animation:sup .2s ease;padding:14px 16px calc(var(--safe) + 18px)}
+@keyframes sup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-hdl{width:32px;height:3px;background:var(--edge2);border-radius:2px;margin:0 auto 14px}
+.sheet-title{font-size:14px;font-weight:600;letter-spacing:-.01em;margin-bottom:15px}
+.type-sel{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px}
+.type-btn{padding:8px 5px;border-radius:var(--r-sm);border:1px solid var(--edge);background:none;color:var(--muted);font:10px var(--font);font-weight:500;cursor:pointer;transition:all .14s;text-align:center}
+.type-btn.ai{border-color:var(--jade);background:var(--jade-s);color:var(--jade)}
+.type-btn.ae{border-color:var(--crimson);background:var(--crimson-s);color:var(--crimson)}
+.type-btn.ac{border-color:var(--cobalt);background:var(--cobalt-s);color:var(--cobalt)}
+.fg{margin-bottom:11px}
+.fl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:4px;display:block}
+.fi,.fs{width:100%;background:var(--void);border:1px solid var(--edge);border-radius:var(--r-sm);padding:9px 11px;color:var(--text);font:13px var(--font);outline:none;transition:border-color .14s;appearance:none;-webkit-appearance:none}
+.fi:focus,.fs:focus{border-color:var(--copper)}
+.fi::placeholder{color:var(--muted)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.fbtn{width:100%;padding:12px;background:var(--copper);border:none;border-radius:var(--r-sm);color:#fff;font:13px var(--font);font-weight:600;cursor:pointer;transition:opacity .14s;margin-top:3px}
+.fbtn:active{opacity:.85}
+.fbtn.sec{background:var(--s3);color:var(--sub)}
+
+/* ── BTN ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:6px 13px;border-radius:var(--r-sm);border:1px solid var(--edge);background:none;color:var(--muted);font:10px var(--font);font-weight:500;cursor:pointer;transition:all .14s}
+.btn:active{background:var(--s2)}
+.btn.primary{background:var(--copper);border-color:var(--copper);color:#fff}
+.btn.sm{padding:4px 10px;font-size:9px}
+.btn.danger{border-color:var(--crimson);color:var(--crimson)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:calc(var(--nav) + var(--safe) + 16px);left:50%;transform:translateX(-50%) translateY(8px);background:var(--s4);border:1px solid var(--edge2);border-radius:22px;padding:9px 18px;font-size:11px;font-weight:500;z-index:600;opacity:0;transition:all .2s cubic-bezier(.34,1.56,.64,1);pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.empty{text-align:center;padding:28px 15px;color:var(--muted);font-size:12px}
+.empty-icon{font-size:28px;margin-bottom:7px;opacity:.5}
+/* Login screen */
+#login-screen{position:fixed;inset:0;z-index:9999;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;transition:opacity .3s;overflow:hidden}
+#login-bg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:auto;height:auto;max-width:100%;z-index:0;opacity:.85}
+#login-overlay{position:absolute;inset:0;background:rgba(5,5,5,.18);z-index:1}
+#login-screen>*:not(#login-bg):not(#login-overlay){position:relative;z-index:2}
+#login-screen.hiding{opacity:0;pointer-events:none}
+.login-logo-wrap{width:68px;height:68px;border-radius:20px;background:rgba(184,115,51,.12);border:1px solid rgba(184,115,51,.22);display:flex;align-items:center;justify-content:center;margin:0 auto 22px}
+.login-title{font-size:32px;font-weight:800;letter-spacing:-.04em;color:#fff;margin-bottom:8px;text-align:center}
+.login-sub{font-size:13px;color:rgba(255,255,255,.32);letter-spacing:.03em;text-align:center}
+.login-google-btn{display:flex;align-items:center;gap:12px;background:#fff;border:none;border-radius:14px;padding:15px 32px;font-size:15px;font-weight:600;color:#1a1a1a;cursor:pointer;letter-spacing:-.01em;box-shadow:0 4px 28px rgba(0,0,0,.45);transition:transform .13s,box-shadow .13s;font-family:var(--font);margin-top:52px}
+.login-google-btn:active{transform:scale(.96);box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.login-note{font-size:11px;color:rgba(255,255,255,.18);text-align:center;line-height:1.7;max-width:260px;margin-top:32px}
+.login-loading{font-size:13px;color:rgba(255,255,255,.38);margin-top:18px;display:none}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--edge2);border-radius:2px}
+/* Font size selector */
+.fz-opts{display:flex;gap:6px;margin-top:8px}
+.fz-opt{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px;background:var(--s2);border:1.5px solid var(--edge2);border-radius:var(--r-sm);cursor:pointer;transition:border-color .15s,background .15s;font-family:var(--font);color:var(--text);-webkit-tap-highlight-color:transparent}
+.fz-opt.active{border-color:var(--copper);background:var(--copper-s)}
+.fz-opt span:first-child{line-height:1;font-weight:600;color:var(--text)}
+.fz-opt span:last-child{font-size:9px;color:var(--muted)}
+/* Layout drag */
+[data-lid]{position:relative}
+.lc{position:absolute;top:6px;right:6px;display:flex;gap:3px;z-index:6;opacity:.22;transition:opacity .2s}
+[data-lid]:hover .lc{opacity:.75}
+.lc-btn{width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:4px;background:var(--s3);border:1px solid var(--edge2);font-size:11px;color:var(--muted);cursor:pointer;user-select:none;padding:0;line-height:1;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.lc-btn:active{opacity:1;background:var(--s2)}
+.lc-drag{touch-action:none}
+[data-lid].ld-dragging{opacity:.35}
+[data-lid].ld-over-top,[data-lid].ld-over-bot{outline:2px solid var(--copper);outline-offset:3px;border-radius:10px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <img id="login-bg" src="login-bg.jpg" alt="">
+  <div id="login-overlay"></div>
+  <div class="login-logo-wrap">
+    <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
+      <rect x="2" y="22" width="8" height="14" rx="2" fill="#b87333" opacity=".45"/>
+      <rect x="15" y="13" width="8" height="23" rx="2" fill="#b87333" opacity=".72"/>
+      <rect x="28" y="4"  width="8" height="32" rx="2" fill="#b87333"/>
+    </svg>
+  </div>
+  <div class="login-title">Fin_Control</div>
+  <div class="login-sub">Controle financeiro inteligente</div>
+  <button class="login-google-btn" onclick="loginWithGoogle()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+    </svg>
+    Entrar com Google
+  </button>
+  <div class="login-loading" id="login-loading">Autenticando…</div>
+  <div class="login-note">Seus dados ficam protegidos<br>na sua própria conta Google Drive</div>
+</div>
+
+<!-- Sync overlay: mostrado após login até o Drive sync concluir -->
+<div id="sync-overlay" style="display:none;position:fixed;inset:0;z-index:9998;background:#0a0a0a;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+  <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="2" y="21" width="7" height="13" rx="2" fill="#b87333" opacity=".45"/><rect x="15" y="12" width="7" height="22" rx="2" fill="#b87333" opacity=".72"/><rect x="28" y="3" width="7" height="31" rx="2" fill="#b87333"/></svg>
+  <div style="font-size:13px;font-weight:600;color:#fff">Carregando seus dados…</div>
+  <div style="font-size:11px;color:rgba(255,255,255,.4)">Sincronizando com o Google Drive</div>
+  <div style="width:40px;height:3px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden;margin-top:4px"><div id="sync-bar" style="height:100%;width:0%;background:#b87333;border-radius:2px;transition:width 2s linear"></div></div>
+</div>
+
+<header class="hdr">
+  <div class="hdr-row">
+    <div>
+      <div class="hdr-greet">Bom dia 👋</div>
+      <div class="hdr-name">Fernando</div>
+      <div class="hdr-date" id="hdrDate"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="thm-btn" id="thm-btn" onclick="openCustomize()" aria-label="Personalizar"></button>
+      <div class="avatar" onclick="toggleAvatarMenu()" style="cursor:pointer;position:relative">FA
+        <div id="avatar-menu" style="display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--s2);border:1px solid var(--edge2);border-radius:12px;padding:8px;z-index:600;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,.5)">
+          <div style="padding:8px 10px 10px;border-bottom:1px solid var(--edge);margin-bottom:6px">
+            <div style="font-weight:600;font-size:13px">Fernando</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:1px" id="avatar-sync-status">—</div>
+          </div>
+          <button onclick="openProfile();toggleAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--text);padding:8px 10px;font-size:12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px"><span>👤</span> Perfil</button>
+          <button onclick="goAvatar('settings');toggleAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--text);padding:8px 10px;font-size:12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px"><span>⚙</span> Configurações</button>
+          <button onclick="doSync();toggleAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--text);padding:8px 10px;font-size:12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px"><span>↻</span> Sincronizar agora</button>
+          <button onclick="openCustomize();toggleAvatarMenu()" style="width:100%;text-align:left;background:none;border:none;color:var(--text);padding:8px 10px;font-size:12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px"><span>⊞</span> Personalizar</button>
+          <div style="border-top:1px solid var(--edge);margin:6px 0 4px"></div>
+          <button onclick="logout()" style="width:100%;text-align:left;background:none;border:none;color:var(--crimson);padding:8px 10px;font-size:12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px"><span>↩</span> Sair</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sync-row" onclick="doSync()">
+    <div class="sync-dot" id="syncDot"></div>
+    <span class="sync-lbl" id="syncLbl">Toque para sincronizar</span>
+  </div>
+</header>
+
+<div class="pages">
+
+  <!-- HOME -->
+  <div class="page active" id="pg-home">
+    <div id="alerts"></div>
+    <div id="mb-hero">
+      <div class="hero">
+        <div class="hero-label">Saldo do mês</div>
+        <div class="hero-amount" id="h-bal">—</div>
+        <div class="hero-meta" id="h-meta">—</div>
+      </div>
+      <div class="mini-row">
+        <div class="mini"><div class="mini-lbl">Entradas</div><div class="mini-val pos" id="h-inc">—</div></div>
+        <div class="mini"><div class="mini-lbl">Saídas</div><div class="mini-val neg" id="h-exp">—</div></div>
+      </div>
+    </div>
+    <div id="mb-forecast">
+      <div class="card" id="h-forecast" style="margin-bottom:10px;padding:10px 12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:11px;font-weight:600;color:var(--text)">Projeção do mês</div>
+          <div style="font-size:9px;color:var(--muted)" id="hfc-day"></div>
+        </div>
+        <div style="height:3px;background:var(--s3);border-radius:2px;margin-bottom:10px;overflow:hidden">
+          <div id="hfc-bar" style="height:100%;width:0%;border-radius:2px;background:var(--copper);transition:width .4s"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px" id="hfc-grid"></div>
+      </div>
+    </div>
+    <div id="mb-savings">
+      <div class="card" style="margin-bottom:10px;padding:12px 14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--text);text-transform:uppercase">Meta de Economia</div>
+            <div id="mb-sg-month" style="font-size:10px;color:var(--muted);margin-top:1px"></div>
+          </div>
+          <button onclick="toggleMbSavingsEdit()" style="background:var(--s2);border:1px solid var(--s3);border-radius:6px;color:var(--muted);font-size:11px;padding:4px 10px;cursor:pointer">✎ Meta</button>
+        </div>
+        <div id="mb-sg-edit" style="display:none;margin-bottom:10px">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px" id="mb-sg-edit-label"></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="mb-sg-input" type="number" min="0" step="100" placeholder="Ex: 1000" inputmode="decimal"
+              style="flex:1;background:var(--s2);border:1px solid var(--accent);border-radius:8px;color:var(--text);font-size:13px;padding:6px 10px">
+            <button onclick="saveMbSavingsGoal()" style="background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:12px;padding:6px 14px;cursor:pointer">OK</button>
+            <button onclick="document.getElementById('mb-sg-edit').style.display='none'" style="background:var(--s2);border:1px solid var(--s3);border-radius:8px;color:var(--muted);font-size:12px;padding:6px 10px;cursor:pointer">✕</button>
+          </div>
+        </div>
+        <div id="mb-sg-values" style="font-size:12px;color:var(--muted);margin-bottom:5px"></div>
+        <div style="height:7px;background:var(--s3);border-radius:4px;overflow:hidden;margin-bottom:4px">
+          <div id="mb-sg-bar" style="height:100%;border-radius:4px;transition:width .5s,background .3s;width:0%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+          <span id="mb-sg-label" style="font-size:10px;color:var(--muted)"></span>
+          <span id="mb-sg-pct" style="font-size:10px;font-weight:700"></span>
+        </div>
+        <div id="mb-sg-history" style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px"></div>
+      </div>
+    </div>
+    <div id="mb-quickact">
+      <div class="sec">Ações rápidas</div>
+      <div class="qa">
+        <button class="qa-btn" onclick="openSheet('tx','income')"><span class="qa-icon">💰</span><span class="qa-lbl">Receita</span></button>
+        <button class="qa-btn" onclick="openSheet('tx','expense')"><span class="qa-icon">💸</span><span class="qa-lbl">Despesa</span></button>
+        <button class="qa-btn" onclick="openSheet('tx','card')"><span class="qa-icon">▭</span><span class="qa-lbl">Cartão</span></button>
+        <button class="qa-btn" onclick="openSheet('rec-confirm')"><span class="qa-icon">↺</span><span class="qa-lbl">Recorrentes</span></button>
+        <button class="qa-btn" id="voice-btn" onclick="startVoice()" style="grid-column:1/-1;flex-direction:row;gap:10px;justify-content:center;padding:13px"><span class="qa-icon" style="font-size:20px">🎤</span><span class="qa-lbl" style="font-size:11px;color:var(--text)">Registro por voz</span></button>
+      </div>
+    </div>
+    <div id="mb-chart">
+      <div class="card">
+        <div class="card-title">Fluxo — 6 meses</div>
+        <div class="bar-chart" id="h-chart"></div>
+      </div>
+    </div>
+    <div id="mb-budgets">
+      <div class="sec" style="display:flex;justify-content:space-between;align-items:center">Orçamentos <button class="btn" style="font-size:10px;padding:3px 10px" onclick="openSheet('bud')">+ Novo</button></div>
+      <div class="card" id="h-budgets"></div>
+    </div>
+    <div id="mb-projecao">
+      <div class="sec">Projeção de saldo</div>
+      <div class="card" id="h-projecao"></div>
+    </div>
+    <div id="mb-recent">
+      <div class="sec">Recentes</div>
+      <div id="h-recent"></div>
+    </div>
+  </div>
+
+  <!-- TRANSACTIONS -->
+  <div class="page" id="pg-tx">
+    <div class="mnav">
+      <button onclick="cm(-1)">‹</button>
+      <span id="mnLbl">—</span>
+      <button onclick="cm(1)">›</button>
+    </div>
+    <div class="chips">
+      <button class="chip active" onclick="setFilt('all',this)">Todos</button>
+      <button class="chip" onclick="setFilt('income',this)">Receitas</button>
+      <button class="chip" onclick="setFilt('expense',this)">Despesas</button>
+      <button class="chip" onclick="setFilt('card',this)">Cartão</button>
+    </div>
+    <input class="fi" id="tx-search" placeholder="🔍 Buscar lançamento..." oninput="rTx()" style="margin:8px 8px 4px;width:calc(100% - 16px);box-sizing:border-box">
+    <div id="tx-list"></div>
+  </div>
+
+  <!-- CARDS & ACCOUNTS -->
+  <div class="page" id="pg-cards">
+    <div class="mnav">
+      <button onclick="cm(-1)">‹</button>
+      <span id="mnLbl2">—</span>
+      <button onclick="cm(1)">›</button>
+    </div>
+    <div class="sec">Contas</div>
+    <div id="acc-list"></div>
+    <div class="sec">Cartões de crédito</div>
+    <div id="cc-list"></div>
+    <div class="sec">Parcelamentos ativos</div>
+    <div id="inst-list"></div>
+    <div style="display:flex;gap:7px;margin-top:10px">
+      <button class="btn primary" style="flex:1" onclick="openSheet('card')">+ Novo cartão</button>
+      <button class="btn" style="flex:1" onclick="openSheet('acc')">+ Nova conta</button>
+    </div>
+  </div>
+
+  <!-- PORTFOLIO (Invest + Goals) -->
+  <div class="page" id="pg-portfolio">
+    <div class="hero" style="background:var(--s1)">
+      <div class="hero-label">Patrimônio total</div>
+      <div class="hero-amount" id="inv-total" style="color:var(--iris)">—</div>
+      <div class="hero-meta">Retorno médio: <span id="inv-avg" style="color:var(--jade)">—</span> · Proventos: <span id="inv-div" style="color:var(--copper)">—</span></div>
+    </div>
+    <div class="card" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:600">Evolução do patrimônio</div>
+        <div style="font-size:9px;color:var(--muted)">12 meses</div>
+      </div>
+      <div id="patrimonio-chart" style="display:block;width:100%;height:80px"></div>
+    </div>
+    <div class="sec">Metas</div>
+    <div id="goals-list"></div>
+    <div class="sec">Investimentos</div>
+    <div id="inv-list"></div>
+    <div style="display:flex;gap:7px;margin-top:10px">
+      <button class="btn primary" style="flex:1" onclick="openSheet('inv')">+ Investimento</button>
+      <button class="btn" style="flex:1" onclick="openSheet('goal')">+ Meta</button>
+    </div>
+
+    <!-- VISÃO ANUAL -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:18px 0 8px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text)">Visão Anual</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button onclick="annualYear--; renderAnnualMobile()" style="background:none;border:none;color:var(--muted);font-size:16px;padding:2px 6px;cursor:pointer">‹</button>
+        <span id="annual-yr-lbl" style="font-size:11px;font-weight:600;color:var(--text)"></span>
+        <button onclick="annualYear++; renderAnnualMobile()" style="background:none;border:none;color:var(--muted);font-size:16px;padding:2px 6px;cursor:pointer">›</button>
+        <button onclick="exportAnnualReportMobile()" style="background:var(--s2);border:1px solid var(--edge);color:var(--text);border-radius:6px;padding:3px 9px;font-size:10px;cursor:pointer">⬇ PDF</button>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:10px;padding:8px">
+      <div id="annual-summary" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;padding:0 4px"></div>
+      <div id="annual-grid" style="display:flex;flex-direction:column;gap:3px"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="pg-settings">
+    <div class="card" id="pwa-install-card" style="display:none;margin-bottom:10px;border-color:var(--copper-b)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <img src="icon.svg" width="36" height="36" style="border-radius:8px">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text)">Instalar FinControl</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">Acesso rápido, funciona offline</div>
+        </div>
+      </div>
+      <button class="btn primary" style="width:100%;padding:10px" onclick="installPWA()">⬇ Download</button>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600">☁️ Google Drive</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="sync-dot" id="syncDot2"></div>
+          <span style="font-size:10px;color:var(--muted)" id="syncLbl2">Desconectado</span>
+        </div>
+      </div>
+      <button id="drive-connect-btn" class="btn primary" style="width:100%;padding:10px;margin-bottom:6px" onclick="driveConnect()">☁ Conectar Google Drive</button>
+      <button id="drive-sync-btn" class="btn primary" style="width:100%;padding:10px;margin-bottom:6px;display:none" onclick="doSync()">↻ Sincronizar agora</button>
+      <button id="drive-disconnect-btn" class="btn" style="width:100%;padding:8px;display:none;font-size:11px;color:var(--crimson)" onclick="driveDisconnect()">Desconectar Drive</button>
+      <div style="font-size:9px;color:var(--muted);margin-top:8px;line-height:1.5">Requer servidor HTTP (localhost). Não funciona via file://.</div>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:12px">🔐 Criptografia E2E</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">Dados encriptados com AES-256 antes de ir ao Drive. A chave nunca sai do dispositivo.</div>
+      <input id="m-crypto-pwd" type="password" class="fi" placeholder="Senha de criptografia…" style="margin-bottom:8px">
+      <button class="fbtn" onclick="setCryptoPassword(document.getElementById('m-crypto-pwd').value)">Ativar criptografia</button>
+      <button class="fbtn" style="background:var(--s2);color:var(--crimson);border:1px solid var(--edge);margin-top:6px" onclick="setCryptoPassword('');document.getElementById('m-crypto-pwd').value=''">Remover senha</button>
+      <div id="m-crypto-status" style="font-size:10px;color:var(--muted);margin-top:8px">🔓 Desativada</div>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:12px">📋 Personalizar Início</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Escolha quais seções exibir na tela Início</div>
+      <div id="home-sections-cfg"></div>
+      <button class="btn" style="width:100%;padding:9px;margin-top:10px;font-size:11px" onclick="resetMobileLayout()">↺ Restaurar layout padrão</button>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:12px">🏷️ Categorias</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Receita</div>
+      <div class="tags" id="m-cat-income"></div>
+      <div style="font-size:11px;color:var(--muted);margin:10px 0 8px">Despesa</div>
+      <div class="tags" id="m-cat-expense"></div>
+      <div style="font-size:11px;color:var(--muted);margin:10px 0 8px">Cartão</div>
+      <div class="tags" id="m-cat-card"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:12px">💾 Dados</div>
+      <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" id="mb-notif-btn" onclick="enableMobileNotifs()">🔔 Ativar notificações de vencimento</button>
+      <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="exportMobilePDF()">🖨️ Relatório PDF — mês atual</button>
+      <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="exportMobileJSON()">⬇ Exportar backup JSON</button>
+      <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="document.getElementById('m-import-json').click()">⬆ Importar backup JSON</button>
+      <button class="btn" style="width:100%;padding:9px;margin-bottom:8px;border-color:var(--copper-b);color:var(--copper)" onclick="document.getElementById('m-import-ofx').click()">📄 Importar extrato OFX / CSV</button>
+      <input type="file" id="m-import-ofx" accept=".ofx,.csv,.txt" style="display:none" onchange="mImportFile(event)">
+      <button class="btn" style="width:100%;padding:9px;margin-bottom:8px;border-color:var(--copper-b);color:var(--copper)" onclick="document.getElementById('m-import-pdf').click()">📑 Importar extrato PDF</button>
+      <input type="file" id="m-import-pdf" accept=".pdf" style="display:none" onchange="mImportPDF(event)">
+      <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="openQRExport()">📲 Exportar configurações via QR Code</button>
+      <input type="file" id="m-import-json" accept=".json" style="display:none" onchange="importMobileJSON(event)">
+      <button class="btn danger" style="width:100%;padding:9px" onclick="document.getElementById('m-clear-confirm').style.display='block'">🗑 Zerar todos os dados</button>
+      <div id="m-clear-confirm" style="display:none;background:rgba(217,95,95,.1);border:1px solid var(--crimson);border-radius:var(--r-sm);padding:12px;margin-top:8px">
+        <div style="font-size:11px;color:var(--crimson);font-weight:600;margin-bottom:10px;line-height:1.5">⚠ Esta ação é irreversível.<br>Todos os dados serão apagados.</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn danger" style="flex:1;padding:9px;font-size:12px" onclick="clearMobileData()">Confirmar</button>
+          <button class="btn" style="flex:1;padding:9px;font-size:12px" onclick="document.getElementById('m-clear-confirm').style.display='none'">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:12px">ℹ️ Sobre</div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.6">
+        <div>FinControl v3</div>
+        <div>Fernando de Araújo Meira</div>
+        <div style="margin-top:6px">Dados salvos localmente no navegador.<br>Use a versão web para análises avançadas.</div>
+      </div>
+      <button class="btn" id="theme-toggle-btn" style="width:100%;padding:10px;margin-top:12px;font-size:12px" onclick="toggleDarkLight()"></button>
+      <button class="btn" style="width:100%;padding:10px;margin-top:8px;font-size:12px" onclick="openCustomize()">🎨 Personalizar tema e gráfico</button>
+      <button class="btn" style="width:100%;padding:10px;margin-top:8px;font-size:12px;border-color:var(--copper-b);color:var(--copper)" onclick="startOnboarding()">🎓 Ver tour do app</button>
+      <button class="btn" style="width:100%;padding:10px;margin-top:8px;font-size:12px;border-color:var(--copper-b);color:var(--copper)" onclick="openManual()">📖 Manual Avançado</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- MANUAL AVANÇADO -->
+<div id="ov-manual" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.72);align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeManual()">
+  <div style="background:var(--s1);border-radius:24px 24px 0 0;width:100%;height:92vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--edge);flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px">📖</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text)">Manual Avançado</div>
+          <div style="font-size:10px;color:var(--muted)">Arquitetura, funções e guias</div>
+        </div>
+      </div>
+      <button onclick="closeManual()" style="background:none;border:none;color:var(--muted);font-size:20px;line-height:1;padding:4px 8px;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:8px 12px;border-bottom:1px solid var(--edge);flex-shrink:0">
+      <input id="m-manual-search" class="fi" placeholder="🔍 Buscar no manual..." oninput="filterManual()" style="width:100%;font-size:12px">
+    </div>
+    <div id="m-manual-body" style="overflow-y:auto;padding:16px;flex:1;font-size:13px;line-height:1.7"></div>
+  </div>
+</div>
+
+<!-- ONBOARDING MODAL -->
 <div id="ov-onboarding" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.72);align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeOnboarding()">
   <div style="background:var(--s1);border-radius:24px 24px 0 0;width:100%;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 16px)">
     <!-- progress bar -->
@@ -3475,190 +4350,185 @@ function mConfirmImport(){
 
 // ── ONBOARDING ────────────────────────────────────────────────────
 const OB_STEPS=[
-  {
-    label:'Bem-vindo',
-    html:`
-      <div style="text-align:center;padding:8px 0 20px">
-        <img src="icon.svg" width="64" height="64" style="border-radius:16px;margin-bottom:16px">
-        <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px">Bem-vindo ao FinControl</div>
-        <div style="font-size:13px;color:var(--sub);line-height:1.7">Este tour rápido mostra como usar<br>o app para controlar seu dinheiro.</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        ${[['💸','Lançamentos','Registre receitas, despesas e gastos no cartão'],['🏦','Contas','Acompanhe o saldo de cada conta'],['💳','Cartões','Veja a fatura aberta e a data de vencimento'],['🎯','Orçamentos','Defina limites por categoria'],['☁️','Drive','Sincronize tudo na nuvem automaticamente']].map(([i,t,d])=>`
-        <div style="display:flex;align-items:center;gap:12px;background:var(--s2);border-radius:10px;padding:12px">
-          <span style="font-size:22px;width:32px;text-align:center">${i}</span>
-          <div><div style="font-size:12px;font-weight:600;color:var(--text)">${t}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${d}</div></div>
-        </div>`).join('')}
-      </div>`
-  },
-  {
-    label:'Passo 1 de 6 — Lançamentos',
-    html:`
-      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">💸 Lançamentos</div>
-      <div style="font-size:12px;color:var(--sub);line-height:1.7;margin-bottom:16px">Tudo que entra ou sai do seu bolso é um lançamento.</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="background:var(--jade-s);border:1px solid rgba(46,184,122,.2);border-radius:10px;padding:14px">
-          <div style="font-size:12px;font-weight:700;color:var(--jade);margin-bottom:4px">✅ Receita</div>
-          <div style="font-size:11px;color:var(--sub);line-height:1.6">Salário, freelance, transferência recebida. Aumenta o saldo da conta escolhida.</div>
-        </div>
-        <div style="background:var(--crimson-s);border:1px solid rgba(201,79,79,.2);border-radius:10px;padding:14px">
-          <div style="font-size:12px;font-weight:700;color:var(--crimson);margin-bottom:4px">❌ Despesa</div>
-          <div style="font-size:11px;color:var(--sub);line-height:1.6">Aluguel, mercado, conta de luz. Subtrai do saldo da conta escolhida.</div>
-        </div>
-        <div style="background:var(--copper-s);border:1px solid var(--copper-b);border-radius:10px;padding:14px">
-          <div style="font-size:12px;font-weight:700;color:var(--copper);margin-bottom:4px">💳 Cartão de crédito</div>
-          <div style="font-size:11px;color:var(--sub);line-height:1.6">Compras que vão para a fatura. Não sai do saldo agora — só quando você pagar a fatura.</div>
-        </div>
-      </div>
-      <div style="background:var(--s2);border-radius:10px;padding:12px;margin-top:12px;display:flex;align-items:flex-start;gap:10px">
-        <span style="font-size:18px">💡</span>
-        <div style="font-size:11px;color:var(--sub);line-height:1.6">Toque no botão <strong style="color:var(--copper)">+</strong> no canto inferior direito para adicionar um lançamento a qualquer momento.</div>
-      </div>`
-  },
-  {
-    label:'Passo 2 de 6 — Contas',
-    html:`
-      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">🏦 Contas</div>
-      <div style="font-size:12px;color:var(--sub);line-height:1.7;margin-bottom:16px">Cada conta representa um lugar onde você guarda dinheiro.</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="background:var(--s2);border-radius:10px;padding:14px">
-          <div style="font-size:11px;color:var(--sub);line-height:1.7">Exemplos: <span style="color:var(--text)">Nubank, Itaú, Carteira, Poupança</span></div>
-        </div>
-        <div style="background:var(--s2);border-radius:10px;padding:14px">
-          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">Como funciona</div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            ${[['Ao cadastrar','Informe o saldo atual da conta'],['Receitas','Somam ao saldo da conta'],['Despesas','Subtraem do saldo da conta'],['Pagamento de fatura','Você registra como despesa na conta']].map(([t,d])=>`
-            <div style="display:flex;gap-8px;align-items:baseline;font-size:11px">
-              <span style="color:var(--muted);min-width:140px">${t}</span>
-              <span style="color:var(--sub)">→ ${d}</span>
-            </div>`).join('')}
-          </div>
-        </div>
-      </div>
-      <div style="background:var(--s2);border-radius:10px;padding:12px;margin-top:12px;display:flex;align-items:flex-start;gap:10px">
-        <span style="font-size:18px">💡</span>
-        <div style="font-size:11px;color:var(--sub);line-height:1.6">Vá em <strong style="color:var(--text)">Contas</strong> na barra inferior para adicionar ou ver o saldo de cada conta.</div>
-      </div>`
-  },
-  {
-    label:'Passo 3 de 6 — Cartões',
-    html:`
-      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">💳 Cartões de crédito</div>
-      <div style="font-size:12px;color:var(--sub);line-height:1.7;margin-bottom:16px">Acompanhe o total de cada fatura e evite surpresas no vencimento.</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="background:var(--s2);border-radius:10px;padding:14px">
-          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Dois campos importantes</div>
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;gap:12px;align-items:flex-start">
-              <div style="background:var(--copper);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">Fechamento</div>
-              <div style="font-size:11px;color:var(--sub);line-height:1.5">Dia em que a fatura fecha. Compras após essa data vão para a próxima fatura.</div>
-            </div>
-            <div style="display:flex;gap:12px;align-items:flex-start">
-              <div style="background:var(--cobalt);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">Vencimento</div>
-              <div style="font-size:11px;color:var(--sub);line-height:1.5">Dia em que você precisa pagar a fatura. O app avisa quando estiver perto.</div>
-            </div>
-          </div>
-        </div>
-        <div style="background:var(--s2);border-radius:10px;padding:14px">
-          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">Fatura aberta vs. anterior</div>
-          <div style="font-size:11px;color:var(--sub);line-height:1.6"><span style="color:var(--text)">Fatura aberta</span> → compras do ciclo atual ainda não fechado.<br><span style="color:var(--text)">Fatura anterior</span> → ciclo fechado, disponível para conferência.</div>
-        </div>
-      </div>
-      <div style="background:var(--s2);border-radius:10px;padding:12px;margin-top:12px;display:flex;align-items:flex-start;gap:10px">
-        <span style="font-size:18px">🔔</span>
-        <div style="font-size:11px;color:var(--sub);line-height:1.6">Ative as notificações em <strong style="color:var(--text)">Configurações → Dados</strong> para receber alertas 3 dias antes do vencimento.</div>
-      </div>`
-  },
-  {
-    label:'Passo 4 de 6 — Orçamentos',
-    html:`
-      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">🎯 Orçamentos</div>
-      <div style="font-size:12px;color:var(--sub);line-height:1.7;margin-bottom:16px">Defina quanto quer gastar em cada categoria por mês.</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="background:var(--s2);border-radius:10px;padding:14px">
-          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Como funciona</div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            ${[['Defina um limite','Ex: R$ 800 em Alimentação'],['O app acompanha','Soma os lançamentos da categoria no mês'],['Barra de progresso','Verde → ok · Amarelo → atenção · Vermelho → estourou']].map(([t,d])=>`
-            <div style="background:var(--s3);border-radius:8px;padding:10px">
-              <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:2px">${t}</div>
-              <div style="font-size:10px;color:var(--muted)">${d}</div>
-            </div>`).join('')}
-          </div>
-        </div>
-        <div style="background:var(--s2);border-radius:10px;padding:14px">
-          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">Dica</div>
-          <div style="font-size:11px;color:var(--sub);line-height:1.6">Orçamentos levam em conta despesas diretas <em>e</em> gastos no cartão. Tudo na mesma categoria é somado.</div>
-        </div>
-      </div>`
-  },
-  {
-    label:'Passo 5 de 6 — Meta de economia',
-    html:`
-      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">💰 Meta de economia</div>
-      <div style="font-size:12px;color:var(--sub);line-height:1.7;margin-bottom:16px">Defina quanto quer guardar por mês e acompanhe se está no caminho.</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="background:var(--s2);border-radius:10px;padding:14px">
-          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">O que o app calcula</div>
-          <div style="font-size:11px;color:var(--sub);line-height:1.8">
-            <div>📥 <strong style="color:var(--jade)">Receitas do mês</strong></div>
-            <div style="margin-left:16px;color:var(--muted)">− Despesas − Gastos no cartão</div>
-            <div style="border-top:1px solid var(--edge);margin:8px 0"></div>
-            <div>= <strong style="color:var(--text)">Saldo do mês</strong> (o que sobrou)</div>
-          </div>
-        </div>
-        <div style="background:var(--s2);border-radius:10px;padding:14px">
-          <div style="font-size:11px;color:var(--sub);line-height:1.6">
-            Se o saldo do mês ≥ sua meta → <strong style="color:var(--jade)">meta batida ✓</strong><br>
-            Se o saldo do mês &lt; sua meta → o app mostra o quanto falta.
-          </div>
-        </div>
-      </div>
-      <div style="background:var(--s2);border-radius:10px;padding:12px;margin-top:12px;display:flex;align-items:flex-start;gap:10px">
-        <span style="font-size:18px">💡</span>
-        <div style="font-size:11px;color:var(--sub);line-height:1.6">Configure a meta em <strong style="color:var(--text)">Início → Meta de economia → Editar</strong>.</div>
-      </div>`
-  },
-  {
-    label:'Passo 6 de 6 — Google Drive',
-    html:`
-      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px">☁️ Google Drive</div>
-      <div style="font-size:12px;color:var(--sub);line-height:1.7;margin-bottom:16px">Seus dados sincronizados entre todos os dispositivos.</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="background:var(--s2);border-radius:10px;padding:14px">
-          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Como ativar</div>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            ${['Vá em Configurações → Google Drive','Toque em "Conectar Google Drive"','Faça login com sua conta Google','Pronto — sync automático a cada 30s'].map((t,i)=>`
-            <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">${i+1}</div>
-              <div style="font-size:11px;color:var(--sub)">${t}</div>
-            </div>`).join('')}
-          </div>
-        </div>
-        <div style="background:var(--s2);border-radius:10px;padding:14px">
-          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">Funciona em</div>
-          <div style="font-size:11px;color:var(--sub);line-height:1.6">📱 App mobile · 🖥️ Dashboard web<br>Os dados são os mesmos nos dois.</div>
-        </div>
-        <div style="background:var(--cobalt-s);border:1px solid rgba(79,127,201,.2);border-radius:10px;padding:12px">
-          <div style="font-size:11px;color:var(--sub);line-height:1.6">⚠️ O sync só funciona via HTTPS ou localhost — não funciona abrindo o arquivo direto (file://).</div>
-        </div>
-      </div>`
-  },
-  {
-    label:'Tudo pronto!',
-    html:`
-      <div style="text-align:center;padding:24px 0 20px">
-        <div style="font-size:48px;margin-bottom:12px">🎉</div>
-        <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px">Você está pronto!</div>
-        <div style="font-size:13px;color:var(--sub);line-height:1.7">Agora você conhece os principais recursos.<br>Comece adicionando seus primeiros lançamentos.</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <button class="btn primary" style="width:100%;padding:13px;font-size:13px;font-weight:700" onclick="closeOnboarding();goTo('tx',document.querySelector('.nav-item:nth-child(2)'))">💸 Adicionar primeiro lançamento</button>
-        <button class="btn" style="width:100%;padding:11px;font-size:12px" onclick="closeOnboarding()">Explorar por conta própria</button>
-      </div>
-      <div style="text-align:center;margin-top:16px">
-        <div style="font-size:10px;color:var(--muted)">Você pode rever este tour a qualquer momento<br>em Configurações → Sobre → Ver tour do app</div>
-      </div>`
-  }
+  {label:'Introdução',html:`
+<div style="text-align:center;padding:8px 0 22px">
+  <div style="font-size:44px;margin-bottom:14px;filter:drop-shadow(0 4px 12px rgba(184,115,51,.4))">&#x1F48E;</div>
+  <div style="font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.3px;margin-bottom:10px">Guia completo<br>do FinControl</div>
+  <div style="font-size:12px;color:var(--muted);line-height:1.8;max-width:340px;margin:0 auto">Aprenda a usar cada fun&ccedil;&atilde;o do app em minutos.<br>Navegue pelos passos abaixo.</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:11px;display:flex;align-items:flex-start;gap:9px"><span style="font-size:18px;line-height:1">&#x1F4B8;</span><div><div style="font-size:11px;font-weight:700;color:var(--text)">Lan&ccedil;amentos</div><div style="font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4">Receitas, despesas, cart&atilde;o e transfer.</div></div></div>
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:11px;display:flex;align-items:flex-start;gap:9px"><span style="font-size:18px;line-height:1">&#x1F3E6;</span><div><div style="font-size:11px;font-weight:700;color:var(--text)">Contas</div><div style="font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4">Saldo e hist&oacute;rico por conta</div></div></div>
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:11px;display:flex;align-items:flex-start;gap:9px"><span style="font-size:18px;line-height:1">&#x1F4B3;</span><div><div style="font-size:11px;font-weight:700;color:var(--text)">Cart&otilde;es</div><div style="font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4">Fatura e controle de cr&eacute;dito</div></div></div>
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:11px;display:flex;align-items:flex-start;gap:9px"><span style="font-size:18px;line-height:1">&#x1F3AF;</span><div><div style="font-size:11px;font-weight:700;color:var(--text)">Or&ccedil;amentos</div><div style="font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4">Limites mensais por categoria</div></div></div>
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:11px;display:flex;align-items:flex-start;gap:9px"><span style="font-size:18px;line-height:1">&#x1F4B0;</span><div><div style="font-size:11px;font-weight:700;color:var(--text)">Meta</div><div style="font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4">Economia e proje&ccedil;&atilde;o de saldo</div></div></div>
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:11px;display:flex;align-items:flex-start;gap:9px"><span style="font-size:18px;line-height:1">&#x1F4CA;</span><div><div style="font-size:11px;font-weight:700;color:var(--text)">Relat&oacute;rios</div><div style="font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4">Gr&aacute;ficos, anual e export PDF</div></div></div>
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:11px;display:flex;align-items:flex-start;gap:9px"><span style="font-size:18px;line-height:1">&#x1F501;</span><div><div style="font-size:11px;font-weight:700;color:var(--text)">Recorrentes</div><div style="font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4">Gastos fixos autom&aacute;ticos</div></div></div>
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:11px;display:flex;align-items:flex-start;gap:9px"><span style="font-size:18px;line-height:1">&#x2601;&#xFE0F;</span><div><div style="font-size:11px;font-weight:700;color:var(--text)">Drive</div><div style="font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4">Sync em todos dispositivos</div></div></div>
+</div>`},
+  {label:'Passo 1 — Dashboard',html:`
+<div style="font-size:19px;font-weight:800;color:var(--text);margin-bottom:4px">&#x1F4CA; Tela principal</div>
+<div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px">O Dashboard re&uacute;ne o resumo financeiro do m&ecirc;s em tempo real.</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4C8;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">KPIs do m&ecirc;s</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Quatro cards no topo: <strong style="color:var(--jade)">Receitas</strong>, <strong style="color:var(--crimson)">Despesas</strong>, <strong style="color:var(--copper)">Fatura aberta</strong> e <strong style="color:var(--cobalt)">Saldo l&iacute;quido</strong>. Clique em qualquer um para ver os lan&ccedil;amentos relacionados.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F967;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Gr&aacute;fico de categorias</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Pizza interativa das despesas do m&ecirc;s. Clique numa fatia para filtrar os lan&ccedil;amentos por categoria.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4B0;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Meta de economia</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Card com o valor poupado no m&ecirc;s versus a meta definida. Clique em <em>Definir meta</em> para configurar.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4C5;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Proje&ccedil;&atilde;o de saldo</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Estima o saldo ao final do m&ecirc;s com base nas receitas e despesas lan&ccedil;adas at&eacute; agora.</div></div></div>
+</div>
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:11px 14px;display:flex;align-items:flex-start;gap:9px;margin-top:8px"><span style="font-size:14px;flex-shrink:0">&#x1F4A1;</span><div style="font-size:11px;color:var(--muted);line-height:1.6">O per&iacute;odo do Dashboard &eacute; sempre o <strong style="color:var(--text)">m&ecirc;s atual</strong>. Para navegar entre meses, use a tela <strong style="color:var(--text)">Lan&ccedil;amentos</strong>.</div></div>`},
+  {label:'Passo 2 — Lançamentos',html:`
+<div style="font-size:19px;font-weight:800;color:var(--text);margin-bottom:4px">&#x1F4B8; Tipos de lan&ccedil;amento</div>
+<div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px">Todo dinheiro que entra ou sai &eacute; registrado como um lan&ccedil;amento.</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="background:rgba(52,199,123,.07);border:1px solid rgba(52,199,123,.22);border-radius:11px;padding:13px">
+  <div style="font-size:12px;font-weight:700;color:var(--jade);margin-bottom:5px">&#x2191; Receita</div>
+  <div style="font-size:11px;color:var(--muted);line-height:1.6">Sal&aacute;rio, freelance, transfer&ecirc;ncia recebida, reembolso. <em>Aumenta o saldo da conta selecionada.</em></div>
+</div>
+<div style="background:rgba(217,95,95,.07);border:1px solid rgba(217,95,95,.22);border-radius:11px;padding:13px">
+  <div style="font-size:12px;font-weight:700;color:var(--crimson);margin-bottom:5px">&#x2193; Despesa</div>
+  <div style="font-size:11px;color:var(--muted);line-height:1.6">Aluguel, mercado, combust&iacute;vel, conta de luz. <em>Subtrai do saldo da conta selecionada.</em></div>
+</div>
+<div style="background:var(--copper-s);border:1px solid var(--copper-b);border-radius:11px;padding:13px">
+  <div style="font-size:12px;font-weight:700;color:var(--copper);margin-bottom:5px">&#x25AC; Cart&atilde;o de cr&eacute;dito</div>
+  <div style="font-size:11px;color:var(--muted);line-height:1.6">Compra parcelada ou &agrave; vista no cr&eacute;dito. <em>N&atilde;o sai do saldo agora &mdash; entra na fatura do cart&atilde;o.</em></div>
+</div>
+<div style="background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.22);border-radius:11px;padding:13px">
+  <div style="font-size:12px;font-weight:700;color:var(--cobalt);margin-bottom:5px">&#x21C4; Transfer&ecirc;ncia</div>
+  <div style="font-size:11px;color:var(--muted);line-height:1.6">Movimenta&ccedil;&atilde;o entre suas pr&oacute;prias contas (ex: Nubank para Itau). <em>Saldo total n&atilde;o muda.</em></div>
+</div>
+</div>`},
+  {label:'Passo 3 — Como lançar',html:`
+<div style="font-size:19px;font-weight:800;color:var(--text);margin-bottom:4px">&#x270D;&#xFE0F; Como lan&ccedil;ar</div>
+<div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px">Siga estes passos para registrar qualquer movimenta&ccedil;&atilde;o.</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">1</div><div style="font-size:11px;color:var(--muted);line-height:1.6;padding-top:3px">Pressione <kbd style="background:var(--s3);border:1px solid var(--edge2);padding:1px 6px;border-radius:4px;font-size:10px">N</kbd> ou clique em <strong style="color:var(--copper)">+ Novo lan&ccedil;amento</strong> no topo da tela.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">2</div><div style="font-size:11px;color:var(--muted);line-height:1.6;padding-top:3px">Escolha o tipo: <strong>Receita</strong>, <strong>Despesa</strong>, <strong>Cart&atilde;o</strong> ou <strong>Transfer&ecirc;ncia</strong>.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">3</div><div style="font-size:11px;color:var(--muted);line-height:1.6;padding-top:3px">Digite a <strong>descri&ccedil;&atilde;o</strong>. O app sugere a categoria com IA &mdash; clique na sugest&atilde;o para aceitar ou ignore.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">4</div><div style="font-size:11px;color:var(--muted);line-height:1.6;padding-top:3px">Preencha o <strong>valor</strong>, a <strong>data</strong>, a <strong>categoria</strong> e a <strong>conta</strong> (ou cart&atilde;o).</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">5</div><div style="font-size:11px;color:var(--muted);line-height:1.6;padding-top:3px">Se for cart&atilde;o: escolha o n&uacute;mero de <strong>parcelas</strong> (2&times; a 24&times;). O app cria uma entrada por parcela automaticamente com "Parcela X/Y" na descri&ccedil;&atilde;o.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">6</div><div style="font-size:11px;color:var(--muted);line-height:1.6;padding-top:3px">Adicione uma <strong>observa&ccedil;&atilde;o</strong> opcional &mdash; dividido com algu&eacute;m, reembolso pendente, n&uacute;mero de nota fiscal.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">7</div><div style="font-size:11px;color:var(--muted);line-height:1.6;padding-top:3px">Clique em <strong style="color:var(--copper)">Salvar lan&ccedil;amento</strong>. &#x2713;</div></div>
+</div>
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:11px 14px;display:flex;align-items:flex-start;gap:9px;margin-top:8px"><span style="font-size:14px;flex-shrink:0">&#x1F4A1;</span><div style="font-size:11px;color:var(--muted);line-height:1.6">Para <strong>editar</strong> um lan&ccedil;amento existente, clique na descri&ccedil;&atilde;o na tabela. Para <strong>excluir</strong>, abra o lan&ccedil;amento e clique em <em>Excluir lan&ccedil;amento</em>.</div></div>`},
+  {label:'Passo 4 — Recorrentes e Notas',html:`
+<div style="font-size:19px;font-weight:800;color:var(--text);margin-bottom:4px">&#x1F501; Recorrentes &amp; &#x1F4DD; Notas</div>
+<div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px">Dois recursos que tornam os lan&ccedil;amentos ainda mais poderosos.</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:11px;padding:14px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:18px">&#x1F501;</span><div style="font-size:13px;font-weight:700;color:var(--text)">Salvar como recorrente</div></div>
+  <div style="font-size:11px;color:var(--muted);line-height:1.7">Ative o checkbox <em>"Salvar como recorrente"</em> ao criar o lan&ccedil;amento. Ele reaparece todo m&ecirc;s na tela <strong style="color:var(--text)">Recorrentes</strong>, pronto para ser confirmado ou ignorado. Ideal para: aluguel, Netflix, academia, sal&aacute;rio fixo.</div>
+  <div style="margin-top:10px;background:var(--s3);border-radius:8px;padding:10px;border:1px solid var(--edge)">
+    <div style="font-size:10px;font-weight:700;color:var(--copper);margin-bottom:4px">TELA RECORRENTES</div>
+    <div style="font-size:11px;color:var(--muted);line-height:1.5">Lista todos os recorrentes do m&ecirc;s. Clique <strong>&#x25B6; Confirmar</strong> para lan&ccedil;ar ou <strong>Pular</strong> para ignorar.</div>
+  </div>
+</div>
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:11px;padding:14px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:18px">&#x1F4DD;</span><div style="font-size:13px;font-weight:700;color:var(--text)">Observa&ccedil;&atilde;o</div></div>
+  <div style="font-size:11px;color:var(--muted);line-height:1.7">Campo de texto livre por lan&ccedil;amento. Exemplos: "Dividiu com Jo&atilde;o", "Nota fiscal #4892", "Reembolso pendente at&eacute; dia 10". Aparece em it&aacute;lico sob a descri&ccedil;&atilde;o na tabela.</div>
+</div>
+</div>`},
+  {label:'Passo 5 — Contas',html:`
+<div style="font-size:19px;font-weight:800;color:var(--text);margin-bottom:4px">&#x1F3E6; Contas</div>
+<div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px">Cada conta representa onde voc&ecirc; guarda dinheiro: banco, carteira, poupan&ccedil;a.</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x2795;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Criar conta</div><div style="font-size:11px;color:var(--muted);line-height:1.6">V&aacute; em <strong style="color:var(--text)">Contas</strong> no menu &rarr; <em>+ Nova conta</em>. Informe: nome, tipo, &iacute;cone e <strong>saldo inicial</strong> (saldo real hoje).</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x2696;&#xFE0F;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Saldo autom&aacute;tico</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Receitas somam. Despesas subtraem. Transfer&ecirc;ncias redistribuem entre contas. O saldo &eacute; calculado em tempo real.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F5C2;&#xFE0F;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Tipos de conta</div><div style="font-size:11px;color:var(--muted);line-height:1.6"><span style="color:var(--text)">Corrente</span> &mdash; conta banc&aacute;ria cotidiana.<br><span style="color:var(--text)">Poupan&ccedil;a</span> &mdash; reserva de emerg&ecirc;ncia.<br><span style="color:var(--text)">Carteira</span> &mdash; dinheiro f&iacute;sico.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x270F;&#xFE0F;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Editar / Excluir</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Clique no &iacute;cone de l&aacute;pis na linha da conta. Para excluir, a conta n&atilde;o pode ter lan&ccedil;amentos vinculados.</div></div></div>
+</div>
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:11px 14px;display:flex;align-items:flex-start;gap:9px;margin-top:8px"><span style="font-size:14px;flex-shrink:0">&#x1F4A1;</span><div style="font-size:11px;color:var(--muted);line-height:1.6">O <strong style="color:var(--text)">saldo inicial</strong> deve ser o valor que voc&ecirc; tem na conta <em>hoje</em>, antes de qualquer lan&ccedil;amento. N&atilde;o insira como receita.</div></div>`},
+  {label:'Passo 6 — Cartões',html:`
+<div style="font-size:19px;font-weight:800;color:var(--text);margin-bottom:4px">&#x1F4B3; Cart&otilde;es de cr&eacute;dito</div>
+<div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px">Controle a fatura de cada cart&atilde;o sem misturar com o saldo banc&aacute;rio.</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:11px;padding:14px">
+  <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">Campos ao cadastrar</div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;gap:10px;align-items:flex-start"><div style="background:var(--copper);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">Limite</div><div style="font-size:11px;color:var(--muted);line-height:1.5">Limite total do cart&atilde;o. Mostra quanto ainda est&aacute; dispon&iacute;vel.</div></div>
+    <div style="display:flex;gap:10px;align-items:flex-start"><div style="background:var(--cobalt);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">Fechamento</div><div style="font-size:11px;color:var(--muted);line-height:1.5">Dia em que a fatura fecha. Compras ap&oacute;s essa data entram no ciclo seguinte.</div></div>
+    <div style="display:flex;gap:10px;align-items:flex-start"><div style="background:var(--crimson);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;color:#fff;flex-shrink:0">Vencimento</div><div style="font-size:11px;color:var(--muted);line-height:1.5">Dia em que voc&ecirc; paga. O app alerta quando o vencimento est&aacute; pr&oacute;ximo.</div></div>
+  </div>
+</div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4CB;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Fatura aberta vs. anterior</div><div style="font-size:11px;color:var(--muted);line-height:1.6"><strong style="color:var(--text)">Aberta</strong>: ciclo atual, n&atilde;o fechado. <strong style="color:var(--text)">Anterior</strong>: ciclo fechado, dispon&iacute;vel para confer&ecirc;ncia e pagamento.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4B5;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Pagar a fatura</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Registre o pagamento como uma <strong>Despesa</strong> na conta banc&aacute;ria, categoria <em>Fatura cart&atilde;o</em>. Isso deduz do saldo da conta.</div></div></div>
+</div>`},
+  {label:'Passo 7 — Orçamentos',html:`
+<div style="font-size:19px;font-weight:800;color:var(--text);margin-bottom:4px">&#x1F3AF; Or&ccedil;amentos</div>
+<div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px">Defina limites de gasto por categoria e acompanhe em tempo real.</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:11px;padding:14px">
+  <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">Como configurar</div>
+  <div style="display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">1</div><div style="font-size:11px;color:var(--muted);line-height:1.6;padding-top:3px">V&aacute; em <strong style="color:var(--text)">Or&ccedil;amentos</strong> no menu lateral.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">2</div><div style="font-size:11px;color:var(--muted);line-height:1.6;padding-top:3px">Clique em <strong style="color:var(--copper)">+ Novo or&ccedil;amento</strong>.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">3</div><div style="font-size:11px;color:var(--muted);line-height:1.6;padding-top:3px">Escolha a <strong>categoria</strong> e defina o <strong>limite mensal</strong> em R$.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">4</div><div style="font-size:11px;color:var(--muted);line-height:1.6;padding-top:3px">O app soma despesas + cart&atilde;o da categoria e exibe barra de progresso.</div></div>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+  <div style="background:rgba(52,199,123,.1);border:1px solid rgba(52,199,123,.25);border-radius:9px;padding:10px;text-align:center"><div style="font-size:16px">&#x1F7E2;</div><div style="font-size:10px;color:var(--jade);font-weight:700;margin-top:4px">Dentro</div><div style="font-size:10px;color:var(--muted);margin-top:2px">&lt; 75%</div></div>
+  <div style="background:rgba(232,168,56,.1);border:1px solid rgba(232,168,56,.25);border-radius:9px;padding:10px;text-align:center"><div style="font-size:16px">&#x1F7E1;</div><div style="font-size:10px;color:var(--copper);font-weight:700;margin-top:4px">Aten&ccedil;&atilde;o</div><div style="font-size:10px;color:var(--muted);margin-top:2px">75-100%</div></div>
+  <div style="background:rgba(217,95,95,.1);border:1px solid rgba(217,95,95,.25);border-radius:9px;padding:10px;text-align:center"><div style="font-size:16px">&#x1F534;</div><div style="font-size:10px;color:var(--crimson);font-weight:700;margin-top:4px">Estourou</div><div style="font-size:10px;color:var(--muted);margin-top:2px">&gt; 100%</div></div>
+</div>
+</div>
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:11px 14px;display:flex;align-items:flex-start;gap:9px;margin-top:8px"><span style="font-size:14px;flex-shrink:0">&#x1F4A1;</span><div style="font-size:11px;color:var(--muted);line-height:1.6">Or&ccedil;amentos valem para o m&ecirc;s corrente. Um novo m&ecirc;s zera os contadores automaticamente.</div></div>`},
+  {label:'Passo 8 — Meta & Projeção',html:`
+<div style="font-size:19px;font-weight:800;color:var(--text);margin-bottom:4px">&#x1F4B0; Meta &amp; Proje&ccedil;&atilde;o</div>
+<div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px">Saiba se est&aacute; guardando o suficiente e para onde o saldo est&aacute; caminhando.</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:11px;padding:14px">
+  <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">&#x1F4B0; Meta de economia</div>
+  <div style="font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:10px">C&aacute;lculo: <strong style="color:var(--jade)">Receitas</strong> &minus; <strong style="color:var(--crimson)">Despesas</strong> &minus; <strong style="color:var(--copper)">Gastos no cart&atilde;o</strong> = <strong style="color:var(--text)">Saldo do m&ecirc;s</strong>. Se saldo &ge; meta &rarr; &#x2705; Meta batida.</div>
+  <div style="background:var(--s3);border-radius:8px;padding:10px;border:1px solid var(--edge);font-size:11px;color:var(--muted)">Configure clicando em <em style="color:var(--copper)">Definir meta</em> no card do Dashboard.</div>
+</div>
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:11px;padding:14px">
+  <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">&#x1F4C5; Proje&ccedil;&atilde;o de saldo</div>
+  <div style="font-size:11px;color:var(--muted);line-height:1.7">Estima o saldo no final do m&ecirc;s com base no ritmo atual de gastos. Vis&iacute;vel na tela <strong style="color:var(--text)">Dashboard &rarr; Proje&ccedil;&atilde;o</strong>. &Uacute;til para identificar m&ecirc;ses deficit&aacute;rios com anteced&ecirc;ncia.</div>
+</div>
+</div>`},
+  {label:'Passo 9 — Relatórios',html:`
+<div style="font-size:19px;font-weight:800;color:var(--text);margin-bottom:4px">&#x1F4CA; Relat&oacute;rios</div>
+<div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px">An&aacute;lise profunda das suas finan&ccedil;as &mdash; mensal, anual e export&aacute;vel.</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4C5;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Mensal</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Gr&aacute;fico de barras com receitas e despesas de cada m&ecirc;s do ano. Navegue com as setas <strong style="color:var(--text)">&lsaquo; &rsaquo;</strong> para ver outros anos.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4C6;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Anual</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Vis&atilde;o do ano inteiro: KPIs consolidados, total de receitas, despesas, economia e maiores categorias de gasto. Navegue entre anos com <strong style="color:var(--text)">&lsaquo; &rsaquo;</strong>.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x2B07;&#xFE0F;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Exportar PDF</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Clique em <strong style="color:var(--copper)">&darr; Exportar PDF</strong> na tela Anual. Uma janela de impress&atilde;o abre com o relat&oacute;rio formatado. Salve como PDF ou imprima.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F967;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Categorias</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Pizza interativa no Dashboard. Clique numa fatia para filtrar os lan&ccedil;amentos da categoria no m&ecirc;s.</div></div></div>
+</div>
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:11px 14px;display:flex;align-items:flex-start;gap:9px;margin-top:8px"><span style="font-size:14px;flex-shrink:0">&#x1F4A1;</span><div style="font-size:11px;color:var(--muted);line-height:1.6">O relat&oacute;rio anual exportado inclui: KPIs do ano, tabela m&ecirc;s a m&ecirc;s com receitas/despesas/saldo e top categorias de gasto.</div></div>`},
+  {label:'Passo 10 — Drive',html:`
+<div style="font-size:19px;font-weight:800;color:var(--text);margin-bottom:4px">&#x2601;&#xFE0F; Sincroniza&ccedil;&atilde;o</div>
+<div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px">Seus dados seguros na nuvem e sincronizados entre Desktop e Mobile.</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="background:var(--s2);border:1px solid var(--edge);border-radius:11px;padding:14px">
+  <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">Como ativar</div>
+  <div style="display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">1</div><div style="font-size:11px;color:var(--muted);line-height:1.6;padding-top:3px">V&aacute; em <strong style="color:var(--text)">Configura&ccedil;&otilde;es &rarr; Sincroniza&ccedil;&atilde;o</strong>.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">2</div><div style="font-size:11px;color:var(--muted);line-height:1.6;padding-top:3px">Clique em <strong style="color:var(--copper)">&#x2601; Conectar com Google Drive</strong>.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">3</div><div style="font-size:11px;color:var(--muted);line-height:1.6;padding-top:3px">Fa&ccedil;a login com sua conta Google e autorize o acesso.</div></div>
+<div style="display:flex;align-items:flex-start;gap:10px"><div style="width:22px;height:22px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">4</div><div style="font-size:11px;color:var(--muted);line-height:1.6;padding-top:3px">Pronto &mdash; sync autom&aacute;tico a cada 90 segundos. Indicador verde no topo quando sincronizado.</div></div>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F510;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Privacidade</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Seus dados ficam em um arquivo privado no <em>seu</em> Google Drive. Nenhum servidor externo armazena seus dados.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F504;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Merge inteligente</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Se voc&ecirc; editar no celular e no desktop simultaneamente, o sistema mescla as altera&ccedil;&otilde;es sem conflito.</div></div></div>
+</div>
+</div>`},
+  {label:'Passo 11 — Configurações',html:`
+<div style="font-size:19px;font-weight:800;color:var(--text);margin-bottom:4px">&#x2699;&#xFE0F; Configura&ccedil;&otilde;es</div>
+<div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px">Personalize o app do jeito que preferir.</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F3A8;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Tema visual</div><div style="font-size:11px;color:var(--muted);line-height:1.6">5 temas: Escuro (padr&atilde;o), Claro, Violeta, Esmeralda e Magenta. Em <strong style="color:var(--text)">Configura&ccedil;&otilde;es &rarr; Apar&ecirc;ncia</strong>.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F524;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Tamanho de fonte</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Ajuste o zoom geral de 80% a 130% para melhor legibilidade.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F5C2;&#xFE0F;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Categorias</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Edite nomes e &iacute;cones das categorias em <strong style="color:var(--text)">Configura&ccedil;&otilde;es &rarr; Categorias</strong>.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4E4;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Exportar dados</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Backup completo dos seus dados em JSON em <strong style="color:var(--text)">Configura&ccedil;&otilde;es &rarr; Dados</strong>.</div></div></div>
+<div style="display:flex;align-items:flex-start;gap:12px;background:var(--s2);border:1px solid var(--edge);border-radius:10px;padding:12px"><span style="font-size:20px;line-height:1;flex-shrink:0">&#x1F4D6;</span><div><div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px">Manual avan&ccedil;ado</div><div style="font-size:11px;color:var(--muted);line-height:1.6">Documenta&ccedil;&atilde;o t&eacute;cnica completa em <strong style="color:var(--text)">Configura&ccedil;&otilde;es &rarr; Ajuda &rarr; Manual Avan&ccedil;ado</strong>.</div></div></div>
+</div>
+<div style="background:rgba(52,199,123,.08);border:1px solid rgba(52,199,123,.2);border-radius:11px;padding:14px;margin-top:4px;text-align:center">
+  <div style="font-size:22px;margin-bottom:8px">&#x1F389;</div>
+  <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">Voc&ecirc; est&aacute; pronto!</div>
+  <div style="font-size:11px;color:var(--muted);line-height:1.7">Comece adicionando suas contas e o primeiro lan&ccedil;amento.<br>Em caso de d&uacute;vida, abra o <strong style="color:var(--text)">Manual Avan&ccedil;ado</strong> a qualquer momento.</div>
+</div>`},
 ];
 
 // ── MANUAL AVANÇADO ──────────────────────────────────────────
@@ -3768,16 +4638,24 @@ function obRender(){
   const total=OB_STEPS.length;
   document.getElementById('ob-step-lbl').textContent=step.label;
   document.getElementById('ob-progress').style.width=((_obStep+1)/total*100)+'%';
-  document.getElementById('ob-content').innerHTML=step.html;
+  const content=document.getElementById('ob-content');
+  content.innerHTML=step.html;
+  content.scrollTop=0;
+  const dotsEl=document.getElementById('ob-dots');
+  if(dotsEl){
+    dotsEl.innerHTML=OB_STEPS.map((_,i)=>
+      `<div onclick="jumpOb(${i})" style="width:${i===_obStep?18:6}px;height:6px;border-radius:3px;background:${i===_obStep?'var(--copper)':'var(--edge2)'};cursor:pointer;transition:all .3s ease;flex-shrink:0"></div>`
+    ).join('');
+  }
   const isLast=_obStep===total-1;
   const isFirst=_obStep===0;
-  const backBtn=document.getElementById('ob-back');
+  document.getElementById('ob-back').style.visibility=isFirst?'hidden':'visible';
   const nextBtn=document.getElementById('ob-next');
-  backBtn.style.visibility=isFirst?'hidden':'visible';
-  nextBtn.textContent=isLast?'Fechar':(_obStep===0?'Começar tour →':'Próximo →');
+  nextBtn.innerHTML=isLast?'&#x2714; Conclu&#xED;r':(_obStep===0?'Come&#xE7;ar &#x2192;':'Pr&#xF3;ximo &#x2192;');
   if(isLast){nextBtn.onclick=closeOnboarding;}
   else{nextBtn.onclick=()=>obStep(1);}
 }
+function jumpOb(i){_obStep=i;obRender();}
 </script>
 
 <!-- RECURRING REMINDER MODAL -->
