@@ -2337,7 +2337,7 @@ function delTx(id){
 function getPendingRecurring() {
   return D.recurring.filter(r=>{
     const alreadyLaunched=D.transactions.some(t=>
-      t.recurringId===r.id && inM(t));
+      t.recurrentId===r.id && inM(t));
     return !alreadyLaunched;
   });
 }
@@ -2374,7 +2374,7 @@ function launchRecurring(id) {
   } else {
     const d=new Date(curY,curM,r.day);
     D.transactions.push({id:uid(),type:r.type,desc:r.desc,amount:r.amount,skipped:false,
-      date:d.toISOString().slice(0,10),cat:r.cat,accountId:1,cardId:null,installments:1,recurringId:id});
+      date:d.toISOString().slice(0,10),cat:r.cat,accountId:r.accountId||1,cardId:r.cardId||null,installments:1,recurrentId:id});
     save(); render(); toast(`✓ ${r.desc} lançado`);
   }
 }
@@ -2384,7 +2384,7 @@ function confirmRecAmt() {
   const r=D.recurring.find(x=>x.id===id); if(!r||!amt) return;
   const d=new Date(curY,curM,r.day);
   D.transactions.push({id:uid(),type:r.type,desc:r.desc,amount:amt,
-    date:d.toISOString().slice(0,10),cat:r.cat,accountId:1,cardId:null,installments:1,recurringId:id});
+    date:d.toISOString().slice(0,10),cat:r.cat,accountId:r.accountId||1,cardId:r.cardId||null,installments:1,recurrentId:id});
   save(); closeOv('ov-confirm-rec'); render(); toast(`✓ ${r.desc} lançado com ${fmt(amt)}`);
 }
 function delRecurring(id){showConfirm('Remover este recorrente?',()=>{markDeleted(id);D.recurring=D.recurring.filter(r=>String(r.id)!==String(id));save();renderRecurring();toast('Recorrente removido');});}
@@ -3416,10 +3416,10 @@ function exportReport(format){
     const incCats=Object.entries(incMap).sort((a,b)=>b[1]-a[1]);
     // Budgets
     const budRows=D.budgets.map(b=>{
-      const spent=txs.filter(t=>t.cat===b.cat&&t.type!=='income'&&t.type!=='transfer').reduce((a,t)=>a+t.amount,0);
+      const spent=txs.filter(t=>t.cat===b.category&&t.type!=='income'&&t.type!=='transfer').reduce((a,t)=>a+t.amount,0);
       const pct=b.limit>0?Math.min(100,spent/b.limit*100):0;
       const ok=spent<=b.limit;
-      return{cat:b.cat,spent,limit:b.limit,pct,ok};
+      return{cat:b.category,spent,limit:b.limit,pct,ok};
     }).filter(b=>b.spent>0||b.limit>0);
     // Card fatura summary
     const cardRows=D.cards.map(c=>{
@@ -3512,7 +3512,7 @@ ${incCats.length?incCats.map(([cat,val])=>`<div class="cat-row">
 
 ${budRows.length?`<h2>Orçamentos</h2>
 ${budRows.map(b=>`<div class="bud-row">
-  <div class="bud-name">${ICONS[b.cat]||'·'} ${b.cat}</div>
+  <div class="bud-name">${ICONS[b.category]||'·'} ${b.category}</div>
   <div class="bud-bar-wrap"><div class="bud-fill" style="width:${b.pct}%;background:${b.ok?'#16a34a':'#dc2626'}"></div></div>
   <div class="bud-vals">${fmt(b.spent)} de ${fmt(b.limit)} (${b.pct.toFixed(0)}%) ${b.ok?'✓':'⚠'}</div>
 </div>`).join('')}`:''}
@@ -3971,9 +3971,9 @@ function checkDashNotifs(){
   });
   // Orçamentos esgotados
   D.budgets.forEach(b=>{
-    const spent=D.transactions.filter(t=>inM(t)&&t.cat===b.cat&&t.type!=='income'&&t.type!=='transfer').reduce((a,t)=>a+t.amount,0);
+    const spent=D.transactions.filter(t=>inM(t)&&t.cat===b.category&&t.type!=='income'&&t.type!=='transfer').reduce((a,t)=>a+t.amount,0);
     if(b.limit>0&&spent>=b.limit){
-      try{new Notification(`⚠️ Orçamento esgotado: ${b.cat}`,{body:`Gasto: ${fmt(spent)} de ${fmt(b.limit)}`,icon:'./icon.svg',tag:`budget-${b.id}-${todayKey}`});}catch(e){}
+      try{new Notification(`⚠️ Orçamento esgotado: ${b.category}`,{body:`Gasto: ${fmt(spent)} de ${fmt(b.limit)}`,icon:'./icon.svg',tag:`budget-${b.id}-${todayKey}`});}catch(e){}
     }
   });
   // Recorrentes pendentes este mês
@@ -4019,8 +4019,8 @@ function runSearch(){
     hits.push(`<div class="sr-row" onclick="goTo('metas',document.querySelector('[data-lid=metas]'));closeSearch();"><span class="sr-ico">${g.icon||'🎯'}</span><div class="sr-main"><div class="sr-name">${g.name}</div><div class="sr-sub">Meta · ${pct}% concluída</div></div><div class="sr-val vt">${fmt(g.current)}</div></div>`);
   });
   // Orçamentos
-  D.budgets.filter(b=>b.cat?.toLowerCase().includes(q)).forEach(b=>{
-    hits.push(`<div class="sr-row" onclick="goTo('orcamentos',document.querySelector('[data-lid=orcamentos]'));closeSearch();"><span class="sr-ico">📊</span><div class="sr-main"><div class="sr-name">${b.cat}</div><div class="sr-sub">Orçamento mensal</div></div><div class="sr-val">${fmt(b.limit)}</div></div>`);
+  D.budgets.filter(b=>b.category?.toLowerCase().includes(q)).forEach(b=>{
+    hits.push(`<div class="sr-row" onclick="goTo('orcamentos',document.querySelector('[data-lid=orcamentos]'));closeSearch();"><span class="sr-ico">📊</span><div class="sr-main"><div class="sr-name">${b.category}</div><div class="sr-sub">Orçamento mensal</div></div><div class="sr-val">${fmt(b.limit)}</div></div>`);
   });
   // Cartões
   D.cards.filter(c=>c.name?.toLowerCase().includes(q)).forEach(c=>{

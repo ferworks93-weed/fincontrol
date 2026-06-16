@@ -1592,7 +1592,7 @@ function confirmRec(id){
   let amount=r.amount;
   if(r.variable){amount=parseFloat(document.getElementById('rcv-'+id)?.value);if(!amount||isNaN(amount)){toast('⚠️ Informe o valor');return;}}
   const d=`${curY}-${String(curM+1).padStart(2,'0')}-${String(r.day).padStart(2,'0')}`;
-  D.transactions.push({id:uid(),type:r.type,desc:r.desc,amount,date:d,cat:r.cat,cardId:r.cardId||null,accountId:r.type!=='card'?1:null,installments:1,recurrentId:r.id});
+  D.transactions.push({id:uid(),type:r.type,desc:r.desc,amount,date:d,cat:r.cat,cardId:r.cardId||null,accountId:r.type!=="card"?(r.accountId||1):null,cardId:r.type==="card"?(r.cardId||null):null,installments:1,recurrentId:r.id});
   save();document.getElementById('rc-list').innerHTML=buildRecConfirm();renderPage(curPg);toast(`✅ ${r.desc} — ${f(amount)}`);
 }
 function skipRec(id){
@@ -1605,7 +1605,7 @@ function confirmAllFixed(){
   const launched=new Set(D.transactions.filter(t=>inM(t)&&t.recurrentId).map(t=>t.recurrentId));
   const pending=D.recurrents.filter(r=>r.active&&!launched.has(r.id)&&!r.variable);
   if(!pending.length){toast('Nenhum lançamento fixo pendente');return;}
-  pending.forEach(r=>{const d=`${curY}-${String(curM+1).padStart(2,'0')}-${String(r.day).padStart(2,'0')}`;D.transactions.push({id:uid(),type:r.type,desc:r.desc,amount:r.amount,date:d,cat:r.cat,cardId:r.cardId||null,accountId:r.type!=='card'?1:null,installments:1,recurrentId:r.id});});
+  pending.forEach(r=>{const d=`${curY}-${String(curM+1).padStart(2,'0')}-${String(r.day).padStart(2,'0')}`;D.transactions.push({id:uid(),type:r.type,desc:r.desc,amount:r.amount,date:d,cat:r.cat,cardId:r.cardId||null,accountId:r.type!=="card"?(r.accountId||1):null,cardId:r.type==="card"?(r.cardId||null):null,installments:1,recurrentId:r.id});});
   save();document.getElementById('rc-list').innerHTML=buildRecConfirm();renderPage(curPg);toast(`✅ ${pending.length} lançamentos confirmados`);
 }
 
@@ -1713,7 +1713,7 @@ function updateTxUI(){
 // SAVES
 // ════════════════════════════════════════════
 function editTx(id){
-  const t=D.transactions.find(x=>x.id==id);if(!t)return;
+  const t=D.transactions.find(x=>String(x.id)===String(id));if(!t)return;
   const ov=document.getElementById('ov-tx');
   ov.dataset.editId=id;
   document.getElementById('sheet-tx-title').textContent='Editar lançamento';
@@ -1754,7 +1754,7 @@ function saveTx(){
       if(accFrom)accFrom.balance-=amount;
       if(accTo)accTo.balance+=amount;
     } else {
-      const idx=D.transactions.findIndex(x=>x.id==editId);
+      const idx=D.transactions.findIndex(x=>String(x.id)===String(editId));
       if(idx>=0)D.transactions[idx]={...D.transactions[idx],desc,amount,date,accountId:fromId,toAccountId:toId};
       document.getElementById('ov-tx').dataset.editId='';
     }
@@ -1767,7 +1767,7 @@ function saveTx(){
   const cardId=selTypeV==='card'?parseInt(document.getElementById('tx-card-sel').value)||null:null;
   const installments=selTypeV==='card'?parseInt(document.getElementById('tx-install').value)||1:1;
   if(editId){
-    const idx=D.transactions.findIndex(x=>x.id==editId);
+    const idx=D.transactions.findIndex(x=>String(x.id)===String(editId));
     if(idx>=0)D.transactions[idx]={...D.transactions[idx],type:selTypeV,desc,amount,date,cat,cardId,accountId,note};
     document.getElementById('ov-tx').dataset.editId='';
   } else {
@@ -2364,9 +2364,9 @@ function checkCardNotifs(){
   });
   // Orçamentos esgotados
   D.budgets.forEach(b=>{
-    const spent=D.transactions.filter(t=>inM(t)&&t.cat===b.cat&&t.type!=='income'&&t.type!=='transfer'&&!t.skipped).reduce((a,t)=>a+t.amount,0);
+    const spent=D.transactions.filter(t=>inM(t)&&t.cat===b.category&&t.type!=='income'&&t.type!=='transfer'&&!t.skipped).reduce((a,t)=>a+t.amount,0);
     if(b.limit>0&&spent>=b.limit){
-      try{new Notification(`⚠️ Orçamento esgotado: ${b.cat}`,{body:`Gasto: ${f(spent)} de ${f(b.limit)}`,icon:'./icon.svg',tag:`budget-${b.id}-${todayKey}`});}catch(e){}
+      try{new Notification(`⚠️ Orçamento esgotado: ${b.category}`,{body:`Gasto: ${f(spent)} de ${f(b.limit)}`,icon:'./icon.svg',tag:`budget-${b.id}-${todayKey}`});}catch(e){}
     }
   });
   // Recorrentes pendentes
