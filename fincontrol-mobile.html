@@ -2593,30 +2593,34 @@ async function _driveSync(){
   try{
     setSyncStatus('busy','Sincronizando com Drive…');
     let fileId=D.meta.driveFileId||localStorage.getItem(DRIVE_KEY);
-    if(!fileId)fileId=await _driveFindFile();
-    if(fileId){
-      const rawRemote=await _driveDownload(fileId);
-      const remote=rawRemote?.fc_encrypted?await _decryptFromDrive(rawRemote):rawRemote;
-      if(remote?.meta){
-        const prev=JSON.stringify({t:D.transactions?.length,c:D.cards?.length});
-        D=mobileAdapt(mergeDatasets(D,remote));
-        const next=JSON.stringify({t:D.transactions?.length,c:D.cards?.length});
-        if(prev!==next){renderPage(curPg);toast('☁ Dados mesclados do Drive');}
-      }
+        if(fileId){
+      try{
+        const rawRemote=await _driveDownload(fileId);
+        const remote=rawRemote?.fc_encrypted?await _decryptFromDrive(rawRemote):rawRemote;
+        if(remote?.meta){
+          const prev=JSON.stringify({t:D.transactions?.length,c:D.cards?.length});
+          D=mobileAdapt(mergeDatasets(D,remote));
+          const next=JSON.stringify({t:D.transactions?.length,c:D.cards?.length});
+          if(prev!==next){renderPage(curPg);toast('☁ Dados mesclados do Drive');}
+        }
+      }catch(de){if(!de.message?.includes('HTTP 404'))throw de;fileId=null;D.meta.driveFileId=null;localStorage.removeItem(DRIVE_KEY);}
     }
+    if(!fileId)fileId=await _driveFindFile();
     D.meta.lastSync=new Date().toISOString();
     D.meta.driveFileId=fileId||null;
     save();
     const payload=await _encryptForDrive(D);
-    if(fileId){await _driveUpdate(fileId,payload);}
-    else{fileId=await _driveCreate(payload);D.meta.driveFileId=fileId;save();}
+    if(fileId){
+      try{await _driveUpdate(fileId,payload);}
+      catch(ue){if(!ue.message?.includes('HTTP 404'))throw ue;fileId=await _driveCreate(payload);D.meta.driveFileId=fileId;save();}
+    }else{fileId=await _driveCreate(payload);D.meta.driveFileId=fileId;save();}
     localStorage.setItem(DRIVE_KEY,fileId);
     const t=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     setSyncStatus('ok',`Drive ☁ ${_cryptoKey?'🔐 ':''}${t}`);
   }catch(e){
     if(e.message==='__refresh__')return;
     console.error('Drive sync:',e);
-    setSyncStatus('error','Erro no sync');
+    setSyncStatus('error','Sync: '+e.message.slice(0,50));
     toast('⚠️ '+e.message);
   }
 }
