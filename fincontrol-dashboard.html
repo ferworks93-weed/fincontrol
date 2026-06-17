@@ -1617,9 +1617,9 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
 </div></div>
 
 <!-- Goal -->
-<div class="ov" id="ov-goal" onclick="closeOv('ov-goal',event)">
+<div class="ov" id="ov-goal" data-edit-id="" onclick="closeOv('ov-goal',event)">
 <div class="modal" onclick="event.stopPropagation()">
-  <div class="modal-hd"><div class="modal-title">Nova meta</div><button class="modal-x" onclick="closeOv('ov-goal')">✕</button></div>
+  <div class="modal-hd"><div class="modal-title" id="gl-modal-title">Nova meta</div><button class="modal-x" onclick="closeOv('ov-goal')">✕</button></div>
   <div class="fg-row">
     <div class="fg"><label class="fl">Nome</label><input class="fi" id="gl-name" placeholder="Ex: Reserva de emergência"></div>
     <div class="fg"><label class="fl">Ícone</label><input class="fi" id="gl-icon" placeholder="🎯" maxlength="4"></div>
@@ -1629,6 +1629,7 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
     <div class="fg"><label class="fl">Valor atual (R$)</label><input class="fi" id="gl-current" type="number" placeholder="0"></div>
   </div>
   <div class="fg"><label class="fl">Prazo</label><input class="fi" id="gl-deadline" type="date"></div>
+  <button id="gl-del-btn" class="btn danger" style="width:100%;padding:9px;font-size:12px;display:none;margin-bottom:6px" onclick="delGoalEdit()">Excluir meta</button>
   <button class="btn pri" style="width:100%;padding:9px;font-size:12px" onclick="saveGoal()">Salvar meta</button>
 </div></div>
 
@@ -2588,6 +2589,7 @@ function renderGoals(){
         <div><div class="goal-name" style="font-size:13px">${g.name}</div><div style="font-size:10px;color:var(--tm);margin-top:2px">Prazo: ${dStr(g.deadline)}</div></div>
         <div style="display:flex;align-items:center;gap:8px">
           <div style="font-size:20px">${g.icon}</div>
+          <button onclick="editGoal('${g.id}')" class="btn sm ghost" style="font-size:10px">✎</button>
           <button onclick="delGoal('${g.id}')" class="btn sm danger">✕</button>
         </div>
       </div>
@@ -3034,7 +3036,7 @@ function openMod(type,sub=null){
   if(type==='account')   {const ov=document.getElementById('ov-account');ov.dataset.editId='';document.getElementById('modal-acc-title').textContent='Nova conta';document.getElementById('acc-name').value='';document.getElementById('acc-type').value='checking';document.getElementById('acc-bal').value='';document.getElementById('acc-color').value='#4f8ef7';openOv('ov-account');}
   if(type==='transfer')  {prepTransfer();openOv('ov-transfer');}
   if(type==='budget')    {prepBudget();openOv('ov-budget');}
-  if(type==='goal')      {document.getElementById('gl-deadline').value=new Date().toISOString().slice(0,10);openOv('ov-goal');}
+  if(type==='goal')      {const gOv=document.getElementById('ov-goal');gOv.dataset.editId='';document.getElementById('gl-modal-title').textContent='Nova meta';document.getElementById('gl-del-btn').style.display='none';['gl-name','gl-icon','gl-target','gl-current'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('gl-deadline').value=new Date().toISOString().slice(0,10);openOv('ov-goal');}
   if(type==='card')      {document.getElementById('ov-card').dataset.editId='';document.getElementById('cd-modal-title').textContent='Novo cartão';['cd-name','cd-lim','cd-close','cd-due'].forEach(id=>document.getElementById(id).value='');openOv('ov-card');}
   if(type==='invest')    {const ov=document.getElementById('ov-invest');ov.dataset.editId='';document.getElementById('modal-invest-title').textContent='Novo ativo';document.getElementById('iv-init-grp').style.display='';document.getElementById('iv-name').value='';document.getElementById('iv-ret').value='';document.getElementById('iv-init').value='';openOv('ov-invest');}
   if(type==='invest-op') {ivOpKind=sub||'aporte';document.getElementById('iv-op-title').textContent=sub==='resgate'?'Registrar resgate':'Registrar aporte';document.getElementById('iv-op-date').value=new Date().toISOString().slice(0,10);const sel=document.getElementById('iv-op-inv');sel.innerHTML=D.investments.map(i=>`<option value="${i.id}">${i.name}</option>`).join('');openOv('ov-invest-op');}
@@ -3184,7 +3186,9 @@ function saveTx(){
       const aF=D.accounts.find(a=>a.id===from);const aT=D.accounts.find(a=>a.id===to);
       if(aF)aF.balance-=amount;if(aT)aT.balance+=amount;
     } else {
+      if(old&&old.accountId&&old.type!=='card'){const oA=D.accounts.find(a=>a.id===old.accountId);if(oA)oA.balance+=old.type==='income'?-old.amount:old.amount;}
       if(idx>=0) D.transactions[idx]={...D.transactions[idx],desc,amount,date,cat,note,accountId,cardId};
+      if(accountId&&selType!=='card'){const nA=D.accounts.find(a=>a.id===accountId);if(nA)nA.balance+=selType==='income'?amount:-amount;}
     }
     document.getElementById('ov-tx').dataset.editId='';
     save();closeOv('ov-tx');render();toast('✓ Lançamento atualizado');return;
@@ -3305,8 +3309,36 @@ function saveGoal(){
   const current=parseFloat(document.getElementById('gl-current').value)||0;
   const deadline=document.getElementById('gl-deadline').value;
   if(!name||!target){toast('⚠ Preencha os campos');return;}
-  D.goals.push({id:uid(),name,icon,target,current,deadline});
-  save();closeOv('ov-goal');render();toast('✓ Meta salva');
+  const editId=document.getElementById('ov-goal').dataset.editId;
+  if(editId){
+    const g=D.goals.find(x=>String(x.id)===String(editId));
+    if(g){g.name=name;g.icon=icon;g.target=target;g.current=current;g.deadline=deadline;}
+    document.getElementById('ov-goal').dataset.editId='';
+    save();closeOv('ov-goal');render();toast('✓ Meta atualizada');
+  }else{
+    D.goals.push({id:uid(),name,icon,target,current,deadline});
+    save();closeOv('ov-goal');render();toast('✓ Meta salva');
+  }
+}
+function editGoal(id){
+  const g=D.goals.find(x=>String(x.id)===String(id));if(!g)return;
+  document.getElementById('ov-goal').dataset.editId=id;
+  document.getElementById('gl-modal-title').textContent='Editar meta';
+  document.getElementById('gl-del-btn').style.display='block';
+  document.getElementById('gl-name').value=g.name||'';
+  document.getElementById('gl-icon').value=g.icon||'🎯';
+  document.getElementById('gl-target').value=g.target||0;
+  document.getElementById('gl-current').value=g.current||0;
+  document.getElementById('gl-deadline').value=g.deadline||'';
+  openOv('ov-goal');
+}
+function delGoalEdit(){
+  const id=document.getElementById('ov-goal').dataset.editId;if(!id)return;
+  showConfirm('Remover esta meta?',()=>{
+    markDeleted(id);D.goals=D.goals.filter(g=>String(g.id)!==String(id));
+    document.getElementById('ov-goal').dataset.editId='';
+    save();closeOv('ov-goal');render();toast('Meta removida');
+  },{title:'Remover meta',btnLabel:'Remover'});
 }
 
 function editCard(id){

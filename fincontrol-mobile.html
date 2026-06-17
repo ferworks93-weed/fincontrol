@@ -1604,7 +1604,7 @@ function confirmRec(id){
   let amount=r.amount;
   if(r.variable){amount=parseFloat(document.getElementById('rcv-'+id)?.value);if(!amount||isNaN(amount)){toast('⚠️ Informe o valor');return;}}
   const d=`${curY}-${String(curM+1).padStart(2,'0')}-${String(r.day).padStart(2,'0')}`;
-  D.transactions.push({id:uid(),type:r.type,desc:r.desc,amount,date:d,cat:r.cat,cardId:r.cardId||null,accountId:r.type!=="card"?(r.accountId||1):null,cardId:r.type==="card"?(r.cardId||null):null,installments:1,recurrentId:r.id});
+  D.transactions.push({id:uid(),type:r.type,desc:r.desc,amount,date:d,cat:r.cat,accountId:r.type!=="card"?(r.accountId||1):null,cardId:r.type==="card"?(r.cardId||null):null,installments:1,recurrentId:r.id});
   save();document.getElementById('rc-list').innerHTML=buildRecConfirm();renderPage(curPg);toast(`✅ ${r.desc} — ${f(amount)}`);
 }
 function skipRec(id){
@@ -1617,7 +1617,7 @@ function confirmAllFixed(){
   const launched=new Set(D.transactions.filter(t=>inM(t)&&t.recurrentId).map(t=>t.recurrentId));
   const pending=D.recurrents.filter(r=>r.active&&!launched.has(r.id)&&!r.variable);
   if(!pending.length){toast('Nenhum lançamento fixo pendente');return;}
-  pending.forEach(r=>{const d=`${curY}-${String(curM+1).padStart(2,'0')}-${String(r.day).padStart(2,'0')}`;D.transactions.push({id:uid(),type:r.type,desc:r.desc,amount:r.amount,date:d,cat:r.cat,cardId:r.cardId||null,accountId:r.type!=="card"?(r.accountId||1):null,cardId:r.type==="card"?(r.cardId||null):null,installments:1,recurrentId:r.id});});
+  pending.forEach(r=>{const d=`${curY}-${String(curM+1).padStart(2,'0')}-${String(r.day).padStart(2,'0')}`;D.transactions.push({id:uid(),type:r.type,desc:r.desc,amount:r.amount,date:d,cat:r.cat,accountId:r.type!=="card"?(r.accountId||1):null,cardId:r.type==="card"?(r.cardId||null):null,installments:1,recurrentId:r.id});});
   save();document.getElementById('rc-list').innerHTML=buildRecConfirm();renderPage(curPg);toast(`✅ ${pending.length} lançamentos confirmados`);
 }
 
@@ -1785,8 +1785,11 @@ function saveTx(){
   const cardId=selTypeV==='card'?parseInt(document.getElementById('tx-card-sel').value)||null:null;
   const installments=selTypeV==='card'?parseInt(document.getElementById('tx-install').value)||1:1;
   if(editId){
+    const _old=D.transactions.find(x=>String(x.id)===String(editId));
+    if(_old&&_old.accountId&&_old.type!=='card'){const oA=D.accounts.find(a=>a.id===_old.accountId);if(oA)oA.balance+=_old.type==='income'?-_old.amount:_old.amount;}
     const idx=D.transactions.findIndex(x=>String(x.id)===String(editId));
     if(idx>=0)D.transactions[idx]={...D.transactions[idx],type:selTypeV,desc,amount,date,cat,cardId,accountId,note};
+    if(accountId&&selTypeV!=='card'){const nA=D.accounts.find(a=>a.id===accountId);if(nA)nA.balance+=selTypeV==='income'?amount:-amount;}
     document.getElementById('ov-tx').dataset.editId='';
   } else {
     if(selTypeV==='card'&&installments>1){
