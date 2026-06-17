@@ -3596,15 +3596,17 @@ function _setSyncDot(s,label){
   if(txt)txt.textContent=label||'Sincronizar dados';
   if(status)status.textContent=label||'—';
   if(badge){
+    const sbDot=badge.querySelector('.sb-dot')||badge.querySelector('div');
+    const sbTxt=badge.querySelector('.sb-txt')||badge.querySelector('span');
     if(cls==='sy'){
       badge.style.display='flex';
-      badge.querySelector('.sb-dot').className='sdot sy';
-      badge.querySelector('.sb-txt').textContent=label||'Sincronizando…';
+      if(sbDot)sbDot.className='sdot sb-dot sy';
+      if(sbTxt)sbTxt.textContent=label||'Sincronizando…';
       clearTimeout(badge._t);
     }else if(cls==='ok'||cls==='er'){
       badge.style.display='flex';
-      badge.querySelector('.sb-dot').className='sdot '+cls;
-      badge.querySelector('.sb-txt').textContent=label||'';
+      if(sbDot)sbDot.className='sdot sb-dot '+cls;
+      if(sbTxt)sbTxt.textContent=label||'';
       clearTimeout(badge._t);badge._t=setTimeout(()=>{badge.style.display='none';},2500);
     }else{
       badge.style.display='none';
