@@ -545,6 +545,12 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
 .fz-opt.active{border-color:var(--copper);background:var(--copper-s)}
 .fz-opt span:first-child{line-height:1;font-weight:600;color:var(--text)}
 .fz-opt span:last-child{font-size:9px;color:var(--muted)}
+/* Collapsible section toggle */
+.mb-sec-toggle{background:none;border:none;color:var(--muted);font-size:16px;padding:0 3px;cursor:pointer;line-height:1;flex-shrink:0;-webkit-tap-highlight-color:transparent;transition:transform .2s;}
+.mb-sec-toggle.cld{transform:rotate(-90deg);}
+.mb-sec-body{overflow:hidden;transition:max-height .25s ease,opacity .15s;}
+.mb-sec-body.cld{max-height:0!important;opacity:0;pointer-events:none;}
+.mb-sec-body:not(.cld){max-height:9999px;}
 /* Layout drag */
 [data-lid]{position:relative}
 .lc{position:absolute;top:6px;right:6px;display:flex;gap:3px;z-index:6;opacity:.22;transition:opacity .2s}
@@ -697,16 +703,16 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
       </div>
     </div>
     <div id="mb-budgets">
-      <div class="sec" style="display:flex;justify-content:space-between;align-items:center">Orçamentos <button class="btn" style="font-size:10px;padding:3px 10px" onclick="openSheet('bud')">+ Novo</button></div>
-      <div class="card" id="h-budgets"></div>
+      <div class="sec" style="display:flex;justify-content:space-between;align-items:center">Orçamentos<div style="display:flex;align-items:center;gap:8px"><button class="btn" style="font-size:10px;padding:3px 10px" onclick="openSheet('bud')">+ Novo</button><button id="mb-budgets-toggle" class="mb-sec-toggle" onclick="toggleMbSection('mb-budgets')" title="Expandir/Recolher">▾</button></div></div>
+      <div id="mb-budgets-body" class="mb-sec-body"><div class="card" id="h-budgets"></div></div>
     </div>
     <div id="mb-projecao">
-      <div class="sec">Projeção de saldo</div>
-      <div class="card" id="h-projecao"></div>
+      <div class="sec" style="display:flex;justify-content:space-between;align-items:center">Projeção de saldo<button id="mb-projecao-toggle" class="mb-sec-toggle" onclick="toggleMbSection('mb-projecao')" title="Expandir/Recolher">▾</button></div>
+      <div id="mb-projecao-body" class="mb-sec-body"><div class="card" id="h-projecao"></div></div>
     </div>
     <div id="mb-recent">
-      <div class="sec">Recentes</div>
-      <div id="h-recent"></div>
+      <div class="sec" style="display:flex;justify-content:space-between;align-items:center">Recentes<button id="mb-recent-toggle" class="mb-sec-toggle" onclick="toggleMbSection('mb-recent')" title="Expandir/Recolher">▾</button></div>
+      <div id="mb-recent-body" class="mb-sec-body"><div id="h-recent"></div></div>
     </div>
   </div>
 
@@ -2118,6 +2124,35 @@ function renderMobileChart(chart,months,maxV){
     });
   }
 }
+// ════════════════════════════════════════════
+// COLLAPSIBLE HOME SECTIONS
+// ════════════════════════════════════════════
+const _MCS_KEY='fc_home_sec';
+function getMbCollapsed(){try{return JSON.parse(localStorage.getItem(_MCS_KEY)||'{}')}catch(e){return{}}}
+function applyMbCollapse(){
+  const s=getMbCollapsed();const cfg=getHomeConfig();
+  const map=[
+    {key:'mb-budgets', body:'mb-budgets-body', cfgKey:'budgets'},
+    {key:'mb-projecao',body:'mb-projecao-body',cfgKey:'projecao'},
+    {key:'mb-recent',  body:'mb-recent-body',  cfgKey:'recent'},
+  ];
+  map.forEach(({key,body,cfgKey})=>{
+    const bodyEl=document.getElementById(body);
+    const btn=document.getElementById(key+'-toggle');
+    if(!bodyEl)return;
+    const sectionOn=cfg[cfgKey]!==false;
+    if(!sectionOn){if(btn){btn.textContent='▾';btn.classList.remove('cld');}return;}
+    const collapsed=!!s[key];
+    bodyEl.classList.toggle('cld',collapsed);
+    if(btn){btn.textContent=collapsed?'›':'▾';btn.classList.toggle('cld',collapsed);}
+  });
+}
+function toggleMbSection(id){
+  const s=getMbCollapsed();s[id]=!s[id];
+  localStorage.setItem(_MCS_KEY,JSON.stringify(s));
+  applyMbCollapse();
+}
+
 function rHome(){
   const cfg=getHomeConfig();
   const mTx=D.transactions.filter(t=>inM(t)&&!t.skipped);
@@ -2223,6 +2258,7 @@ function rHome(){
 
   renderMbSavingsGoal(inc,exp);
   if(cfg.projecao!==false)renderProjecao();
+  applyMbCollapse();
 }
 
 function mbSgKey(m,y){return`${y}-${String(m+1).padStart(2,'0')}`;}
