@@ -2515,7 +2515,15 @@ function _initGIS(){
 async function _driveReq(url,opts={}){
   if(!_gToken)throw new Error('Não autenticado');
   const resp=await fetch(url,{...opts,headers:{Authorization:`Bearer ${_gToken}`,...(opts.headers||{})}});
-  if(resp.status===401){_gToken=null;_updateDriveUI();throw new Error('Token expirado — reconecte');}
+  if(resp.status===401){
+    _gToken=null;
+    if(_gTokenClient&&localStorage.getItem('fc_drive_connected')==='1'){
+      _gTokenClient.requestAccessToken({prompt:''});
+      throw new Error('__refresh__');
+    }
+    _updateDriveUI();throw new Error('Token expirado — reconecte');
+  }
+  if(!resp.ok)throw new Error('Erro Drive: HTTP '+resp.status);
   return resp;
 }
 
@@ -2606,6 +2614,7 @@ async function _driveSync(){
     const t=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     setSyncStatus('ok',`Drive ☁ ${_cryptoKey?'🔐 ':''}${t}`);
   }catch(e){
+    if(e.message==='__refresh__')return;
     console.error('Drive sync:',e);
     setSyncStatus('error','Erro no sync');
     toast('⚠️ '+e.message);
