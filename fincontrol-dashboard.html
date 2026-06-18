@@ -2087,6 +2087,44 @@ function renderForecast(){
       <div style="font-size:17px;font-weight:700;color:${pc}">${ps}${fmt(proj)}</div></div>`;
 }
 
+function dismissAlert(id){
+  const dal=JSON.parse(sessionStorage.getItem('fc_dal')||'{}');
+  dal[id]=1;
+  sessionStorage.setItem('fc_dal',JSON.stringify(dal));
+  renderDash();
+}
+
+function showBudAlertDetail(cat){
+  const b=D.budgets.find(x=>x.category===cat);if(!b)return;
+  const mTx=(D.transactions||[]).filter(t=>inM(t)&&t.cat===cat&&t.type!=='income');
+  const sp=mTx.reduce((a,t)=>a+t.amount,0);
+  const pct=Math.min(100,sp/b.limit*100);
+  const cls=pct>=100?'#c94f4f':pct>=80?'#d4a017':'#34c77b';
+  const rows=mTx.sort((a,z)=>z.date.localeCompare(a.date)).map(t=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);font-size:13px">
+      <div><div style="font-weight:500">${t.desc}</div><div style="font-size:11px;color:var(--tm)">${t.date}</div></div>
+      <div style="color:#c94f4f;font-weight:600">−${fmt(t.amount)}</div>
+    </div>`).join('');
+  const html=`
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:center;justify-content:center" onclick="this.remove()">
+      <div style="background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:24px;width:min(480px,92vw);max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.4)" onclick="event.stopPropagation()">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-size:16px;font-weight:700">${cat}</div>
+          <button onclick="this.closest('[style*=position:fixed]').remove()" style="background:none;border:none;color:var(--tm);font-size:18px;cursor:pointer;line-height:1">✕</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
+          <span style="color:var(--tm)">Gasto</span><span style="font-weight:600;color:${cls}">${fmt(sp)} <span style="color:var(--tm);font-weight:400">de ${fmt(b.limit)}</span></span>
+        </div>
+        <div style="background:var(--s2);border-radius:6px;height:8px;margin-bottom:16px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${cls};border-radius:6px;transition:width .3s"></div>
+        </div>
+        <div style="font-size:12px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${mTx.length} lançamento${mTx.length!==1?'s':''}</div>
+        ${rows||'<div style="color:var(--tm);font-size:13px;padding:12px 0">Nenhum lançamento este mês</div>'}
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+
 function renderDash() {
   const dcfg = D.meta?.dashConfig || {};
   const show = id => dcfg[id] !== false;
@@ -2121,8 +2159,8 @@ function renderDash() {
   D.budgets.forEach(b=>{
     const sp=mTx.filter(t=>t.cat===b.category&&t.type!=='income').reduce((a,t)=>a+t.amount,0);
     const p=sp/b.limit*100;
-    if(p>=100) als.push({type:'danger',m:`🚨 Orçamento <strong>${b.category}</strong> esgotado — ${fmt(sp)} de ${fmt(b.limit)}`});
-    else if(p>=80) als.push({type:'warn',m:`⚠ Orçamento <strong>${b.category}</strong> em ${p.toFixed(0)}% — ${fmt(sp)} de ${fmt(b.limit)}`});
+    if(p>=100) als.push({type:'danger',id:'bud-'+b.id,budCat:b.category,m:`🚨 Orçamento <strong>${b.category}</strong> esgotado — ${fmt(sp)} de ${fmt(b.limit)}`});
+    else if(p>=80) als.push({type:'warn',id:'bud-'+b.id,budCat:b.category,m:`⚠ Orçamento <strong>${b.category}</strong> em ${p.toFixed(0)}% — ${fmt(sp)} de ${fmt(b.limit)}`});
   });
   // Pending recurring
   const pendRec=getPendingRecurring();
@@ -2137,7 +2175,13 @@ function renderDash() {
       als.push({type:dD<=1?'danger':'warn',m:`💳 Fatura ${c.name} ${lbl}${total>0?' — '+fmt(total):''}${dD===0?' · Pague para evitar juros':''}`});
     }
   });
-  document.getElementById('dash-alerts').innerHTML=als.map(a=>`<div class="alert ${a.type}"${a.action?` style="cursor:pointer" onclick="goTo('${a.action}',document.querySelector('.nb[onclick*=\\'${a.action}\\']'))"`:''} >${a.m}</div>`).join('');
+  const _dal=JSON.parse(sessionStorage.getItem('fc_dal')||'{}');
+  document.getElementById('dash-alerts').innerHTML=als.filter(a=>!a.id||!_dal[a.id]).map(a=>{
+    const click=a.budCat?`onclick="showBudAlertDetail('${a.budCat}')"`
+      :a.action?`onclick="goTo('${a.action}',document.querySelector('.nb[onclick*=\\'${a.action}\\']'))"`:'' ;
+    const xBtn=a.id?`<button onclick="event.stopPropagation();dismissAlert('${a.id}')" style="background:none;border:none;color:inherit;opacity:.45;cursor:pointer;font-size:13px;padding:0 2px 0 8px;line-height:1;flex-shrink:0" title="Fechar">✕</button>`:'';
+    return`<div class="alert ${a.type}" style="display:flex;align-items:center;gap:4px;${a.budCat||a.action?'cursor:pointer':''}" ${click}><span style="flex:1">${a.m}</span>${xBtn}</div>`;
+  }).join('');
 
   // Charts
   const chartsRow=document.getElementById('dash-charts-row');
