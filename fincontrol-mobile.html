@@ -2176,7 +2176,7 @@ function _showSheet(title,bodyHtml){
   el.id='fc-detail-sheet';
   el.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9990;display:flex;align-items:flex-end';
   el.innerHTML=`
-    <div style="background:var(--card);border-radius:18px 18px 0 0;width:100%;max-height:82vh;display:flex;flex-direction:column">
+    <div style="background:var(--s1);border-radius:18px 18px 0 0;width:100%;max-height:82vh;display:flex;flex-direction:column">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 16px 12px;flex-shrink:0;border-bottom:1px solid var(--bd)">
         <div style="font-size:16px;font-weight:700">${title}</div>
         <button id="fc-sheet-close" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:0 4px">✕</button>
@@ -2220,14 +2220,14 @@ function showSummaryDetail(type){
   if(type==='income'){
     const list=mTx.filter(t=>t.type==='income');
     const total=list.reduce((a,t)=>a+t.amount,0);
-    _showSheet(`Entradas — ${MONTHS[curM]}`,`
+    _showSheet(`Entradas — ${MO[curM]}`,`
       <div style="font-size:22px;font-weight:700;color:#34c77b;margin-bottom:14px">${f(total)}</div>
       <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${list.length} lançamento${list.length!==1?'s':''}</div>
       ${_mbTxRows(list,()=>'#34c77b')}`);
   }else if(type==='expense'){
     const list=mTx.filter(t=>t.type!=='income'&&t.type!=='transfer');
     const total=list.reduce((a,t)=>a+t.amount,0);
-    _showSheet(`Saídas — ${MONTHS[curM]}`,`
+    _showSheet(`Saídas — ${MO[curM]}`,`
       <div style="font-size:22px;font-weight:700;color:#c94f4f;margin-bottom:14px">${f(total)}</div>
       <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${list.length} lançamento${list.length!==1?'s':''}</div>
       ${_mbTxRows(list,()=>'#c94f4f')}`);
