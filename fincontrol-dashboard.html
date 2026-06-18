@@ -1449,6 +1449,7 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
           <button id="drive-connect-btn" class="btn sm" onclick="driveConnect()">☁ Conectar</button>
           <button id="drive-sync-btn" class="btn sm" style="display:none" onclick="doSync()">↻ Sync</button>
           <button id="drive-disconnect-btn" class="btn sm danger" style="display:none" onclick="driveDisconnect()">Desconectar</button>
+          <button id="drive-repair-btn" class="btn sm" style="display:none;color:var(--iris)" onclick="repairDriveSync()">🔧 Reparar</button>
         </div>
       </div>
       <div style="margin-top:16px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd)">Segurança — Criptografia E2E</div>
@@ -3649,7 +3650,7 @@ function _setSyncDot(s,label){
 function _updateDriveUI(){
   const on=!!_gToken;
   ['drive-connect-btn'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=on?'none':'';});
-  ['drive-sync-btn','drive-disconnect-btn'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=on?'':'none';});
+  ['drive-sync-btn','drive-disconnect-btn','drive-repair-btn'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=on?'':'none';});
 }
 
 // ── AUTH / LOGIN ─────────────────────────────────────────────────
@@ -3727,9 +3728,39 @@ async function _driveReq(url,opts={}){
 
 async function _driveFindFile(){
   const q=encodeURIComponent(`name='${DRIVE_FILENAME}' and trashed=false`);
-  const r=await _driveReq(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)&spaces=drive`);
+  const r=await _driveReq(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,modifiedTime)&orderBy=modifiedTime+desc&spaces=drive`);
   const d=await r.json();
   return d.files?.[0]?.id||null;
+}
+async function _driveFindAllFiles(){
+  const q=encodeURIComponent(`name='${DRIVE_FILENAME}' and trashed=false`);
+  const r=await _driveReq(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,modifiedTime)&orderBy=modifiedTime+desc&spaces=drive`);
+  const d=await r.json();
+  return d.files||[];
+}
+async function repairDriveSync(){
+  if(!_gToken){toast('⚠️ Conecte ao Drive primeiro');return;}
+  try{
+    toast('🔄 Buscando todos os arquivos no Drive…');
+    const files=await _driveFindAllFiles();
+    if(files.length===0){toast('❌ Nenhum arquivo encontrado no Drive');return;}
+    for(const f of files){
+      try{
+        const rawR=await _driveDownload(f.id);
+        const remote=rawR?.fc_encrypted?await _decryptFromDrive(rawR):rawR;
+        if(remote?.meta) D=migrateData(mergeDatasets(D,remote));
+      }catch(e){console.warn('repairDriveSync: skip file',f.id,e.message);}
+    }
+    D.meta.driveFileId=files[0].id;
+    localStorage.setItem(DRIVE_KEY,files[0].id);
+    D.meta.lastSync=new Date().toISOString();
+    save();
+    const payload=await _encryptForDrive(D);
+    await _driveUpdate(files[0].id,payload);
+    render();
+    _setSyncDot('ok','Drive ☁ reparado');
+    toast('✅ Dados mesclados e sincronizados!');
+  }catch(e){toast('❌ '+e.message);console.error('repairDriveSync:',e);}
 }
 
 async function _driveCreate(content){
