@@ -864,6 +864,7 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
       <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="openQRExport()">📲 Exportar configurações via QR Code</button>
       <input type="file" id="m-import-json" accept=".json" style="display:none" onchange="importMobileJSON(event)">
       <button class="btn" style="width:100%;padding:9px;margin-bottom:8px;border-color:var(--iris);color:var(--iris)" onclick="forceAppUpdate()">🔄 Atualizar app (limpar cache)</button>
+      <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="deduplicateTx()">🔧 Remover duplicatas</button>
       <button class="btn danger" style="width:100%;padding:9px" onclick="document.getElementById('m-clear-confirm').style.display='block'">🗑 Zerar todos os dados</button>
       <div id="m-clear-confirm" style="display:none;background:rgba(217,95,95,.1);border:1px solid var(--crimson);border-radius:var(--r-sm);padding:12px;margin-top:8px">
         <div style="font-size:11px;color:var(--crimson);font-weight:600;margin-bottom:10px;line-height:1.5">⚠ Esta ação é irreversível.<br>Todos os dados serão apagados.</div>
@@ -2553,6 +2554,21 @@ async function forceAppUpdate(){
     toast('🔄 Cache limpo — atualizando...');
     setTimeout(()=>window.location.reload(true),1200);
   }catch(e){toast('❌ '+e.message);}
+}
+function deduplicateTx(){
+  const before=D.transactions.length;
+  const seen=new Map();
+  D.transactions.forEach(t=>{
+    const key=t.seriesId
+      ?`s|${t.seriesId}|${t.installCurrent||0}`
+      :`${t.date}|${t.type}|${String(t.amount)}|${t.desc.trim().toLowerCase()}|${t.cat}`;
+    if(!seen.has(key)){seen.set(key,t);}
+    else{if(String(t.id)<String(seen.get(key).id))seen.set(key,t);}
+  });
+  D.transactions=[...seen.values()];
+  const removed=before-D.transactions.length;
+  if(removed>0){save();renderPage(curPg);toast(`✅ ${removed} duplicata${removed>1?'s':''} removida${removed>1?'s':''}`);}
+  else toast('✓ Nenhuma duplicata encontrada');
 }
 function clearMobileData(){
   D=mobileAdapt(createEmptyData());

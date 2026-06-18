@@ -1426,6 +1426,10 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
         <div><div class="setting-lbl">Exportar CSV</div><div class="setting-sub">Lançamentos do mês para Excel</div></div>
         <button class="btn sm" onclick="exportCSV()">Exportar</button>
       </div>
+      <div class="setting-row">
+        <div><div class="setting-lbl">Remover duplicatas</div><div class="setting-sub">Remove lançamentos idênticos gerados por erro de sincronização</div></div>
+        <button class="btn sm" onclick="deduplicateTx()">🔧 Limpar</button>
+      </div>
       <div class="setting-row" id="clear-row">
         <div><div class="setting-lbl">Zerar todos os dados</div><div class="setting-sub">Remove lançamentos, contas, metas e orçamentos</div></div>
         <button class="btn sm danger" onclick="confirmClearAll()">Zerar</button>
@@ -3712,6 +3716,25 @@ ${cardRows.map(({card:c,cTx,total,fat})=>`<div class="card-block">
 function exportJSON(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,2)],{type:'application/json'}));a.download='fincontrol-backup.json';a.click();toast('📥 Backup exportado');}
 function exportCSV(){document.getElementById('rep-period').value='month';exportReport('csv');}
 function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);save();render();toast('✓ Dados restaurados');}catch{toast('❌ Arquivo inválido');}};r.readAsText(f);}
+function deduplicateTx(){
+  const before=D.transactions.length;
+  const seen=new Map();
+  D.transactions.forEach(t=>{
+    // Chave por série de parcelamento (mesmo seriesId+parcela = mesmo lançamento)
+    const key=t.seriesId
+      ?`s|${t.seriesId}|${t.installCurrent||0}`
+      :`${t.date}|${t.type}|${String(t.amount)}|${t.desc.trim().toLowerCase()}|${t.cat}`;
+    if(!seen.has(key)){seen.set(key,t);}
+    else{
+      // Manter o de ID menor (mais antigo/canônico)
+      if(String(t.id)<String(seen.get(key).id))seen.set(key,t);
+    }
+  });
+  D.transactions=[...seen.values()];
+  const removed=before-D.transactions.length;
+  if(removed>0){save();render();toast(`✅ ${removed} duplicata${removed>1?'s':''} removida${removed>1?'s':''}`);}
+  else toast('✓ Nenhuma duplicata encontrada');
+}
 function confirmClearAll(){document.getElementById('clear-confirm').style.display='block';}
 function clearAll(){
   D=createEmptyData();
