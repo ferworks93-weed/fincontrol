@@ -1,4 +1,4 @@
-const CACHE = 'fincontrol-v5';
+const CACHE = 'fincontrol-v6';
 const STATIC = ['./manifest.json', './icon.svg', './login-bg.jpg'];
 const HTML   = ['./fincontrol-mobile', './fincontrol-dashboard', './fincontrol-mobile.html', './fincontrol-dashboard.html'];
 

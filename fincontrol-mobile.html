@@ -546,11 +546,7 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
 .fz-opt span:first-child{line-height:1;font-weight:600;color:var(--text)}
 .fz-opt span:last-child{font-size:9px;color:var(--muted)}
 /* Collapsible section toggle */
-.mb-sec-toggle{background:none;border:none;color:var(--muted);font-size:16px;padding:0 3px;cursor:pointer;line-height:1;flex-shrink:0;-webkit-tap-highlight-color:transparent;transition:transform .2s;}
-.mb-sec-toggle.cld{transform:rotate(-90deg);}
-.mb-sec-body{overflow:hidden;transition:max-height .25s ease,opacity .15s;}
-.mb-sec-body.cld{max-height:0!important;opacity:0;pointer-events:none;}
-.mb-sec-body:not(.cld){max-height:9999px;}
+.mb-sec-toggle{background:none;border:none;color:var(--muted);font-size:16px;padding:4px 8px;cursor:pointer;line-height:1;flex-shrink:0;-webkit-tap-highlight-color:transparent;position:relative;z-index:10;}
 /* Layout drag */
 [data-lid]{position:relative}
 .lc{position:absolute;top:6px;right:6px;display:flex;gap:3px;z-index:6;opacity:.22;transition:opacity .2s}
@@ -2141,10 +2137,10 @@ function applyMbCollapse(){
     const btn=document.getElementById(key+'-toggle');
     if(!bodyEl)return;
     const sectionOn=cfg[cfgKey]!==false;
-    if(!sectionOn){if(btn){btn.textContent='▾';btn.classList.remove('cld');}return;}
+    if(!sectionOn){if(btn)btn.textContent='▾';return;}
     const collapsed=!!s[key];
-    bodyEl.classList.toggle('cld',collapsed);
-    if(btn){btn.textContent=collapsed?'›':'▾';btn.classList.toggle('cld',collapsed);}
+    bodyEl.style.display=collapsed?'none':'';
+    if(btn)btn.textContent=collapsed?'›':'▾';
   });
 }
 function toggleMbSection(id){
