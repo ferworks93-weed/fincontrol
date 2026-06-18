@@ -852,6 +852,7 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
       <input type="file" id="m-import-pdf" accept=".pdf" style="display:none" onchange="mImportPDF(event)">
       <button class="btn" style="width:100%;padding:9px;margin-bottom:8px" onclick="openQRExport()">📲 Exportar configurações via QR Code</button>
       <input type="file" id="m-import-json" accept=".json" style="display:none" onchange="importMobileJSON(event)">
+      <button class="btn" style="width:100%;padding:9px;margin-bottom:8px;border-color:var(--iris);color:var(--iris)" onclick="forceAppUpdate()">🔄 Atualizar app (limpar cache)</button>
       <button class="btn danger" style="width:100%;padding:9px" onclick="document.getElementById('m-clear-confirm').style.display='block'">🗑 Zerar todos os dados</button>
       <div id="m-clear-confirm" style="display:none;background:rgba(217,95,95,.1);border:1px solid var(--crimson);border-radius:var(--r-sm);padding:12px;margin-top:8px">
         <div style="font-size:11px;color:var(--crimson);font-weight:600;margin-bottom:10px;line-height:1.5">⚠ Esta ação é irreversível.<br>Todos os dados serão apagados.</div>
@@ -2449,6 +2450,20 @@ function importMobileJSON(e){
   const r=new FileReader();
   r.onload=ev=>{try{D=mobileAdapt(JSON.parse(ev.target.result));save();renderPage(curPg);toast('✅ Dados importados');}catch{toast('❌ Arquivo inválido');}};
   r.readAsText(file);
+}
+async function forceAppUpdate(){
+  try{
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+    }
+    if('caches' in window){
+      const keys=await caches.keys();
+      await Promise.all(keys.map(k=>caches.delete(k)));
+    }
+    toast('🔄 Cache limpo — atualizando...');
+    setTimeout(()=>window.location.reload(true),1200);
+  }catch(e){toast('❌ '+e.message);}
 }
 function clearMobileData(){
   D=mobileAdapt(createEmptyData());
