@@ -3740,27 +3740,28 @@ function clearAll(){
   D=createEmptyData();
   localStorage.removeItem(KEY);
   localStorage.removeItem(DRIVE_KEY);
-  // Cancelar sync pendente para não restaurar dados do Drive
-  clearTimeout(save._syncTimer);
   // Marcar como estado recente para vencer qualquer merge futuro
   D.meta.lastSync=new Date().toISOString();
   save();
+  // Cancelar timer DEPOIS do save (save() recria o timer em modo auto)
+  clearTimeout(save._syncTimer);save._syncTimer=null;
   document.getElementById('clear-confirm').style.display='none';
   const nb=document.querySelector('.nb[onclick*="dashboard"]');
   goTo('dashboard',nb);renderDash();
   toast('🗑 Dados zerados');
   // Se conectado ao Drive, sobrescrever imediatamente com estado vazio
   if(_gToken){
-    _encryptForDrive(D).then(payload=>{
-      return _driveFindFile().then(fid=>{
-        const act=fid?_driveUpdate(fid,payload):_driveCreate(payload);
-        return act.then(newId=>{
-          const id=fid||newId;
-          D.meta.driveFileId=id;localStorage.setItem(DRIVE_KEY,id);save();
-          _setSyncDot('ok',`Drive ☁ ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`);
-        });
-      });
-    }).catch(e=>console.warn('clearAll Drive:',e));
+    (async()=>{
+      try{
+        const payload=await _encryptForDrive(D);
+        const fid=await _driveFindFile();
+        const id=fid?(await _driveUpdate(fid,payload),fid):await _driveCreate(payload);
+        D.meta.driveFileId=id;localStorage.setItem(DRIVE_KEY,id);
+        D.meta.lastSync=new Date().toISOString();
+        save();clearTimeout(save._syncTimer);save._syncTimer=null;
+        _setSyncDot('ok',`Drive ☁ ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`);
+      }catch(e){console.warn('clearAll Drive:',e);}
+    })();
   }
 }
 
@@ -3840,10 +3841,22 @@ function _initGIS(){
     callback:async resp=>{
       if(resp.error){
         document.getElementById('login-loading').style.display='none';
-        _setSyncDot('error','Erro na autenticação');
+        // Se era auto-reconexão silenciosa e falhou, mostrar aviso discreto
+        if(resp.error==='access_denied'||resp.error==='interaction_required'||resp.error==='immediate_failed'){
+          _setSyncDot('error','Reconecte o Drive');
+          _showDriveReconnectBanner();
+        }else{
+          _setSyncDot('error','Erro na autenticação');
+        }
         return;
       }
       _gToken=resp.access_token;
+      // Agendar renovação automática 5 min antes de expirar (token dura ~1h)
+      clearTimeout(_gTokenRefreshTimer);
+      _gTokenRefreshTimer=setTimeout(()=>{
+        if(_gTokenClient&&localStorage.getItem('fc_drive_connected')==='1')
+          _gTokenClient.requestAccessToken({prompt:'none'});
+      },55*60*1000);
       if(!getSession()){
         document.getElementById('login-loading').textContent='Obtendo perfil…';
         try{
@@ -3854,6 +3867,7 @@ function _initGIS(){
           document.getElementById('login-loading').style.display='none';
         }
       }else{
+        document.getElementById('drive-reconnect-banner')?.remove();
         localStorage.setItem('fc_drive_connected','1');
         _updateDriveUI();
         await _driveSync();
@@ -3862,8 +3876,18 @@ function _initGIS(){
   });
   if(_loginPending){_loginPending=false;_gTokenClient.requestAccessToken();return;}
   if(getSession()&&localStorage.getItem('fc_drive_connected')==='1'){
-    _gTokenClient.requestAccessToken({prompt:''});
+    // prompt:'none' = silencioso, sem popup; se falhar, banner aparece
+    _gTokenClient.requestAccessToken({prompt:'none'});
   }
+}
+let _gTokenRefreshTimer=null;
+function _showDriveReconnectBanner(){
+  if(document.getElementById('drive-reconnect-banner'))return;
+  const b=document.createElement('div');
+  b.id='drive-reconnect-banner';
+  b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#2a1f0e;border-bottom:1px solid #d4a017;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#d4a017';
+  b.innerHTML='<span>⚠ Sessão do Drive expirou</span><button onclick="_gTokenClient.requestAccessToken();this.closest(\'#drive-reconnect-banner\').remove()" style="background:var(--cu);border:none;color:#fff;padding:4px 14px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600">Reconectar</button>';
+  document.body.prepend(b);
 }
 
 async function _driveReq(url,opts={}){
