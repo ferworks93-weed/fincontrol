@@ -812,6 +812,16 @@ body{font-family:var(--font);background:var(--void);color:var(--text);display:fl
       <button id="drive-sync-btn" class="btn primary" style="width:100%;padding:10px;margin-bottom:6px;display:none" onclick="doSync()">↻ Sincronizar agora</button>
       <button id="drive-disconnect-btn" class="btn" style="width:100%;padding:8px;display:none;font-size:11px;color:var(--crimson)" onclick="driveDisconnect()">Desconectar Drive</button>
       <button id="drive-repair-btn" class="btn" style="width:100%;padding:8px;margin-top:4px;display:none;font-size:11px;color:var(--iris)" onclick="repairDriveSync()">🔧 Reparar sincronização</button>
+      <div id="sync-freq-row" style="display:none;margin-top:10px">
+        <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">Frequência de sincronização</div>
+        <select id="sync-freq-sel" class="fi" style="width:100%;font-size:12px" onchange="applySyncFreq(this.value)">
+          <option value="auto">Automático (após cada alteração)</option>
+          <option value="300000">A cada 5 minutos</option>
+          <option value="600000">A cada 10 minutos</option>
+          <option value="1800000">A cada 30 minutos</option>
+          <option value="manual">Manual</option>
+        </select>
+      </div>
       <div style="font-size:9px;color:var(--muted);margin-top:8px;line-height:1.5">Requer servidor HTTP (localhost). Não funciona via file://.</div>
     </div>
 
@@ -1195,7 +1205,9 @@ const save=()=>{
     try{const tx=_idb.transaction('queue','readwrite');tx.objectStore('queue').put({id:'pending',ts:Date.now(),data:JSON.stringify(D)});}catch(e){}
   }
   clearTimeout(save._t);
-  save._t=setTimeout(()=>{if(typeof _driveSync==='function'&&window._gToken)_driveSync();},1500);
+  if(getSyncFreq()==='auto'){
+    save._t=setTimeout(()=>{if(typeof _driveSync==='function'&&window._gToken)_driveSync();},1500);
+  }
 };
 
 // ════════════════════════════════════════════
@@ -2488,7 +2500,8 @@ let _gToken=null,_gTokenClient=null;
 
 function setSyncStatus(s,l){
   document.querySelectorAll('#syncDot,#syncDot2').forEach(d=>d.className='sync-dot '+(s||''));
-  document.querySelectorAll('#syncLbl,#syncLbl2').forEach(el=>{if(el)el.textContent=l;});
+  // Durante sincronização, não altera o texto — apenas o ponto muda
+  if(s!=='busy') document.querySelectorAll('#syncLbl,#syncLbl2').forEach(el=>{if(el)el.textContent=l;});
 }
 
 function _updateDriveUI(){
@@ -2497,10 +2510,12 @@ function _updateDriveUI(){
   const b=document.getElementById('drive-sync-btn');
   const c=document.getElementById('drive-disconnect-btn');
   const repair=document.getElementById('drive-repair-btn');
+  const freqRow=document.getElementById('sync-freq-row');
   if(a)a.style.display=on?'none':'';
   if(b)b.style.display=on?'':'none';
   if(c)c.style.display=on?'':'none';
   if(repair)repair.style.display=on?'':'none';
+  if(freqRow){freqRow.style.display=on?'':'none';if(on){const sel=document.getElementById('sync-freq-sel');if(sel)sel.value=getSyncFreq();}}
 }
 
 // ── AUTH / LOGIN ─────────────────────────────────────────────────
@@ -2847,7 +2862,21 @@ document.addEventListener('keydown',e=>{
   if(e.key==='s'||e.key==='S'){e.preventDefault();doSync();}
 });
 window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue){D=mobileAdapt(JSON.parse(e.newValue));renderPage(curPg);setSyncStatus('ok','Sync automático');toast('🔄 Dados atualizados');}});
-setInterval(()=>{if(_gToken)_driveSync();},30000);
+const SYNC_FREQ_KEY='fc_sync_freq';
+let _syncIntervalId=null;
+function getSyncFreq(){return localStorage.getItem(SYNC_FREQ_KEY)||'auto';}
+function applySyncFreq(val){
+  localStorage.setItem(SYNC_FREQ_KEY,val);
+  if(_syncIntervalId){clearInterval(_syncIntervalId);_syncIntervalId=null;}
+  if(val!=='auto'&&val!=='manual'){
+    const ms=parseInt(val);
+    if(ms>0)_syncIntervalId=setInterval(()=>{if(_gToken)_driveSync();},ms);
+  }
+  const sel=document.getElementById('sync-freq-sel');
+  if(sel)sel.value=val;
+}
+function initSyncFreq(){applySyncFreq(getSyncFreq());}
+initSyncFreq();
 
 // Se veio de login recente, mostra overlay até sync concluir
 (function(){
