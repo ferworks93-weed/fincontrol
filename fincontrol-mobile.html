@@ -1198,7 +1198,6 @@ function mobileAdapt(d){
 }
 let D=mobileAdapt(JSON.parse(localStorage.getItem(KEY)||'null'));
 const save=()=>{
-  D.meta.lastSync=new Date().toISOString();
   try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){toast('⚠️ Erro ao salvar: armazenamento cheio. Exporte um backup.');}
   if(typeof _bc!=='undefined'&&_bc)_bc.postMessage({type:'sync',key:KEY,d:D});
   if(!navigator.onLine&&typeof _idb!=='undefined'&&_idb){

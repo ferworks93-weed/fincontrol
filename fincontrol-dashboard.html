@@ -1897,8 +1897,6 @@ const save = () => {
     document.body.appendChild(msg);
     setTimeout(()=>msg.remove(), 6000);
   }
-  // Atualiza timestamp ANTES de transmitir para merge correto nas abas receptoras
-  D.meta.lastSync = new Date().toISOString();
   // BroadcastChannel — notifica outras abas em tempo real
   if(typeof _bc!=='undefined'&&_bc) _bc.postMessage({type:'sync',key:KEY,d:D});
   // IndexedDB — enfileira quando offline
