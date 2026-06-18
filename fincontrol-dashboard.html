@@ -1069,11 +1069,11 @@ tbody td{padding:9px 16px;font-size:12px;color:var(--tx)}
 <div class="sc active" id="sc-dashboard">
   <div id="dash-alerts-row"><div id="dash-alerts" style="margin-bottom:8px"></div></div>
   <div class="g5 mb" id="d-kpi-row">
-    <div class="kpi c-gn"><div class="kpi-ico">↑</div><div class="kpi-lbl">Receitas</div><div class="kpi-val gn" id="d-inc">—</div><div class="kpi-meta" id="d-inc-m"></div></div>
-    <div class="kpi c-rd"><div class="kpi-ico">↓</div><div class="kpi-lbl">Despesas</div><div class="kpi-val rd" id="d-exp">—</div><div class="kpi-meta" id="d-exp-m"></div></div>
+    <div class="kpi c-gn" style="cursor:pointer" onclick="showSummaryDetail('income')"><div class="kpi-ico">↑</div><div class="kpi-lbl">Receitas</div><div class="kpi-val gn" id="d-inc">—</div><div class="kpi-meta" id="d-inc-m"></div></div>
+    <div class="kpi c-rd" style="cursor:pointer" onclick="showSummaryDetail('expense')"><div class="kpi-ico">↓</div><div class="kpi-lbl">Despesas</div><div class="kpi-val rd" id="d-exp">—</div><div class="kpi-meta" id="d-exp-m"></div></div>
     <div class="kpi c-cu"><div class="kpi-ico">≈</div><div class="kpi-lbl">Saldo Líquido</div><div class="kpi-val" id="d-bal">—</div><div class="kpi-meta">Este mês</div></div>
-    <div class="kpi c-bl"><div class="kpi-ico">◉</div><div class="kpi-lbl">Saldo em Contas</div><div class="kpi-val bl" id="d-acc">—</div><div class="kpi-meta" id="d-acc-m"></div></div>
-    <div class="kpi c-vt"><div class="kpi-ico">△</div><div class="kpi-lbl">Patrimônio</div><div class="kpi-val vt" id="d-inv">—</div><div class="kpi-meta" id="d-inv-m"></div></div>
+    <div class="kpi c-bl" style="cursor:pointer" onclick="showSummaryDetail('accounts')"><div class="kpi-ico">◉</div><div class="kpi-lbl">Saldo em Contas</div><div class="kpi-val bl" id="d-acc">—</div><div class="kpi-meta" id="d-acc-m"></div></div>
+    <div class="kpi c-vt" style="cursor:pointer" onclick="showSummaryDetail('patrimonio')"><div class="kpi-ico">△</div><div class="kpi-lbl">Patrimônio</div><div class="kpi-val vt" id="d-inv">—</div><div class="kpi-meta" id="d-inv-m"></div></div>
   </div>
   <div class="mb" id="dash-forecast-row">
     <div class="card">
@@ -2094,35 +2094,97 @@ function dismissAlert(id){
   renderDash();
 }
 
+function _closeModal(){document.getElementById('fc-detail-modal')?.remove();}
+
+function _showModal(title,bodyHtml){
+  _closeModal();
+  const ov=document.createElement('div');
+  ov.id='fc-detail-modal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:center;justify-content:center';
+  ov.addEventListener('click',e=>{if(e.target===ov)_closeModal();});
+  ov.innerHTML=`
+    <div style="background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:24px;width:min(500px,92vw);max-height:82vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.4)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-shrink:0">
+        <div style="font-size:16px;font-weight:700">${title}</div>
+        <button id="fc-modal-close" style="background:none;border:none;color:var(--tm);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px">✕</button>
+      </div>
+      <div style="overflow-y:auto;flex:1">${bodyHtml}</div>
+    </div>`;
+  ov.querySelector('#fc-modal-close').addEventListener('click',_closeModal);
+  document.body.appendChild(ov);
+}
+
+function _txRows(list,colorFn){
+  if(!list.length)return'<div style="color:var(--tm);font-size:13px;padding:12px 0">Nenhum lançamento este mês</div>';
+  return list.sort((a,z)=>z.date.localeCompare(a.date)).map(t=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);font-size:13px;cursor:pointer" onclick="_closeModal();openOv('ov-tx');editTx('${t.id}')">
+      <div><div style="font-weight:500">${t.desc}</div><div style="font-size:11px;color:var(--tm)">${t.date} · ${t.cat}</div></div>
+      <div style="font-weight:600;color:${colorFn(t)}">${t.type==='income'?'+':'-'}${fmt(t.amount)}</div>
+    </div>`).join('');
+}
+
 function showBudAlertDetail(cat){
   const b=D.budgets.find(x=>x.category===cat);if(!b)return;
-  const mTx=(D.transactions||[]).filter(t=>inM(t)&&t.cat===cat&&t.type!=='income');
-  const sp=mTx.reduce((a,t)=>a+t.amount,0);
+  const list=(D.transactions||[]).filter(t=>inM(t)&&t.cat===cat&&t.type!=='income');
+  const sp=list.reduce((a,t)=>a+t.amount,0);
   const pct=Math.min(100,sp/b.limit*100);
   const cls=pct>=100?'#c94f4f':pct>=80?'#d4a017':'#34c77b';
-  const rows=mTx.sort((a,z)=>z.date.localeCompare(a.date)).map(t=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);font-size:13px">
-      <div><div style="font-weight:500">${t.desc}</div><div style="font-size:11px;color:var(--tm)">${t.date}</div></div>
-      <div style="color:#c94f4f;font-weight:600">−${fmt(t.amount)}</div>
-    </div>`).join('');
-  const html=`
-    <div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;display:flex;align-items:center;justify-content:center" onclick="this.remove()">
-      <div style="background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:24px;width:min(480px,92vw);max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.4)" onclick="event.stopPropagation()">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <div style="font-size:16px;font-weight:700">${cat}</div>
-          <button onclick="this.closest('[style*=position:fixed]').remove()" style="background:none;border:none;color:var(--tm);font-size:18px;cursor:pointer;line-height:1">✕</button>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
-          <span style="color:var(--tm)">Gasto</span><span style="font-weight:600;color:${cls}">${fmt(sp)} <span style="color:var(--tm);font-weight:400">de ${fmt(b.limit)}</span></span>
-        </div>
-        <div style="background:var(--s2);border-radius:6px;height:8px;margin-bottom:16px;overflow:hidden">
-          <div style="height:100%;width:${pct}%;background:${cls};border-radius:6px;transition:width .3s"></div>
-        </div>
-        <div style="font-size:12px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${mTx.length} lançamento${mTx.length!==1?'s':''}</div>
-        ${rows||'<div style="color:var(--tm);font-size:13px;padding:12px 0">Nenhum lançamento este mês</div>'}
+  const body=`
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
+      <span style="color:var(--tm)">Gasto</span>
+      <span style="font-weight:600;color:${cls}">${fmt(sp)} <span style="color:var(--tm);font-weight:400">de ${fmt(b.limit)}</span></span>
+    </div>
+    <div style="background:var(--s2);border-radius:6px;height:8px;margin-bottom:16px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:${cls};border-radius:6px"></div>
+    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${list.length} lançamento${list.length!==1?'s':''}</div>
+    ${_txRows(list,()=>'#c94f4f')}`;
+  _showModal(cat,body);
+}
+
+function showSummaryDetail(type){
+  const mTx=D.transactions.filter(t=>inM(t)&&!t.skipped);
+  if(type==='income'){
+    const list=mTx.filter(t=>t.type==='income');
+    const total=list.reduce((a,t)=>a+t.amount,0);
+    _showModal(`Receitas — ${MONTHS[curM]}`,`
+      <div style="font-size:22px;font-weight:700;color:#34c77b;margin-bottom:16px">${fmt(total)}</div>
+      <div style="font-size:11px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${list.length} lançamento${list.length!==1?'s':''}</div>
+      ${_txRows(list,()=>'#34c77b')}`);
+  }else if(type==='expense'){
+    const list=mTx.filter(t=>t.type!=='income'&&t.type!=='transfer');
+    const total=list.reduce((a,t)=>a+t.amount,0);
+    _showModal(`Despesas — ${MONTHS[curM]}`,`
+      <div style="font-size:22px;font-weight:700;color:#c94f4f;margin-bottom:16px">${fmt(total)}</div>
+      <div style="font-size:11px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${list.length} lançamento${list.length!==1?'s':''}</div>
+      ${_txRows(list,()=>'#c94f4f')}`);
+  }else if(type==='accounts'){
+    const rows=(D.accounts||[]).map(a=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd);font-size:13px">
+        <div style="font-weight:500">${a.name}</div>
+        <div style="font-weight:600;color:${a.balance>=0?'#34c77b':'#c94f4f'}">${fmt(a.balance)}</div>
+      </div>`).join('');
+    const total=(D.accounts||[]).reduce((s,a)=>s+a.balance,0);
+    _showModal('Saldo em Contas',`
+      <div style="font-size:22px;font-weight:700;color:var(--bl);margin-bottom:16px">${fmt(total)}</div>
+      ${rows||'<div style="color:var(--tm);font-size:13px">Nenhuma conta cadastrada</div>'}`);
+  }else if(type==='patrimonio'){
+    const accTotal=(D.accounts||[]).reduce((s,a)=>s+a.balance,0);
+    const invTotal=(D.investments||[]).reduce((s,i)=>s+(i.currentValue||0),0);
+    const invRows=(D.investments||[]).map(i=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd);font-size:13px">
+        <div><div style="font-weight:500">${i.name}</div><div style="font-size:11px;color:var(--tm)">${i.type||''}</div></div>
+        <div style="font-weight:600;color:#8b7cf8">${fmt(i.currentValue||0)}</div>
+      </div>`).join('');
+    _showModal('Patrimônio',`
+      <div style="font-size:22px;font-weight:700;color:#8b7cf8;margin-bottom:16px">${fmt(accTotal+invTotal)}</div>
+      <div style="display:flex;gap:16px;margin-bottom:16px;font-size:13px">
+        <div><div style="color:var(--tm);font-size:11px">Contas</div><div style="font-weight:600">${fmt(accTotal)}</div></div>
+        <div><div style="color:var(--tm);font-size:11px">Investimentos</div><div style="font-weight:600">${fmt(invTotal)}</div></div>
       </div>
-    </div>`;
-  document.body.insertAdjacentHTML('beforeend',html);
+      <div style="font-size:11px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Investimentos</div>
+      ${invRows||'<div style="color:var(--tm);font-size:13px">Nenhum investimento cadastrado</div>'}`);
+  }
 }
 
 function renderDash() {
