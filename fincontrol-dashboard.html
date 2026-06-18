@@ -3626,7 +3626,8 @@ function _setSyncDot(s,label){
   const status=document.getElementById('set-sync-status');
   const badge=document.getElementById('sync-badge');
   if(dot)dot.className='sdot '+cls;
-  if(txt)txt.textContent=label||'Sincronizar dados';
+  // Durante sincronização, não altera o texto — apenas o ponto muda de cor/animação
+  if(s!=='busy'){if(txt)txt.textContent=label||'Sincronizar dados';}
   if(status)status.textContent=label||'—';
   if(badge){
     const sbDot=badge.querySelector('.sb-dot')||badge.querySelector('div');
