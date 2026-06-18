@@ -3740,11 +3740,28 @@ function clearAll(){
   D=createEmptyData();
   localStorage.removeItem(KEY);
   localStorage.removeItem(DRIVE_KEY);
+  // Cancelar sync pendente para não restaurar dados do Drive
+  clearTimeout(save._syncTimer);
+  // Marcar como estado recente para vencer qualquer merge futuro
+  D.meta.lastSync=new Date().toISOString();
   save();
   document.getElementById('clear-confirm').style.display='none';
   const nb=document.querySelector('.nb[onclick*="dashboard"]');
   goTo('dashboard',nb);renderDash();
   toast('🗑 Dados zerados');
+  // Se conectado ao Drive, sobrescrever imediatamente com estado vazio
+  if(_gToken){
+    _encryptForDrive(D).then(payload=>{
+      return _driveFindFile().then(fid=>{
+        const act=fid?_driveUpdate(fid,payload):_driveCreate(payload);
+        return act.then(newId=>{
+          const id=fid||newId;
+          D.meta.driveFileId=id;localStorage.setItem(DRIVE_KEY,id);save();
+          _setSyncDot('ok',`Drive ☁ ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`);
+        });
+      });
+    }).catch(e=>console.warn('clearAll Drive:',e));
+  }
 }
 
 // ════════════════════════════════════════════════════════════════

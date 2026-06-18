@@ -2574,9 +2574,23 @@ function clearMobileData(){
   D=mobileAdapt(createEmptyData());
   localStorage.removeItem(KEY);
   localStorage.removeItem(DRIVE_KEY);
+  clearTimeout(save._t);
+  D.meta.lastSync=new Date().toISOString();
   save();
   document.getElementById('m-clear-confirm').style.display='none';
   renderPage(curPg);toast('🗑 Dados zerados');
+  if(_gToken){
+    _encryptForDrive(D).then(payload=>{
+      return _driveFindFile().then(fid=>{
+        const act=fid?_driveUpdate(fid,payload):_driveCreate(payload);
+        return act.then(newId=>{
+          const id=fid||newId;
+          D.meta.driveFileId=id;localStorage.setItem(DRIVE_KEY,id);save();
+          setSyncStatus('ok',`Drive ☁ ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`);
+        });
+      });
+    }).catch(e=>console.warn('clearMobileData Drive:',e));
+  }
 }
 
 // ════════════════════════════════════════════
